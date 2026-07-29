@@ -16,6 +16,8 @@ import {
   Clock,
   ArrowRight,
   Filter,
+  Search,
+  ListFilter,
   CheckCircle2,
   HelpCircle,
   X,
@@ -38,9 +40,7 @@ import {
   FlaskConical,
   PlusCircle,
   ArrowLeft,
-  ListFilter,
   Tag,
-  Search,
   Mail,
   Link2,
   ShieldCheck,
@@ -128,9 +128,9 @@ export const MOCK_DRIVE_FORMS: DriveFormMock[] = [
       },
       {
         id: 'q-imp-7',
-        title: 'Escreva abaixo suas sugestões ou críticas para a melhoria continuada da gestão do Campus Tauá:',
-        type: 'LONG_TEXT',
-        required: false,
+        title: 'Como você avalia os canais de atendimento e escuta da gestão do Campus Tauá?',
+        type: 'SCALE',
+        required: true,
         category: 'Gestão',
         audiences: ['todos'],
       },
@@ -179,10 +179,11 @@ export const MOCK_DRIVE_FORMS: DriveFormMock[] = [
       },
       {
         id: 'q-imp-205',
-        title: 'Aponte setores do campus que necessitam de reformas ou manutenções prioritárias:',
-        type: 'LONG_TEXT',
+        title: 'Quais setores do campus necessitam de melhorias de infraestrutura com maior urgência?',
+        type: 'CHECKBOX',
         required: false,
         category: 'Infraestrutura',
+        options: ['Salas de aula', 'Laboratórios', 'Sanitários', 'Refeitório', 'Biblioteca'],
         audiences: ['todos'],
       },
     ],
@@ -221,9 +222,9 @@ export const MOCK_DRIVE_FORMS: DriveFormMock[] = [
       },
       {
         id: 'q-imp-304',
-        title: 'Sugestões de temas prioritários para futuros projetos de extensão no Sertão dos Inhamuns:',
-        type: 'SHORT_TEXT',
-        required: false,
+        title: 'Como você avalia o impacto dos projetos de extensão para a comunidade externa regional?',
+        type: 'SCALE',
+        required: true,
         category: 'Extensão',
         audiences: ['todos'],
       },
@@ -233,6 +234,7 @@ export const MOCK_DRIVE_FORMS: DriveFormMock[] = [
 
 interface FormsManagerViewProps {
   onReturnToDashboard?: () => void;
+  onSelectTab?: (tab: string) => void;
 }
 
 export const QUESTION_CATEGORIES: QuestionCategory[] = [
@@ -299,11 +301,12 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
       },
       {
         id: 'q-doc-4',
-        title: 'Comentários e sugestões sobre a atuação docente e metodologias utilizadas:',
-        description: 'Espaço discursivo para sugestões e pontos positivos.',
-        type: 'LONG_TEXT',
-        required: false,
+        title: 'O professor demonstrou receptividade para tirar dúvidas e atendimento aos estudantes?',
+        description: 'Avalie a disponibilidade do docente para apoio extracurricular.',
+        type: 'YES_NO',
+        required: true,
         category: 'Ensino',
+        options: ['Sim', 'Não'],
         audiences: ['alunos'],
       },
     ],
@@ -352,11 +355,12 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
       },
       {
         id: 'q-dis-4',
-        title: 'Quais as principais dificuldades encontradas para o seu rendimento acadêmico?',
+        title: 'A infraestrutura do campus atende às necessidades para o seu rendimento acadêmico?',
         description: 'Suas respostas orientarão ações pedagógicas e de assistência estudantil.',
-        type: 'LONG_TEXT',
-        required: false,
+        type: 'RADIO',
+        required: true,
         category: 'Assistência Estudantil',
+        options: ['Atende plenamente', 'Atende parcialmente', 'Não atende'],
         audiences: ['alunos'],
       },
     ],
@@ -404,10 +408,10 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
       },
       {
         id: 'q-tae-4',
-        title: 'Sugestões de simplificação e melhoria nos processos administrativos do campus:',
-        description: 'Ideias de inovação e desburocratização.',
-        type: 'LONG_TEXT',
-        required: false,
+        title: 'Como você avalia a padronização e clareza dos processos administrativos do campus?',
+        description: 'Avaliação da rotina e suporte das chefias.',
+        type: 'SCALE',
+        required: true,
         category: 'Gestão',
         audiences: ['taes'],
       },
@@ -504,10 +508,10 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
       },
       {
         id: 'q-bib-4',
-        title: 'Sugira novos títulos de livros ou melhorias no ambiente de estudos da Biblioteca:',
-        description: 'Espaço livre para sugestões de acervo e infraestrutura.',
-        type: 'LONG_TEXT',
-        required: false,
+        title: 'Como você avalia a atualização do acervo e espaço físico da Biblioteca do campus?',
+        description: 'Avaliação da relevância do acervo e conforto das instalações.',
+        type: 'SCALE',
+        required: true,
         category: 'Biblioteca',
         audiences: ['todos'],
       },
@@ -556,10 +560,10 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
       },
       {
         id: 'q-pes-4',
-        title: 'Sugestões e demandas para impulsionar a pesquisa e inovação científica no campus:',
-        description: 'Propostas para o fortalecimento da pesquisa institucional.',
-        type: 'LONG_TEXT',
-        required: false,
+        title: 'Como você avalia os incentivos e fomento do campus para publicação e difusão científica?',
+        description: 'Apoio institucional para participação em congressos e periódicos.',
+        type: 'SCALE',
+        required: true,
         category: 'Pesquisa',
         audiences: ['docentes', 'alunos'],
       },
@@ -567,7 +571,10 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
   },
 ];
 
-export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
+export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
+  onReturnToDashboard,
+  onSelectTab,
+}) => {
   // Main Forms State
   const [forms, setForms] = useState<SmartForm[]>(() => {
     const saved = localStorage.getItem('cpa_smart_forms');
@@ -595,6 +602,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'Ativo' | 'Rascunho' | 'Encerrado'>('todos');
   const [audienceFilter, setAudienceFilter] = useState<'todos' | 'alunos' | 'docentes' | 'taes'>('todos');
+  const [campusFilter, setCampusFilter] = useState<string>('todos');
+  const [periodFilter, setPeriodFilter] = useState<string>('todos');
 
   // Import Google Form Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -1081,6 +1090,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
     setFormQuestions(
       formQuestions.map((q) => {
         if (q.id === id) {
+          if (field === 'type' && value === 'YES_NO') {
+            return { ...q, type: 'YES_NO', options: ['Sim', 'Não'] };
+          }
           return { ...q, [field]: value };
         }
         return q;
@@ -1270,7 +1282,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
     setDeletingForm(null);
   };
 
-  // Filtered forms list for grid
+  // Filtered forms list for table and grid
   const filteredForms = forms.filter((f) => {
     const matchesSearch =
       f.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1281,8 +1293,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
       f.questions.some(
         (q) => q.audiences.includes('todos') || q.audiences.includes(audienceFilter as any)
       );
+    const matchesCampus = campusFilter === 'todos' || f.campus === campusFilter;
+    const matchesPeriod =
+      periodFilter === 'todos' || (f.periodo && f.periodo.toLowerCase().includes(periodFilter.toLowerCase()));
 
-    return matchesSearch && matchesStatus && matchesAudience;
+    return matchesSearch && matchesStatus && matchesAudience && matchesCampus && matchesPeriod;
   });
 
   // Render Classificação das Perguntas Screen if active
@@ -1796,240 +1811,150 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
         </div>
       )}
 
-      {/* Campanhas de Avaliação Ativas */}
-      {campaignsList.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-100 text-amber-800">
-                <Send className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Campanhas de Avaliação em Andamento</h3>
-                <p className="text-[11px] text-slate-500">
-                  Acompanhe os convites disparados para os participantes e teste a experiência filtrada por segmento.
-                </p>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 bg-amber-50 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
-              {campaignsList.length} Campanha(s) Ativa(s)
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {campaignsList.map((camp) => {
-              const linkedForm = forms.find((f) => f.id === camp.formId);
-              return (
-                <div
-                  key={camp.id}
-                  className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-[#006837]">
-                        ● {camp.status} • {camp.campus}
-                      </span>
-                      <h4 className="text-xs font-bold text-slate-900 leading-snug">{camp.title}</h4>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
-                      Segmento: {camp.segment.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 line-clamp-2 italic">
-                    "{camp.customMessage}"
-                  </p>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-200/60 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> Período: {camp.startDate} até {camp.endDate}
-                    </span>
-                    <span className="flex items-center gap-1 text-slate-700 font-bold">
-                      <Mail className="w-3.5 h-3.5 text-[#006837]" /> {camp.sentEmailsCount} e-mails
-                    </span>
-                  </div>
-
-                  <div className="pt-1 flex items-center justify-end gap-2">
-                    {linkedForm && (
-                      <button
-                        onClick={() => {
-                          handleStartResponding(linkedForm);
-                          setParticipantSegment(camp.segment === 'todos' ? 'alunos' : camp.segment);
-                        }}
-                        className="w-full px-3 py-2 bg-white hover:bg-emerald-50 text-[#006837] border border-emerald-200 text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Testar Visão do Respondente (Filtrada)</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Stat Cards Header (Mostrar: Formulários ativos, Formulários encerrados, Total de respostas, Última sincronização) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Formulários ativos */}
-        <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-2xs space-y-2 bg-emerald-50/20">
+      {/* Top Indicators Bar (Apenas 3 indicadores) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Card 1: Formulários Ativos */}
+        <div className="bg-white rounded-2xl border border-emerald-100 p-4.5 shadow-2xs space-y-1 bg-emerald-50/20">
           <div className="flex items-center justify-between text-emerald-800">
-            <span className="text-xs font-bold uppercase tracking-wider">Formulários ativos</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#006837] flex items-center justify-center">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Formulários Ativos</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#006837] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-slate-900">
+          <p className="text-2xl font-extrabold text-slate-900">
             {forms.filter((f) => f.status === 'Ativo').length}
           </p>
-          <p className="text-[11px] text-emerald-700/80 font-medium">Em andamento na CPA</p>
+          <p className="text-[11px] text-emerald-700 font-medium">Em andamento na CPA</p>
         </div>
 
-        {/* Card 2: Formulários encerrados */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Formulários encerrados</span>
-            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-3xl font-extrabold text-slate-900">
-            {forms.filter((f) => f.status === 'Encerrado').length}
-          </p>
-          <p className="text-[11px] text-slate-400 font-medium">Ciclos finalizados</p>
-        </div>
-
-        {/* Card 3: Total de respostas */}
-        <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-2xs space-y-2 bg-indigo-50/20">
+        {/* Card 2: Respostas Recebidas */}
+        <div className="bg-white rounded-2xl border border-indigo-100 p-4.5 shadow-2xs space-y-1 bg-indigo-50/20">
           <div className="flex items-center justify-between text-indigo-700">
-            <span className="text-xs font-bold uppercase tracking-wider">Total de respostas</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Respostas Recebidas</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
               <BarChart2 className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-indigo-950">
+          <p className="text-2xl font-extrabold text-indigo-950">
             {forms.reduce((acc, f) => acc + (f.responsesCount?.total || 0), 0).toLocaleString('pt-BR')}
           </p>
-          <p className="text-[11px] text-indigo-600/80 font-medium">Respostas registradas</p>
+          <p className="text-[11px] text-indigo-600 font-medium">Consolidadas para relatórios</p>
         </div>
 
-        {/* Card 4: Última sincronização */}
-        <div className="bg-white rounded-2xl border border-amber-100 p-5 shadow-2xs space-y-2 bg-amber-50/20">
+        {/* Card 3: Última Sincronização */}
+        <div className="bg-white rounded-2xl border border-amber-100 p-4.5 shadow-2xs space-y-1 bg-amber-50/20">
           <div className="flex items-center justify-between text-amber-800">
-            <span className="text-xs font-bold uppercase tracking-wider">Última sincronização</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Última Sincronização</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
               <RefreshCw className="w-4 h-4" />
             </div>
           </div>
           <p className="text-base font-bold text-slate-900 truncate mt-1">
-            {forms.find((f) => f.lastSync)?.lastSync || '28/07/2026 15:30'}
+            {forms.find((f) => f.lastSync)?.lastSync || 'Hoje, 11:45'}
           </p>
-          <p className="text-[11px] text-amber-700/80 font-medium">Sincronizado no Google Forms</p>
+          <p className="text-[11px] text-amber-700 font-medium">Integração Google Forms ativa</p>
         </div>
       </div>
 
-      {/* Concept Architecture Educational Card */}
-      <div className="bg-gradient-to-r from-emerald-50/80 via-white to-slate-50 border border-emerald-200/80 rounded-2xl p-5 shadow-2xs space-y-3">
-        <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-[#006837] text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Arquitetura de Avaliação Unificada & Segmentação de Público
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-4xl">
-              Cada formulário unifica itens para a comunidade acadêmica. As perguntas são etiquetadas por segmento (<span className="font-semibold text-[#006837]">Todos</span>, <span className="font-semibold text-indigo-600">Alunos</span>, <span className="font-semibold text-emerald-700">Docentes</span> e <span className="font-semibold text-amber-700">TAEs</span>).
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de Formulários Header, Filter & View Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Lista de Formulários</h2>
-            <p className="text-xs text-slate-500">Exibir todos os formulários em tabela.</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* View Mode Switcher */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  viewMode === 'table' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'hover:text-slate-900'
-                }`}
-              >
-                <Table className="w-3.5 h-3.5" />
-                <span>Tabela</span>
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'hover:text-slate-900'
-                }`}
-              >
-                <Grid className="w-3.5 h-3.5" />
-                <span>Grade</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Search */}
-          <div className="relative w-full md:w-80">
-            <Filter className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* Single Horizontal Filter Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs flex flex-col xl:flex-row items-center justify-between gap-3">
+        {/* Horizontal Filters Group */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 w-full xl:w-auto flex-1">
+          {/* 1. Pesquisa */}
+          <div className="relative min-w-[160px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Buscar por título ou descrição..."
+              placeholder="Pesquisar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 pl-10 pr-3.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+              className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white"
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Status Filter */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600">
-              {(['todos', 'Ativo', 'Rascunho', 'Encerrado'] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg capitalize transition-colors cursor-pointer ${
-                    statusFilter === st ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'hover:text-slate-900'
-                  }`}
-                >
-                  {st === 'todos' ? 'Todos os Status' : st}
-                </button>
-              ))}
-            </div>
-
-            {/* Segment Filter */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600">
-              {(['todos', 'alunos', 'docentes', 'taes'] as const).map((aud) => (
-                <button
-                  key={aud}
-                  onClick={() => setAudienceFilter(aud)}
-                  className={`px-2.5 py-1.5 rounded-lg capitalize transition-colors cursor-pointer ${
-                    audienceFilter === aud ? 'bg-[#006837] text-white font-bold shadow-2xs' : 'hover:text-slate-900'
-                  }`}
-                >
-                  {aud === 'todos'
-                    ? 'Todos os Públicos'
-                    : aud === 'alunos'
-                    ? 'Alunos'
-                    : aud === 'docentes'
-                    ? 'Docentes'
-                    : 'TAEs'}
-                </button>
-              ))}
-            </div>
+          {/* 2. Campus */}
+          <div className="relative">
+            <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={campusFilter}
+              onChange={(e) => setCampusFilter(e.target.value)}
+              className="w-full h-9 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
+            >
+              <option value="todos">Todos os Campi</option>
+              <option value="Campus Tauá">Campus Tauá</option>
+              <option value="Campus Crateús">Campus Crateús</option>
+              <option value="Campus Canindé">Campus Canindé</option>
+              <option value="Campus Fortaleza">Campus Fortaleza</option>
+            </select>
           </div>
+
+          {/* 3. Status */}
+          <div className="relative">
+            <ListFilter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full h-9 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
+            >
+              <option value="todos">Todos os Status</option>
+              <option value="Ativo">Ativo</option>
+              <option value="Rascunho">Rascunho</option>
+              <option value="Encerrado">Encerrado</option>
+            </select>
+          </div>
+
+          {/* 4. Segmento */}
+          <div className="relative">
+            <Users className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={audienceFilter}
+              onChange={(e) => setAudienceFilter(e.target.value as any)}
+              className="w-full h-9 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
+            >
+              <option value="todos">Todos os Segmentos</option>
+              <option value="alunos">Alunos</option>
+              <option value="docentes">Docentes</option>
+              <option value="taes">TAEs</option>
+            </select>
+          </div>
+
+          {/* 5. Período */}
+          <div className="relative">
+            <Calendar className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value)}
+              className="w-full h-9 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
+            >
+              <option value="todos">Todos os Períodos</option>
+              <option value="2026.2">Semestre 2026.2</option>
+              <option value="2026.1">Semestre 2026.1</option>
+              <option value="2025.2">Semestre 2025.2</option>
+              <option value="2025.1">Semestre 2025.1</option>
+            </select>
+          </div>
+        </div>
+
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600 shrink-0">
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+              viewMode === 'table' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'hover:text-slate-900'
+            }`}
+          >
+            <Table className="w-3.5 h-3.5" />
+            <span>Tabela</span>
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+              viewMode === 'grid' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'hover:text-slate-900'
+            }`}
+          >
+            <Grid className="w-3.5 h-3.5" />
+            <span>Grade</span>
+          </button>
         </div>
       </div>
 
@@ -2200,6 +2125,22 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
                               >
                                 <BarChart2 className="w-4 h-4 text-purple-600" />
                                 <span>Visualizar respostas</span>
+                              </button>
+
+                              {/* 5b. Consolidação e Planilha CPA */}
+                              <button
+                                onClick={() => {
+                                  setOpenActionMenuId(null);
+                                  if (onSelectTab) {
+                                    onSelectTab('relatorios');
+                                  } else {
+                                    setViewingMetricsForm(form);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                              >
+                                <FileSpreadsheet className="w-4 h-4 text-[#006837]" />
+                                <span>Consolidação CPA (Planilha)</span>
                               </button>
 
                               {/* 6. Enviar campanha */}
@@ -2740,12 +2681,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
                               }
                               className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
                             >
-                              <option value="SCALE">Escala (Likert 1 a 5)</option>
-                              <option value="SHORT_TEXT">Resposta curta</option>
-                              <option value="LONG_TEXT">Resposta longa</option>
-                              <option value="RADIO">Múltipla escolha (Única)</option>
-                              <option value="CHECKBOX">Checkbox (Múltiplas)</option>
-                              <option value="DROPDOWN">Lista suspensa</option>
+                              <option value="SCALE">Escala Likert (1 a 5)</option>
+                              <option value="YES_NO">Sim / Não</option>
+                              <option value="RADIO">Múltipla Escolha (Seleção Única)</option>
+                              <option value="CHECKBOX">Caixas de Seleção (Múltipla Seleção)</option>
+                              <option value="DROPDOWN">Lista Suspenso / Escala Numérica</option>
                             </select>
                           </div>
 
@@ -3113,36 +3053,29 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = () => {
                         </div>
                       )}
 
-                      {/* Short Text Question */}
-                      {q.type === 'SHORT_TEXT' && (
-                        <input
-                          type="text"
-                          placeholder="Digite sua resposta curta..."
-                          value={(participantAnswers[q.id] as string) || ''}
-                          onChange={(e) =>
-                            setParticipantAnswers({
-                              ...participantAnswers,
-                              [q.id]: e.target.value,
-                            })
-                          }
-                          className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                        />
-                      )}
-
-                      {/* Long Text or Legacy Text Question */}
-                      {(q.type === 'LONG_TEXT' || q.type === 'TEXT') && (
-                        <textarea
-                          rows={3}
-                          placeholder="Digite sua resposta detalhada..."
-                          value={(participantAnswers[q.id] as string) || ''}
-                          onChange={(e) =>
-                            setParticipantAnswers({
-                              ...participantAnswers,
-                              [q.id]: e.target.value,
-                            })
-                          }
-                          className="w-full p-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                        />
+                      {/* Yes/No Question */}
+                      {q.type === 'YES_NO' && (
+                        <div className="flex items-center gap-3 pt-1">
+                          {['Sim', 'Não'].map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                setParticipantAnswers({
+                                  ...participantAnswers,
+                                  [q.id]: opt,
+                                })
+                              }
+                              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                participantAnswers[q.id] === opt
+                                  ? 'bg-[#006837] text-white border-[#006837] shadow-xs'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
                       )}
 
                       {/* Radio Question (Multiple Choice Single) */}

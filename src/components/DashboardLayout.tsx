@@ -7,6 +7,7 @@ import { PlaceholderView } from './PlaceholderView';
 import { GoogleFormsManager } from './GoogleFormsManager';
 import { FormsManagerView } from './FormsManagerView';
 import { ParticipantsView } from './ParticipantsView';
+import { FormResultsView } from './FormResultsView';
 import { UserCoordinator } from '../types';
 
 interface DashboardLayoutProps {
@@ -98,7 +99,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 transition={{ duration: 0.2 }}
                 className="w-full flex-1 flex flex-col"
               >
-                <FormsManagerView onReturnToDashboard={() => setActiveTab('dashboard')} />
+                <FormsManagerView
+                  onReturnToDashboard={() => setActiveTab('dashboard')}
+                  onSelectTab={setActiveTab}
+                />
+              </motion.div>
+            ) : activeTab === 'relatorios' ? (
+              <motion.div
+                key="relatorios"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <FormResultsView onReturnToForms={() => setActiveTab('formularios')} />
               </motion.div>
             ) : activeTab === 'google-forms' || activeTab === 'novo-formulario' ? (
               <motion.div
