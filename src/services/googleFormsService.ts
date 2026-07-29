@@ -13,7 +13,7 @@ export interface QuestionOption {
 
 export interface FormQuestionInput {
   title: string;
-  type: 'RADIO' | 'CHECKBOX' | 'TEXT' | 'SCALE' | 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN';
+  type: 'RADIO' | 'CHECKBOX' | 'TEXT' | 'SCALE' | 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN' | 'YES_NO';
   required?: boolean;
   options?: string[];
 }

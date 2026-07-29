@@ -38,7 +38,7 @@ export interface SmartQuestion {
   id: string;
   title: string;
   description?: string;
-  type: 'SCALE' | 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'TEXT';
+  type: 'SCALE' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'YES_NO';
   required: boolean;
   category?: QuestionCategory;
   options?: string[];
