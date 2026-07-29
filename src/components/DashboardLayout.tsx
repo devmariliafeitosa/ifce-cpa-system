@@ -4,6 +4,9 @@ import { Sidebar, NavTabId } from './Sidebar';
 import { Header } from './Header';
 import { DashboardView } from './DashboardView';
 import { PlaceholderView } from './PlaceholderView';
+import { GoogleFormsManager } from './GoogleFormsManager';
+import { FormsManagerView } from './FormsManagerView';
+import { ParticipantsView } from './ParticipantsView';
 import { UserCoordinator } from '../types';
 
 interface DashboardLayoutProps {
@@ -15,7 +18,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   user,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<NavTabId>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavTabId>('formularios');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
@@ -85,6 +88,39 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full flex-1"
               >
                 <DashboardView onNavigateTab={setActiveTab} />
+              </motion.div>
+            ) : activeTab === 'formularios' ? (
+              <motion.div
+                key="formularios"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <FormsManagerView onReturnToDashboard={() => setActiveTab('dashboard')} />
+              </motion.div>
+            ) : activeTab === 'google-forms' || activeTab === 'novo-formulario' ? (
+              <motion.div
+                key="google-forms"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <GoogleFormsManager onReturnToDashboard={() => setActiveTab('dashboard')} />
+              </motion.div>
+            ) : activeTab === 'participantes' || activeTab === 'alunos' || activeTab === 'docentes' || activeTab === 'taes' ? (
+              <motion.div
+                key="participantes"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <ParticipantsView />
               </motion.div>
             ) : (
               <motion.div

@@ -11,6 +11,7 @@ import {
   Eye,
   FileSpreadsheet,
   Plus,
+  ArrowUpRight,
   Search,
   Filter,
 } from 'lucide-react';
@@ -181,11 +182,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
           </p>
         </div>
         <button
-          onClick={() => onNavigateTab('novo-formulario')}
+          onClick={() => onNavigateTab('google-forms')}
           className="px-4 py-2.5 bg-white text-[#006837] hover:bg-emerald-50 font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          <span>Novo Formulário</span>
+          <span>Novo Google Form</span>
+        </button>
+      </div>
+
+      {/* Google Forms Integration Highlight Card */}
+      <div className="bg-white rounded-2xl border border-emerald-200/80 p-5 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/60 to-white">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#006837] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <FileSpreadsheet className="w-5 h-5" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800">
+                Integração Oficial com Google Forms
+              </h3>
+              <span className="text-[10px] font-bold text-[#006837] bg-[#E8F5EE] px-2 py-0.5 rounded-full">
+                Ativo no Campus Tauá
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Crie questionários de avaliação institucional, distribua links oficiais e analise respostas em tempo real pelo Google Forms API.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigateTab('google-forms')}
+          className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer shrink-0"
+        >
+          <span>Acessar Google Forms</span>
+          <ArrowUpRight className="w-4 h-4" />
         </button>
       </div>
 

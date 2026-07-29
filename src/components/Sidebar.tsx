@@ -4,22 +4,22 @@ import {
   FileText,
   ClipboardList,
   PlusCircle,
-  GraduationCap,
-  UserCheck,
-  Briefcase,
+  Users,
   Settings,
   User,
   LogOut,
   X,
-  ChevronRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { IFCELogo } from './IFCELogo';
 
 export type NavTabId =
   | 'dashboard'
-  | 'relatorios'
   | 'formularios'
+  | 'relatorios'
+  | 'google-forms'
   | 'novo-formulario'
+  | 'participantes'
   | 'alunos'
   | 'docentes'
   | 'taes'
@@ -49,17 +49,10 @@ const MENU_GROUPS: MenuGroup[] = [
     title: 'GERENCIAMENTO',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: Home },
-      { id: 'relatorios', label: 'Relatórios', icon: FileText },
       { id: 'formularios', label: 'Formulários', icon: ClipboardList },
-      { id: 'novo-formulario', label: 'Novo Formulário', icon: PlusCircle },
-    ],
-  },
-  {
-    title: 'PARTICIPANTES',
-    items: [
-      { id: 'alunos', label: 'Alunos', icon: GraduationCap },
-      { id: 'docentes', label: 'Docentes', icon: UserCheck },
-      { id: 'taes', label: 'Técnicos Admin. (TAEs)', icon: Briefcase },
+      { id: 'relatorios', label: 'Relatórios', icon: FileText },
+      { id: 'google-forms', label: 'Google Forms', icon: FileSpreadsheet },
+      { id: 'participantes', label: 'Participantes', icon: Users },
     ],
   },
   {

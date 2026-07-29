@@ -20,6 +20,10 @@ const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
     title: 'Relatórios Institucionais',
     subtitle: 'Consolidação e exportação dos relatórios da CPA.',
   },
+  'google-forms': {
+    title: 'Gerenciador Google Forms',
+    subtitle: 'Integração oficial com Google Forms e Drive no Campus Tauá.',
+  },
   formularios: {
     title: 'Formulários de Avaliação',
     subtitle: 'Gerenciamento de questionários e instrumentos avaliativos.',
@@ -27,6 +31,10 @@ const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
   'novo-formulario': {
     title: 'Novo Formulário',
     subtitle: 'Criação de novos formulários de avaliação por ciclo.',
+  },
+  participantes: {
+    title: 'Participantes do Sistema',
+    subtitle: 'Gerenciamento e controle de usuários cadastrados (Alunos, Docentes e TAEs).',
   },
   alunos: {
     title: 'Participação dos Alunos',

@@ -6,6 +6,7 @@ import {
   GraduationCap,
   UserCheck,
   Briefcase,
+  Users,
   Settings,
   User,
   ArrowLeft,
@@ -27,10 +28,20 @@ const PAGE_CONFIG: Record<
     subtitle: 'Painel Geral da CPA',
     icon: Construction,
   },
+  participantes: {
+    title: 'Participantes do Sistema',
+    subtitle: 'Gerenciamento de usuários cadastrados no IFCE Campus Tauá',
+    icon: Users,
+  },
   relatorios: {
     title: 'Relatórios Institucionais',
     subtitle: 'Consolidação e exportação de relatórios da avaliação',
     icon: FileText,
+  },
+  'google-forms': {
+    title: 'Google Forms',
+    subtitle: 'Integração oficial com Google Forms e Drive no Campus Tauá',
+    icon: ClipboardList,
   },
   formularios: {
     title: 'Formulários de Avaliação',
