@@ -10,13 +10,15 @@ import {
   Settings,
   User,
   ArrowLeft,
+  Home,
   Construction,
 } from 'lucide-react';
 import { NavTabId } from './Sidebar';
 
 interface PlaceholderViewProps {
   tabId: NavTabId;
-  onReturnToDashboard: () => void;
+  onReturnToDashboard?: () => void;
+  onSelectTab?: (tab: NavTabId) => void;
 }
 
 const PAGE_CONFIG: Record<
@@ -25,8 +27,8 @@ const PAGE_CONFIG: Record<
 > = {
   dashboard: {
     title: 'Dashboard',
-    subtitle: 'Painel Geral da CPA',
-    icon: Construction,
+    subtitle: 'Painel Geral e Indicadores da CPA',
+    icon: Home,
   },
   participantes: {
     title: 'Participantes do Sistema',
@@ -83,6 +85,7 @@ const PAGE_CONFIG: Record<
 export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
   tabId,
   onReturnToDashboard,
+  onSelectTab,
 }) => {
   const config = PAGE_CONFIG[tabId] || {
     title: 'Página em Desenvolvimento',
@@ -91,6 +94,14 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
   };
 
   const Icon = config.icon;
+
+  const handleActionClick = () => {
+    if (onSelectTab) {
+      onSelectTab('formularios');
+    } else if (onReturnToDashboard) {
+      onReturnToDashboard();
+    }
+  };
 
   return (
     <div className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8 flex items-center justify-center my-auto">
@@ -122,11 +133,11 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
         {/* Action Button */}
         <div className="pt-2">
           <button
-            onClick={onReturnToDashboard}
+            onClick={handleActionClick}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white font-semibold text-xs rounded-xl shadow-md hover:shadow-lg focus:outline-hidden focus:ring-4 focus:ring-[#006837]/30 transition-all cursor-pointer active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Voltar ao Dashboard</span>
+            <span>Ir para Formulários</span>
           </button>
         </div>
       </div>

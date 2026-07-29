@@ -9,7 +9,6 @@ import {
   User,
   LogOut,
   X,
-  FileSpreadsheet,
 } from 'lucide-react';
 import { IFCELogo } from './IFCELogo';
 
@@ -51,7 +50,6 @@ const MENU_GROUPS: MenuGroup[] = [
       { id: 'dashboard', label: 'Dashboard', icon: Home },
       { id: 'formularios', label: 'Formulários', icon: ClipboardList },
       { id: 'relatorios', label: 'Relatórios', icon: FileText },
-      { id: 'google-forms', label: 'Google Forms', icon: FileSpreadsheet },
       { id: 'participantes', label: 'Participantes', icon: Users },
     ],
   },

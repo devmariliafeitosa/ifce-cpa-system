@@ -79,18 +79,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Dynamic Page Content View */}
         <main className="flex-1 flex flex-col min-w-0 pb-12">
           <AnimatePresence mode="wait">
-            {activeTab === 'dashboard' ? (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="w-full flex-1"
-              >
-                <DashboardView onNavigateTab={setActiveTab} />
-              </motion.div>
-            ) : activeTab === 'formularios' ? (
+            {activeTab === 'formularios' ? (
               <motion.div
                 key="formularios"
                 initial={{ opacity: 0, y: 10 }}
@@ -100,20 +89,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full flex-1 flex flex-col"
               >
                 <FormsManagerView
-                  onReturnToDashboard={() => setActiveTab('dashboard')}
+                  onReturnToDashboard={() => setActiveTab('formularios')}
                   onSelectTab={setActiveTab}
                 />
-              </motion.div>
-            ) : activeTab === 'relatorios' ? (
-              <motion.div
-                key="relatorios"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="w-full flex-1 flex flex-col"
-              >
-                <FormResultsView onReturnToForms={() => setActiveTab('formularios')} />
               </motion.div>
             ) : activeTab === 'google-forms' || activeTab === 'novo-formulario' ? (
               <motion.div
@@ -124,18 +102,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 transition={{ duration: 0.2 }}
                 className="w-full flex-1 flex flex-col"
               >
-                <GoogleFormsManager onReturnToDashboard={() => setActiveTab('dashboard')} />
-              </motion.div>
-            ) : activeTab === 'participantes' || activeTab === 'alunos' || activeTab === 'docentes' || activeTab === 'taes' ? (
-              <motion.div
-                key="participantes"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="w-full flex-1 flex flex-col"
-              >
-                <ParticipantsView />
+                <GoogleFormsManager onReturnToDashboard={() => setActiveTab('formularios')} />
               </motion.div>
             ) : (
               <motion.div
@@ -148,7 +115,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               >
                 <PlaceholderView
                   tabId={activeTab}
-                  onReturnToDashboard={() => setActiveTab('dashboard')}
+                  onReturnToDashboard={() => setActiveTab('formularios')}
+                  onSelectTab={setActiveTab}
                 />
               </motion.div>
             )}
