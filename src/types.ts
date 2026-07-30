@@ -69,7 +69,7 @@ export interface Campaign {
   endDate: string;
   customMessage: string;
   createdAt: string;
-  status: 'Ativa' | 'Agendada' | 'Concluída';
+  status: 'Ativa' | 'Agendada' | 'Concluída' | 'Rascunho';
   sentEmailsCount: number;
   uniqueTokenUrl?: string;
 }
