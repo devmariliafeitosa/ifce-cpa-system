@@ -27,6 +27,7 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
+  ChevronDown,
   RefreshCw,
   Layers,
   Sparkle,
@@ -40,10 +41,16 @@ import {
   FlaskConical,
   PlusCircle,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Tag,
   Mail,
   Link2,
   ShieldCheck,
+  Info,
+  Settings,
+  Save,
+  FileText,
 } from 'lucide-react';
 import { SmartForm, SmartQuestion, TargetAudience, FormSubmission, QuestionCategory, Campaign } from '../types';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
@@ -571,6 +578,34 @@ export const CPA_TEMPLATES_DATA: CPATemplateItem[] = [
   },
 ];
 
+export const IFCE_CAMPUSES = [
+  'IFCE Campus Tauá',
+  'IFCE Campus Fortaleza',
+  'IFCE Campus Juazeiro do Norte',
+  'IFCE Campus Sobral',
+  'IFCE Campus Crato',
+  'IFCE Campus Iguatu',
+  'IFCE Campus Cedro',
+  'IFCE Campus Maracanaú',
+  'IFCE Campus Quixadá',
+  'IFCE Campus Canindé',
+  'IFCE Campus Crateús',
+  'IFCE Campus Limoeiro do Norte',
+  'IFCE Campus Tianguá',
+  'IFCE Campus Baturité',
+  'IFCE Campus Caucaia',
+  'IFCE Campus Aracati',
+  'Todos os Campi do IFCE',
+];
+
+export const WIZARD_STEPS = [
+  { id: 1, label: 'Informações', icon: Info },
+  { id: 2, label: 'Perguntas Gerais', icon: HelpCircle },
+  { id: 3, label: 'Escolha de Segmento', icon: Users },
+  { id: 4, label: 'Perguntas do Segmento', icon: CheckSquare },
+  { id: 5, label: 'Revisão e Finalização', icon: CheckCircle2 },
+];
+
 export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   onReturnToDashboard,
   onSelectTab,
@@ -785,76 +820,286 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     });
   };
 
-  // Modal Creation Step State: 'select-type' | 'cpa-templates' | 'builder'
-  const [creationStep, setCreationStep] = useState<'select-type' | 'cpa-templates' | 'builder'>('select-type');
-
-  // Modal States
+  // Wizard State (Steps 1 to 5)
+  const [wizardStep, setWizardStep] = useState<number>(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<SmartForm | null>(null);
+  const [selectedSegment, setSelectedSegment] = useState<'alunos' | 'docentes' | 'taes'>('alunos');
+  const [completedSegments, setCompletedSegments] = useState<string[]>([]);
+  const [publishStatus, setPublishStatus] = useState<'Ativo' | 'Rascunho'>('Ativo');
 
   // Form Builder Inputs
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formCampus, setFormCampus] = useState('Campus Tauá');
+  const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
+  const [formPeriodo, setFormPeriodo] = useState('2026.2');
+  const [formCategory, setFormCategory] = useState<string>('Autoavaliação Institucional');
+  const [formStartDate, setFormStartDate] = useState('2026-08-15');
+  const [formEndDate, setFormEndDate] = useState('2026-12-30');
+  const [formAnonymous, setFormAnonymous] = useState(true);
+  const [formAudiences, setFormAudiences] = useState<TargetAudience[]>(['alunos', 'docentes', 'taes']);
+  const [formEixos, setFormEixos] = useState<string[]>([
+    'Eixo 1: Planejamento e Avaliação',
+    'Eixo 3: Políticas Acadêmicas',
+    'Eixo 5: Infraestrutura Física',
+  ]);
   const [formQuestions, setFormQuestions] = useState<SmartQuestion[]>([]);
 
-  // Open Create Modal (Initial 2-option selection)
+  // Open Create Wizard
   const handleOpenCreateModal = () => {
     setEditingForm(null);
-    setCreationStep('select-type');
+    setWizardStep(1);
     setFormTitle('');
     setFormDescription('');
-    setFormCampus('Campus Tauá');
-    setFormQuestions([]);
+    setFormCampus('IFCE Campus Tauá');
+    setFormPeriodo('2026.2');
+    setFormCategory('Autoavaliação Institucional');
+    setFormStartDate('2026-08-15');
+    setFormEndDate('2026-12-30');
+    setFormAnonymous(true);
+    setFormAudiences(['alunos', 'docentes', 'taes']);
+    setSelectedSegment('alunos');
+    setCompletedSegments([]);
+    setPublishStatus('Ativo');
+    setFormEixos([
+      'Eixo 1: Planejamento e Avaliação',
+      'Eixo 3: Políticas Acadêmicas',
+      'Eixo 5: Infraestrutura Física',
+    ]);
+    setFormQuestions([
+      {
+        id: `q-${Date.now()}-1`,
+        title: 'Como você avalia o apoio acadêmico e as instalações gerais do campus?',
+        description: 'Estas perguntas serão exibidas para todos os participantes da avaliação.',
+        type: 'SCALE',
+        required: true,
+        category: 'Ensino',
+        audiences: ['todos'],
+        options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+      },
+    ]);
     setIsCreateModalOpen(true);
   };
 
-  // Select Option 1: CPA Template Card
-  const handleSelectCPATemplate = (template: CPATemplateItem) => {
-    setFormTitle(`${template.title} - CPA ${new Date().getFullYear()}`);
-    setFormDescription(template.description);
-    setFormCampus('Campus Tauá');
+  // Open Edit Wizard
+  const handleOpenEditModal = (form: SmartForm) => {
+    setEditingForm(form);
+    setWizardStep(1);
+    setFormTitle(form.title);
+    setFormDescription(form.description);
+    setFormCampus(form.campus || 'IFCE Campus Tauá');
+    setFormPeriodo(form.periodo || '2026.2');
+    setFormQuestions(form.questions || []);
+    setPublishStatus(form.status === 'Ativo' ? 'Ativo' : 'Rascunho');
+    setSelectedSegment('alunos');
+    const existingSegs: string[] = [];
+    if (form.questions?.some((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos'))) existingSegs.push('alunos');
+    if (form.questions?.some((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos'))) existingSegs.push('docentes');
+    if (form.questions?.some((q) => q.audiences.includes('taes') && !q.audiences.includes('todos'))) existingSegs.push('taes');
+    setCompletedSegments(existingSegs);
+    setIsCreateModalOpen(true);
+  };
+
+  // Save Progress as Draft (Botão "Salvar progresso")
+  const handleSaveProgressDraft = () => {
+    const titleToSave = formTitle.trim() || 'Novo Formulário';
+    const questionsToSave =
+      formQuestions.length > 0
+        ? formQuestions
+        : [
+            {
+              id: `q-${Date.now()}-1`,
+              title: 'Como você avalia a qualidade geral das instalações do campus?',
+              type: 'SCALE',
+              required: true,
+              category: 'Ensino',
+              audiences: ['todos'],
+              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+            },
+          ];
+
+    if (editingForm) {
+      const updated: SmartForm = {
+        ...editingForm,
+        title: titleToSave,
+        description: formDescription,
+        campus: formCampus,
+        periodo: formPeriodo,
+        questions: questionsToSave,
+        updatedAt: new Date().toLocaleDateString('pt-BR'),
+        status: 'Rascunho',
+      };
+      setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
+      showNotification('success', `Progresso salvo! Formulário "${titleToSave}" mantido em Rascunho.`);
+    } else {
+      const newForm: SmartForm = {
+        id: `form-smart-${Date.now()}`,
+        title: titleToSave,
+        description: formDescription,
+        campus: formCampus,
+        periodo: formPeriodo,
+        status: 'Rascunho',
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        questions: questionsToSave,
+        responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
+      };
+      setForms([newForm, ...forms]);
+      showNotification('success', `Progresso salvo! Novo formulário "${titleToSave}" armazenado em Rascunho.`);
+    }
+
+    setIsCreateModalOpen(false);
+  };
+
+  // Finalize / Publicar Form
+  const handleFinalizeForm = () => {
+    const titleToSave = formTitle.trim() || 'Avaliação Institucional CPA';
+    const questionsToSave =
+      formQuestions.length > 0
+        ? formQuestions
+        : [
+            {
+              id: `q-${Date.now()}-1`,
+              title: 'Como você avalia as condições de apoio acadêmico e infraestrutura do campus?',
+              type: 'SCALE',
+              required: true,
+              category: 'Ensino',
+              audiences: ['todos'],
+              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+            },
+          ];
+
+    if (editingForm) {
+      const updated: SmartForm = {
+        ...editingForm,
+        title: titleToSave,
+        description: formDescription,
+        campus: formCampus,
+        periodo: formPeriodo,
+        questions: questionsToSave,
+        updatedAt: new Date().toLocaleDateString('pt-BR'),
+        status: publishStatus,
+      };
+      setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
+      showNotification(
+        'success',
+        `Formulário "${titleToSave}" atualizado e ${publishStatus === 'Ativo' ? 'PUBLICADO com status Ativo' : 'salvo como Rascunho'}!`
+      );
+    } else {
+      const newForm: SmartForm = {
+        id: `form-smart-${Date.now()}`,
+        title: titleToSave,
+        description: formDescription,
+        campus: formCampus,
+        periodo: formPeriodo,
+        status: publishStatus,
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        questions: questionsToSave,
+        responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
+      };
+      setForms([newForm, ...forms]);
+      showNotification(
+        'success',
+        `Formulário "${titleToSave}" cadastrado e ${publishStatus === 'Ativo' ? 'PUBLICADO com status Ativo' : 'salvo como Rascunho'}!`
+      );
+    }
+
+    setIsCreateModalOpen(false);
+  };
+
+  // Question Manipulation Helpers for Steps 2 and 4
+  const handleAddGeneralQuestion = () => {
+    setFormQuestions((prev) => [
+      ...prev,
+      {
+        id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: '',
+        type: 'SCALE',
+        required: true,
+        category: 'Ensino',
+        audiences: ['todos'],
+        options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+      },
+    ]);
+  };
+
+  const handleAddSegmentQuestion = (seg: 'alunos' | 'docentes' | 'taes') => {
+    setFormQuestions((prev) => [
+      ...prev,
+      {
+        id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: '',
+        type: 'SCALE',
+        required: true,
+        category: 'Ensino',
+        audiences: [seg],
+        options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+      },
+    ]);
+  };
+
+  const handleRemoveWizardQuestion = (id: string) => {
+    setFormQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  const handleMoveWizardQuestion = (id: string, direction: 'up' | 'down') => {
+    setFormQuestions((prev) => {
+      const idx = prev.findIndex((q) => q.id === id);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const newArr = [...prev];
+      const temp = newArr[idx];
+      newArr[idx] = newArr[targetIdx];
+      newArr[targetIdx] = temp;
+      return newArr;
+    });
+  };
+
+  const handleUpdateWizardQuestionField = (id: string, field: keyof SmartQuestion, value: any) => {
+    setFormQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id === id) {
+          if (field === 'type') {
+            let options: string[] | undefined = undefined;
+            if (value === 'SCALE') {
+              options = ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'];
+            } else if (value === 'YES_NO') {
+              options = ['Sim', 'Não'];
+            } else if (['RADIO', 'CHECKBOX'].includes(value)) {
+              options = q.options && q.options.length > 0 ? q.options : ['Opção 1', 'Opção 2'];
+            }
+            return { ...q, type: value, options };
+          }
+          return { ...q, [field]: value };
+        }
+        return q;
+      })
+    );
+  };
+
+  const handleChooseNextSegment = () => {
+    if (!completedSegments.includes(selectedSegment)) {
+      setCompletedSegments((prev) => [...prev, selectedSegment]);
+    }
+    setWizardStep(3);
+    showNotification('info', `Perguntas salvas! Escolha o próximo segmento ou avance para a revisão.`);
+  };
+
+  // Helper to load CPA template items into current questions
+  const handleLoadCPATemplate = (template: CPATemplateItem) => {
+    if (!formTitle.trim()) {
+      setFormTitle(`${template.title} - ${new Date().getFullYear()}`);
+    }
+    if (!formDescription.trim()) {
+      setFormDescription(template.description);
+    }
     setFormQuestions(
       template.questions.map((q) => ({
         ...q,
         id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       }))
     );
-    setCreationStep('builder');
-    showNotification(
-      'success',
-      `Modelo "${template.title}" selecionado com integração Google Forms! Você pode personalizar as perguntas no Form Builder.`
-    );
-  };
-
-  // Select Option 2: Custom Form Builder
-  const handleSelectCustomForm = () => {
-    setFormTitle('Novo Formulário Personalizado - CPA');
-    setFormDescription('Formulário de avaliação institucional personalizado com direcionamento de perguntas por segmento.');
-    setFormCampus('Campus Tauá');
-    setFormQuestions([
-      {
-        id: `q-${Date.now()}-1`,
-        title: 'Como você avalia o desenvolvimento das atividades acadêmicas do campus?',
-        description: 'Indique sua percepção geral sobre o período letivo.',
-        type: 'SCALE',
-        required: true,
-        category: 'Ensino',
-        audiences: ['todos'],
-      },
-    ]);
-    setCreationStep('builder');
-  };
-
-  // Open Edit Modal
-  const handleOpenEditModal = (form: SmartForm) => {
-    setEditingForm(form);
-    setCreationStep('builder');
-    setFormTitle(form.title);
-    setFormDescription(form.description);
-    setFormCampus(form.campus);
-    setFormQuestions(form.questions);
-    setIsCreateModalOpen(true);
+    showNotification('success', `Perguntas do modelo "${template.title}" carregadas no formulário!`);
   };
 
   // Participant Responder Mode ("Visão do Participante")
@@ -1047,7 +1292,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         title: formTitle,
         description: formDescription,
         campus: formCampus,
-        status: 'Ativo',
+        status: 'Rascunho',
         createdAt: new Date().toLocaleDateString('pt-BR'),
         questions: formQuestions,
         responsesCount: {
@@ -1058,7 +1303,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         },
       };
       setForms([newForm, ...forms]);
-      showNotification('success', `Novo Formulário "${formTitle}" criado com sucesso!`);
+      showNotification('success', `Novo Formulário "${formTitle}" salvo em rascunho com sucesso!`);
     }
 
     setIsCreateModalOpen(false);
@@ -2044,139 +2289,187 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       {form.lastSync || '28/07/2026 15:30'}
                     </td>
 
-                    {/* Column 7: Ações (Menu de ações) */}
+                    {/* Column 7: Ações (Olho, Avião e 3 Pontos) */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <div className="relative inline-block text-left">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {/* 1. Ícone do Olho: Visualizar / Responder */}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenActionMenuId(openActionMenuId === form.id ? null : form.id);
-                          }}
-                          className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                          title="Menu de Ações"
+                          onClick={() => handleStartResponding(form)}
+                          className="p-1.5 text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer border border-emerald-200/80"
+                          title="Visualizar / Responder"
                         >
-                          <MoreVertical className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </button>
 
-                        {openActionMenuId === form.id && (
-                          <>
-                            {/* Backdrop overlay */}
-                            <div
-                              className="fixed inset-0 z-20"
-                              onClick={() => setOpenActionMenuId(null)}
-                            />
+                        {/* 2. Ícone de Avião: Lançar Formulário / Enviar Campanha */}
+                        <button
+                          onClick={() => handleSendCampaign(form)}
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer border border-amber-200/80"
+                          title="Lançar Formulário / Enviar Campanha"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
 
-                            <div className="absolute right-0 mt-1 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 z-30 py-1.5 animate-in fade-in zoom-in-95 duration-100 space-y-0.5 text-left">
-                              <div className="px-3 py-1.5 border-b border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                  Menu de Ações
-                                </p>
-                              </div>
+                        {/* 3. Ícone de 3 Pontos: Menu de Mais Opções */}
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionMenuId(openActionMenuId === form.id ? null : form.id);
+                            }}
+                            className={`p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border transition-all cursor-pointer ${
+                              openActionMenuId === form.id
+                                ? 'bg-slate-200 text-slate-900 border-slate-300 shadow-xs'
+                                : 'bg-slate-50 border-slate-200'
+                            }`}
+                            title="Mais Opções"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
 
-                              {/* 1. Visualizar */}
-                              <button
-                                onClick={() => {
-                                  setOpenActionMenuId(null);
-                                  handleStartResponding(form);
-                                }}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <Eye className="w-4 h-4 text-[#006837]" />
-                                <span>Visualizar</span>
-                              </button>
+                          {openActionMenuId === form.id && (
+                            <>
+                              {/* Backdrop overlay */}
+                              <div
+                                className="fixed inset-0 z-20"
+                                onClick={() => setOpenActionMenuId(null)}
+                              />
 
-                              {/* 2. Editar */}
-                              <button
-                                onClick={() => {
-                                  setOpenActionMenuId(null);
-                                  handleOpenEditModal(form);
-                                }}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <Edit3 className="w-4 h-4 text-blue-600" />
-                                <span>Editar</span>
-                              </button>
+                              <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-30 p-1.5 animate-in fade-in zoom-in-95 duration-100 space-y-1 text-left">
+                                {/* Group 1: Gestão */}
+                                <div className="px-2.5 py-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                    Gestão do Formulário
+                                  </p>
+                                </div>
 
-                              {/* 3. Duplicar */}
-                              <button
-                                onClick={() => handleDuplicateForm(form)}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <Copy className="w-4 h-4 text-indigo-600" />
-                                <span>Duplicar</span>
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleStartResponding(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-[#006837]" />
+                                  <span>Visualizar / Responder</span>
+                                </button>
 
-                              {/* 4. Abrir no Google Forms */}
-                              <button
-                                onClick={() => handleOpenGoogleFormsLink(form)}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <ExternalLink className="w-4 h-4 text-emerald-600" />
-                                <span>Abrir no Google Forms</span>
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleOpenEditModal(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>Editar Estrutura</span>
+                                </button>
 
-                              {/* 5. Visualizar respostas */}
-                              <button
-                                onClick={() => {
-                                  setOpenActionMenuId(null);
-                                  setViewingMetricsForm(form);
-                                }}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <BarChart2 className="w-4 h-4 text-purple-600" />
-                                <span>Visualizar respostas</span>
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleDuplicateForm(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <Copy className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Duplicar Formulário</span>
+                                </button>
 
-                              {/* 5b. Consolidação e Planilha CPA */}
-                              <button
-                                onClick={() => {
-                                  setOpenActionMenuId(null);
-                                  if (onSelectTab) {
-                                    onSelectTab('relatorios');
-                                  } else {
+                                <div className="border-t border-slate-100 my-1" />
+
+                                {/* Group 2: Integração e Métricas */}
+                                <div className="px-2.5 py-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                    Integração & Métricas
+                                  </p>
+                                </div>
+
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleOpenGoogleFormsLink(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Abrir no Google Forms</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
                                     setViewingMetricsForm(form);
-                                  }
-                                }}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <FileSpreadsheet className="w-4 h-4 text-[#006837]" />
-                                <span>Consolidação CPA (Planilha)</span>
-                              </button>
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <BarChart2 className="w-3.5 h-3.5 text-purple-600" />
+                                  <span>Visualizar Respostas</span>
+                                </button>
 
-                              {/* 6. Enviar campanha */}
-                              <button
-                                onClick={() => handleSendCampaign(form)}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <Send className="w-4 h-4 text-amber-600" />
-                                <span>Enviar campanha</span>
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    if (onSelectTab) {
+                                      onSelectTab('relatorios');
+                                    } else {
+                                      setViewingMetricsForm(form);
+                                    }
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#006837]" />
+                                  <span>Consolidação CPA</span>
+                                </button>
 
-                              {/* 7. Encerrar campanha */}
-                              <button
-                                onClick={() => handleToggleCampaignStatus(form)}
-                                className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-900 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
-                              >
-                                <Clock className="w-4 h-4 text-orange-600" />
-                                <span>{form.status === 'Ativo' ? 'Encerrar campanha' : 'Reativar campanha'}</span>
-                              </button>
+                                <div className="border-t border-slate-100 my-1" />
 
-                              {/* 8. Excluir */}
-                              <div className="border-t border-slate-100 pt-1">
+                                {/* Group 3: Divulgação */}
+                                <div className="px-2.5 py-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                    Divulgação
+                                  </p>
+                                </div>
+
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleSendCampaign(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <Send className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Enviar Campanha</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    handleToggleCampaignStatus(form);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-900 rounded-lg flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+                                >
+                                  <Clock className="w-3.5 h-3.5 text-orange-600" />
+                                  <span>{form.status === 'Ativo' ? 'Encerrar Campanha' : 'Reativar Campanha'}</span>
+                                </button>
+
+                                <div className="border-t border-slate-100 my-1" />
+
+                                {/* Group 4: Excluir */}
                                 <button
                                   onClick={() => {
                                     setOpenActionMenuId(null);
                                     setDeletingForm(form);
                                   }}
-                                  className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 font-semibold transition-colors cursor-pointer"
+                                  className="w-full px-2.5 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2.5 font-semibold transition-colors cursor-pointer"
                                 >
-                                  <Trash2 className="w-4 h-4 text-rose-600" />
-                                  <span>Excluir</span>
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                  <span>Excluir Formulário</span>
                                 </button>
                               </div>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -2345,523 +2638,1055 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         </div>
       )}
 
-      {/* MODAL 1: Novo Formulário Flow (Opção 1: Modelo CPA ou Opção 2: Personalizado) */}
+      {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 my-8">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
             
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2.5">
-                {creationStep !== 'select-type' && !editingForm && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCreationStep(creationStep === 'builder' ? 'cpa-templates' : 'select-type')
-                    }
-                    className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer mr-1"
-                    title="Voltar"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                )}
-                <div className="p-2 rounded-xl bg-emerald-100 text-[#006837]">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">
-                    {editingForm
-                      ? 'Editar Formulário & Públicos'
-                      : creationStep === 'select-type'
-                      ? 'Novo Formulário • Escolha o método de criação'
-                      : creationStep === 'cpa-templates'
-                      ? 'Modelos Oficiais da CPA (Google Forms Sync)'
-                      : 'Form Builder • Personalização do Formulário'}
+            {/* CABEÇALHO DO WIZARD */}
+            <div className="bg-slate-50 border-b border-slate-200/80 p-5 sm:p-6 space-y-4">
+              {/* Header Top Row: Title & Close */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#006837] text-[10px] font-black uppercase tracking-wider border border-emerald-200/80">
+                      Assistente de Criação • CPA IFCE
+                    </span>
+                    {editingForm && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                        Edição de Formulário
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Realtime Dynamic Header Title */}
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate tracking-tight">
+                    {formTitle.trim() ? formTitle : 'Novo Formulário'}
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Comissão Própria de Avaliação • IFCE Campus Tauá
-                  </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+                  title="Fechar assistente"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Progress Counter */}
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1">
+                <span className="flex items-center gap-1.5 text-slate-700 font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-[#006837]" />
+                  Etapa {wizardStep} de {WIZARD_STEPS.length}
+                </span>
+                <span className="text-[#006837] font-black">
+                  {wizardStep * 20}% concluído
+                </span>
+              </div>
+
+              {/* Progress Line */}
+              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#006837] transition-all duration-300 rounded-full"
+                  style={{ width: `${wizardStep * 20}%` }}
+                />
+              </div>
+
+              {/* STEPPER INDICATOR */}
+              <div className="grid grid-cols-5 gap-1 pt-1">
+                {WIZARD_STEPS.map((step) => {
+                  const isActive = wizardStep === step.id;
+                  const isCompleted = wizardStep > step.id;
+
+                  return (
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => setWizardStep(step.id)}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer text-center group ${
+                        isActive
+                          ? 'bg-white shadow-xs border border-emerald-200 text-[#006837]'
+                          : isCompleted
+                          ? 'text-emerald-700 hover:bg-emerald-50/50'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all mb-1 ${
+                          isActive
+                            ? 'bg-[#006837] text-white shadow-xs'
+                            : isCompleted
+                            ? 'bg-emerald-100 text-[#006837]'
+                            : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {isCompleted ? <Check className="w-3.5 h-3.5" /> : step.id}
+                      </div>
+                      <span className="text-[10px] font-bold line-clamp-1">
+                        {step.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* STEP 1: Select Creation Type (Opção 1 vs Opção 2) */}
-            {creationStep === 'select-type' && (
-              <div className="space-y-6 py-2">
-                <div className="text-center space-y-1.5 max-w-md mx-auto">
-                  <h4 className="text-base font-bold text-slate-900">
-                    Como você deseja criar o formulário?
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Selecione uma das duas opções abaixo para iniciar a elaboração do instrumento de avaliação.
-                  </p>
-                </div>
+            {/* CORPO DO WIZARD (CONTEÚDO DAS ETAPAS) */}
+            <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* OPÇÃO 1: Criar utilizando um modelo da CPA */}
-                  <div
-                    onClick={() => setCreationStep('cpa-templates')}
-                    className="p-6 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/90 hover:border-[#006837] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-4 relative"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="w-11 h-11 rounded-xl bg-[#006837] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                          <Sparkles className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-[#006837] border border-emerald-200">
-                          Opção 1
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h5 className="text-sm font-bold text-slate-900 group-hover:text-[#006837] transition-colors">
-                          Criar utilizando um modelo da CPA
-                        </h5>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Utilize cartões de modelos institucionais pré-configurados com templates disponíveis na integração do Google Forms.
-                        </p>
-                      </div>
-
-                      <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold text-emerald-900">
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • Avaliação Docente
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • Discente
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • TAEs
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • Infraestrutura
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • Biblioteca
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200">
-                          • Pesquisa
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-emerald-200/60 flex items-center justify-between text-xs font-bold text-[#006837]">
-                      <span>Ver Modelos Disponíveis</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-
-                  {/* OPÇÃO 2: Criar formulário personalizado */}
-                  <div
-                    onClick={handleSelectCustomForm}
-                    className="p-6 rounded-2xl border-2 border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="w-11 h-11 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                          <PlusCircle className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
-                          Opção 2
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h5 className="text-sm font-bold text-slate-900 group-hover:text-slate-800 transition-colors">
-                          Criar formulário personalizado
-                        </h5>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Utilize o Form Builder existente para adicionar perguntas do zero, definir títulos, tipos, categorias e direcionar para os públicos-alvo desejados.
-                        </p>
-                      </div>
-
-                      <div className="pt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-700">
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">
-                          • Form Builder Livre
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">
-                          • 6 Tipos de Resposta
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">
-                          • 12 Categorias
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-800">
-                      <span>Abrir Form Builder</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: CPA Templates Cards Grid (Opção 1) */}
-            {creationStep === 'cpa-templates' && (
-              <div className="space-y-5 py-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Selecione um dos modelos pré-configurados da CPA:
+              {/* ETAPA 1 — INFORMAÇÕES DO FORMULÁRIO */}
+              {wizardStep === 1 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Info className="w-5 h-5 text-[#006837]" />
+                      Etapa 1: Informações do Formulário
                     </h4>
-                    <p className="text-xs text-slate-500">
-                      Ao selecionar, os dados e perguntas do modelo serão carregados no Form Builder.
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Informe o título, a apresentação e o campus do IFCE para onde este instrumento será direcionado.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setCreationStep('select-type')}
-                    className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Alternar para Opção 2
-                  </button>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[420px] overflow-y-auto pr-1">
-                  {CPA_TEMPLATES_DATA.map((tpl) => (
-                    <div
-                      key={tpl.id}
-                      onClick={() => handleSelectCPATemplate(tpl)}
-                      className="p-4 rounded-xl border border-slate-200 bg-white hover:border-[#006837] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-3 relative"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#006837] border border-emerald-200">
-                            {tpl.categoryTag}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400">
-                            {tpl.questions.length} perguntas
-                          </span>
-                        </div>
-
-                        <h5 className="text-xs font-bold text-slate-900 group-hover:text-[#006837] transition-colors leading-snug">
-                          {tpl.title}
-                        </h5>
-
-                        <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-3">
-                          {tpl.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-[#006837]">
-                        <span>Usar este modelo</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </div>
+                  <div className="space-y-4">
+                    {/* Campo 1: Título do Formulário */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                        <span>Título do Formulário</span>
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Avaliação Institucional CPA 2026.2"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full h-11 px-4 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium transition-all"
+                      />
+                      <p className="text-[11px] text-slate-400 italic">
+                        O título digitado aqui é atualizado automaticamente no cabeçalho do assistente.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* STEP 3: Form Builder (Customizer / Form Saver) */}
-            {creationStep === 'builder' && (
-              <form onSubmit={handleSaveForm} className="space-y-6">
-                {/* Form Metadata */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Título do Formulário *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Avaliação Institucional CPA 2025.2"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full h-10 px-3.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                    />
-                  </div>
+                    {/* Campo 2: Descrição */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-800">
+                        Descrição / Apresentação Institucional
+                      </label>
+                      <textarea
+                        rows={3}
+                        placeholder="Descreva os objetivos do formulário e orientações para os participantes..."
+                        value={formDescription}
+                        onChange={(e) => setFormDescription(e.target.value)}
+                        className="w-full p-3.5 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium transition-all"
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Campus</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={formCampus}
-                      className="w-full h-10 px-3.5 text-xs bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Descrição do Instrumento</label>
-                    <textarea
-                      rows={2}
-                      placeholder="Descrição institucional exibida na abertura do formulário..."
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                    />
+                    {/* Campo 3: Campus (Seletor com lista de todos os campi do IFCE) */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                        <Building2 className="w-3.5 h-3.5 text-[#006837]" />
+                        <span>Campus do IFCE</span>
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={formCampus}
+                        onChange={(e) => setFormCampus(e.target.value)}
+                        className="w-full h-11 px-3.5 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800 transition-all cursor-pointer"
+                      >
+                        {IFCE_CAMPUSES.map((campusName) => (
+                          <option key={campusName} value={campusName}>
+                            {campusName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Questions Builder */}
-                <div className="space-y-4 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
+              {/* ETAPA 2 — PERGUNTAS GERAIS */}
+              {wizardStep === 2 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                        Perguntas e Propriedades ({formQuestions.length})
+                      <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <HelpCircle className="w-5 h-5 text-[#006837]" />
+                        Perguntas Gerais
                       </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Configure Título, Descrição, Tipo, Categoria e Públicos-Alvo.
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Estas perguntas serão exibidas para todos os participantes da avaliação.
                       </p>
                     </div>
 
                     <button
                       type="button"
-                      onClick={handleAddQuestion}
-                      className="px-3 py-1.5 bg-[#E8F5EE] text-[#006837] hover:bg-[#d4ebdd] text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                      onClick={handleAddGeneralQuestion}
+                      className="px-3.5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Adicionar Pergunta
+                      <Plus className="w-4 h-4" />
+                      <span>Adicionar Pergunta Geral</span>
                     </button>
                   </div>
 
-                  <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-                    {formQuestions.map((q, idx) => (
-                      <div
-                        key={q.id}
-                        className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-3.5 relative"
-                      >
-                        {/* Header: Title & Delete */}
-                        <div className="flex items-start gap-3">
-                          <span className="w-6 h-6 rounded-full bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-1">
-                            {idx + 1}
-                          </span>
+                  {/* Informational Alert Box */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
+                    <Info className="w-4 h-4 text-[#006837] shrink-0 mt-0.5" />
+                    <p className="text-xs text-emerald-950 leading-relaxed font-medium">
+                      Todas as perguntas criadas nesta etapa são classificadas automaticamente como <strong>"Todos"</strong> e serão aplicadas sem distinção de público.
+                    </p>
+                  </div>
 
-                          <div className="flex-1 space-y-1">
-                            <label className="text-[11px] font-bold text-slate-700">Título da Pergunta *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="Enunciado da Pergunta (Ex: Como você avalia a didática dos professores?)"
-                              value={q.title}
-                              onChange={(e) => handleUpdateQuestion(q.id, 'title', e.target.value)}
-                              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                            />
-                          </div>
-
-                          {formQuestions.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveQuestion(q.id)}
-                              className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer mt-5"
-                              title="Remover pergunta"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Property: Descrição */}
-                        <div className="pl-9 space-y-1">
-                          <label className="text-[11px] font-semibold text-slate-600">Descrição / Instrução (Opcional):</label>
-                          <input
-                            type="text"
-                            placeholder="Ex: Responda considerando o seu desempenho no último semestre letivo."
-                            value={q.description || ''}
-                            onChange={(e) => handleUpdateQuestion(q.id, 'description', e.target.value)}
-                            className="w-full h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                          />
-                        </div>
-
-                        {/* Property: Tipo, Categoria & Obrigatória */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pl-9">
-                          {/* Tipo */}
-                          <div className="space-y-1">
-                            <label className="text-slate-600 font-semibold text-[11px]">Tipo de Pergunta:</label>
-                            <select
-                              value={q.type}
-                              onChange={(e) =>
-                                handleUpdateQuestion(q.id, 'type', e.target.value as any)
-                              }
-                              className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                            >
-                              <option value="SCALE">Escala Likert (1 a 5)</option>
-                              <option value="YES_NO">Sim / Não</option>
-                              <option value="RADIO">Múltipla Escolha (Seleção Única)</option>
-                              <option value="CHECKBOX">Caixas de Seleção (Múltipla Seleção)</option>
-                              <option value="DROPDOWN">Lista Suspenso / Escala Numérica</option>
-                            </select>
-                          </div>
-
-                          {/* Categoria */}
-                          <div className="space-y-1">
-                            <label className="text-slate-600 font-semibold text-[11px]">Categoria:</label>
-                            <select
-                              value={q.category || 'Ensino'}
-                              onChange={(e) =>
-                                handleUpdateQuestion(q.id, 'category', e.target.value as QuestionCategory)
-                              }
-                              className="w-full h-8 px-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                            >
-                              {QUESTION_CATEGORIES.map((cat) => (
-                                <option key={cat} value={cat}>
-                                  {cat}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Obrigatória */}
-                          <div className="flex items-end pb-1.5">
-                            <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                              <input
-                                type="checkbox"
-                                checked={q.required}
-                                onChange={(e) => handleUpdateQuestion(q.id, 'required', e.target.checked)}
-                                className="accent-[#006837] w-4 h-4"
-                              />
-                              <span className="text-xs font-semibold">Resposta Obrigatória</span>
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Options Editor for Choice Types */}
-                        {['RADIO', 'CHECKBOX', 'DROPDOWN'].includes(q.type) && (
-                          <div className="pl-9 space-y-2 pt-2 border-t border-slate-200/60">
-                            <label className="text-[11px] font-bold text-slate-700">Opções da Lista / Múltipla Escolha:</label>
-                            <div className="space-y-1.5">
-                              {(q.options && q.options.length > 0 ? q.options : ['Opção 1', 'Opção 2']).map(
-                                (opt, optIdx) => (
-                                  <div key={optIdx} className="flex items-center gap-2">
-                                    <span className="text-[10px] text-slate-400 font-mono w-4">{optIdx + 1}.</span>
-                                    <input
-                                      type="text"
-                                      value={opt}
-                                      onChange={(e) =>
-                                        handleUpdateQuestionOption(q.id, optIdx, e.target.value)
-                                      }
-                                      className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs"
-                                      placeholder={`Opção ${optIdx + 1}`}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveQuestionOption(q.id, optIdx)}
-                                      className="text-slate-400 hover:text-rose-600 p-1"
-                                      title="Remover opção"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                )
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleAddQuestionOption(q.id)}
-                              className="text-[11px] font-bold text-[#006837] hover:underline flex items-center gap-1 pt-1 cursor-pointer"
-                            >
-                              <Plus className="w-3.5 h-3.5" /> Adicionar Opção
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Property: Público-Alvo Checkboxes */}
-                        <div className="pl-9 pt-2 border-t border-slate-200/60 space-y-1.5">
-                          <p className="text-[11px] font-bold text-slate-700">
-                            Público-alvo para esta pergunta:
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
-                            {/* Checkbox: Todos */}
-                            <label className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:border-[#006837]">
-                              <input
-                                type="checkbox"
-                                checked={q.audiences.includes('todos')}
-                                onChange={() => handleToggleAudience(q.id, 'todos')}
-                                className="accent-[#006837] w-4 h-4"
-                              />
-                              <span className="text-slate-800 font-semibold">☑ Todos</span>
-                            </label>
-
-                            {/* Checkbox: Alunos */}
-                            <label className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500">
-                              <input
-                                type="checkbox"
-                                checked={
-                                  q.audiences.includes('todos') || q.audiences.includes('alunos')
-                                }
-                                onChange={() => handleToggleAudience(q.id, 'alunos')}
-                                className="accent-indigo-600 w-4 h-4"
-                              />
-                              <span className="text-indigo-900 font-semibold flex items-center gap-1">
-                                <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                                Alunos
-                              </span>
-                            </label>
-
-                            {/* Checkbox: Docentes */}
-                            <label className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:border-emerald-500">
-                              <input
-                                type="checkbox"
-                                checked={
-                                  q.audiences.includes('todos') || q.audiences.includes('docentes')
-                                }
-                                onChange={() => handleToggleAudience(q.id, 'docentes')}
-                                className="accent-[#006837] w-4 h-4"
-                              />
-                              <span className="text-emerald-900 font-semibold flex items-center gap-1">
-                                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                Docentes
-                              </span>
-                            </label>
-
-                            {/* Checkbox: TAEs */}
-                            <label className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:border-amber-500">
-                              <input
-                                type="checkbox"
-                                checked={
-                                  q.audiences.includes('todos') || q.audiences.includes('taes')
-                                }
-                                onChange={() => handleToggleAudience(q.id, 'taes')}
-                                className="accent-amber-600 w-4 h-4"
-                              />
-                              <span className="text-amber-900 font-semibold flex items-center gap-1">
-                                <Briefcase className="w-3.5 h-3.5 text-amber-600" />
-                                Técnicos Administrativos (TAEs)
-                              </span>
-                            </label>
-                          </div>
-                        </div>
+                  {/* Questions List (Filtered for 'todos') */}
+                  {formQuestions.filter((q) => q.audiences.includes('todos')).length === 0 ? (
+                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-3 bg-slate-50/50">
+                      <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Nenhuma pergunta geral cadastrada</p>
+                        <p className="text-[11px] text-slate-400">Clique no botão acima para adicionar a primeira pergunta aberta a todos os segmentos.</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <button
+                        type="button"
+                        onClick={handleAddGeneralQuestion}
+                        className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar Pergunta</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+                      {formQuestions
+                        .filter((q) => q.audiences.includes('todos'))
+                        .map((q, qIdx) => (
+                          <div
+                            key={q.id}
+                            className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-[#006837]/40 transition-all space-y-3"
+                          >
+                            {/* Question Header Row */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-lg bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                                  {qIdx + 1}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold uppercase">
+                                  Público: Todos
+                                </span>
+                              </div>
 
-                {/* Submit Buttons */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  {!editingForm && (
-                    <button
-                      type="button"
-                      onClick={() => setCreationStep('select-type')}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Alternar opção de criação
-                    </button>
+                              {/* Order & Remove Actions */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveWizardQuestion(q.id, 'up')}
+                                  disabled={qIdx === 0}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Mover para cima"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveWizardQuestion(q.id, 'down')}
+                                  disabled={qIdx === formQuestions.filter((item) => item.audiences.includes('todos')).length - 1}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Mover para baixo"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveWizardQuestion(q.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Excluir pergunta"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Enunciado da Pergunta */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700">Enunciado da Pergunta</label>
+                              <input
+                                type="text"
+                                value={q.title}
+                                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
+                                placeholder="Ex: Como você avalia a infraestrutura física dos laboratórios do campus?"
+                                className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                              />
+                            </div>
+
+                            {/* Tipo, Categoria e Obrigatoriedade */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
+                                <select
+                                  value={q.type}
+                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'type', e.target.value as any)}
+                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                >
+                                  <option value="SCALE">Escala CPA (Ótimo, Regular, Ruim...)</option>
+                                  <option value="YES_NO">Sim / Não</option>
+                                  <option value="RADIO">Múltipla Escolha (Única opção)</option>
+                                  <option value="CHECKBOX">Caixa de Seleção (Múltiplas opções)</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-600">Categoria</label>
+                                <select
+                                  value={q.category || 'Ensino'}
+                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'category', e.target.value as any)}
+                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                >
+                                  {QUESTION_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {cat}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="flex items-center pt-5">
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={q.required ?? true}
+                                    onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
+                                    className="accent-[#006837] w-4 h-4 cursor-pointer"
+                                  />
+                                  <span>Resposta Obrigatória</span>
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* Alternativas Padrão para Escala CPA */}
+                            {q.type === 'SCALE' && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Alternativas Padrão da Escala CPA:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'].map((opt) => (
+                                    <span
+                                      key={opt}
+                                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs"
+                                    >
+                                      {opt}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Alternativas para Sim / Não */}
+                            {q.type === 'YES_NO' && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Opções de Resposta:
+                                </span>
+                                <div className="flex gap-2">
+                                  <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#006837] text-xs font-bold">Sim</span>
+                                  <span className="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Não</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Opções Editáveis para RADIO e CHECKBOX */}
+                            {['RADIO', 'CHECKBOX'].includes(q.type) && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Opções da Pergunta:
+                                </span>
+                                <div className="space-y-1.5">
+                                  {(q.options || ['Opção 1', 'Opção 2']).map((opt, oIdx) => (
+                                    <div key={oIdx} className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={opt}
+                                        onChange={(e) => handleUpdateQuestionOption(q.id, oIdx, e.target.value)}
+                                        className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveQuestionOption(q.id, oIdx)}
+                                        className="text-slate-400 hover:text-rose-600 p-1"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddQuestionOption(q.id)}
+                                    className="text-xs font-bold text-[#006837] hover:underline pt-1 flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Adicionar mais uma opção</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
                   )}
-                  <div className="flex items-center gap-3 ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateModalOpen(false)}
-                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
-                    >
-                      Salvar Formulário
-                    </button>
+                </div>
+              )}
+
+              {/* ETAPA 3 — ESCOLHA DO SEGMENTO */}
+              {wizardStep === 3 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-[#006837]" />
+                      Segmentos Específicos
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Agora selecione qual segmento deseja configurar.
+                    </p>
+                  </div>
+
+                  {/* 3 CARDS GRANDES DE SEGMENTO */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* CARD 1: DISCENTES */}
+                    {(() => {
+                      const qCount = formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length;
+                      const isDone = qCount > 0 || completedSegments.includes('alunos');
+
+                      return (
+                        <div
+                          onClick={() => {
+                            setSelectedSegment('alunos');
+                            setWizardStep(4);
+                          }}
+                          className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-4 group relative ${
+                            selectedSegment === 'alunos'
+                              ? 'border-[#006837] bg-emerald-50/50 shadow-md ring-2 ring-[#006837]/20'
+                              : isDone
+                              ? 'border-emerald-200 bg-white hover:border-[#006837]'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                              🎓
+                            </div>
+
+                            {isDone ? (
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-[#006837] text-[11px] font-extrabold flex items-center gap-1 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Concluído
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
+                                Pendente
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h5 className="text-sm font-bold text-slate-900 group-hover:text-[#006837] transition-colors">
+                              Discentes
+                            </h5>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Estudantes de cursos técnicos, graduação e pós-graduação.
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-600">
+                              {qCount} {qCount === 1 ? 'pergunta' : 'perguntas'}
+                            </span>
+                            <span className="text-[#006837] font-bold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                              Configurar <ArrowRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* CARD 2: DOCENTES */}
+                    {(() => {
+                      const qCount = formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length;
+                      const isDone = qCount > 0 || completedSegments.includes('docentes');
+
+                      return (
+                        <div
+                          onClick={() => {
+                            setSelectedSegment('docentes');
+                            setWizardStep(4);
+                          }}
+                          className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-4 group relative ${
+                            selectedSegment === 'docentes'
+                              ? 'border-[#006837] bg-emerald-50/50 shadow-md ring-2 ring-[#006837]/20'
+                              : isDone
+                              ? 'border-emerald-200 bg-white hover:border-[#006837]'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#006837] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                              👨‍🏫
+                            </div>
+
+                            {isDone ? (
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-[#006837] text-[11px] font-extrabold flex items-center gap-1 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Concluído
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
+                                Pendente
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h5 className="text-sm font-bold text-slate-900 group-hover:text-[#006837] transition-colors">
+                              Docentes
+                            </h5>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Professores efetivos, substitutos e visitantes do IFCE.
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-600">
+                              {qCount} {qCount === 1 ? 'pergunta' : 'perguntas'}
+                            </span>
+                            <span className="text-[#006837] font-bold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                              Configurar <ArrowRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* CARD 3: TAES */}
+                    {(() => {
+                      const qCount = formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length;
+                      const isDone = qCount > 0 || completedSegments.includes('taes');
+
+                      return (
+                        <div
+                          onClick={() => {
+                            setSelectedSegment('taes');
+                            setWizardStep(4);
+                          }}
+                          className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-4 group relative ${
+                            selectedSegment === 'taes'
+                              ? 'border-[#006837] bg-emerald-50/50 shadow-md ring-2 ring-[#006837]/20'
+                              : isDone
+                              ? 'border-emerald-200 bg-white hover:border-[#006837]'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                              👨‍💼
+                            </div>
+
+                            {isDone ? (
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-[#006837] text-[11px] font-extrabold flex items-center gap-1 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Concluído
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">
+                                Pendente
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h5 className="text-sm font-bold text-slate-900 group-hover:text-[#006837] transition-colors">
+                              Técnicos Administrativos (TAEs)
+                            </h5>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Corpo técnico-administrativo em educação.
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-600">
+                              {qCount} {qCount === 1 ? 'pergunta' : 'perguntas'}
+                            </span>
+                            <span className="text-[#006837] font-bold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                              Configurar <ArrowRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <p className="text-xs text-slate-500 text-center italic">
+                    Ao selecionar um segmento acima, você será direcionado para cadastrar as perguntas exclusivas desse grupo.
+                  </p>
+                </div>
+              )}
+
+              {/* ETAPA 4 — PERGUNTAS DO SEGMENTO */}
+              {wizardStep === 4 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Destaque do Segmento em Configuração */}
+                  <div className="p-4 rounded-2xl bg-[#006837] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl shrink-0">
+                        {selectedSegment === 'alunos'
+                          ? '🎓'
+                          : selectedSegment === 'docentes'
+                          ? '👨‍🏫'
+                          : '👨‍💼'}
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-200">
+                          Segmento em Configuração
+                        </span>
+                        <h4 className="text-base font-bold">
+                          {selectedSegment === 'alunos'
+                            ? 'Perguntas para Discentes'
+                            : selectedSegment === 'docentes'
+                            ? 'Perguntas para Docentes'
+                            : 'Perguntas para Técnicos Administrativos (TAEs)'}
+                        </h4>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAddSegmentQuestion(selectedSegment)}
+                        className="px-3.5 py-2 bg-white text-[#006837] hover:bg-emerald-50 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Adicionar Pergunta</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleChooseNextSegment}
+                        className="px-3.5 py-2 bg-emerald-900/60 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl border border-emerald-400/30 transition-all cursor-pointer"
+                        title="Salvar segmento e voltar para escolha de segmentos"
+                      >
+                        <span>Escolher próximo segmento</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filtered questions list for selectedSegment */}
+                  {formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos')).length === 0 ? (
+                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-3 bg-slate-50/50">
+                      <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">
+                          Nenhuma pergunta específica cadastrada para {selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs'}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Estas perguntas serão exibidas somente no questionário deste segmento.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddSegmentQuestion(selectedSegment)}
+                        className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar Primeira Pergunta</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+                      {formQuestions
+                        .filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'))
+                        .map((q, qIdx) => (
+                          <div
+                            key={q.id}
+                            className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-[#006837]/40 transition-all space-y-3"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-lg bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                                  {qIdx + 1}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold uppercase">
+                                  Público: {selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveWizardQuestion(q.id, 'up')}
+                                  disabled={qIdx === 0}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Mover para cima"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveWizardQuestion(q.id, 'down')}
+                                  disabled={qIdx === formQuestions.filter((item) => item.audiences.includes(selectedSegment) && !item.audiences.includes('todos')).length - 1}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Mover para baixo"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveWizardQuestion(q.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Excluir pergunta"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700">Enunciado da Pergunta</label>
+                              <input
+                                type="text"
+                                value={q.title}
+                                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
+                                placeholder="Digite a pergunta específica..."
+                                className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
+                                <select
+                                  value={q.type}
+                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'type', e.target.value as any)}
+                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                >
+                                  <option value="SCALE">Escala CPA (Ótimo, Regular, Ruim...)</option>
+                                  <option value="YES_NO">Sim / Não</option>
+                                  <option value="RADIO">Múltipla Escolha (Única opção)</option>
+                                  <option value="CHECKBOX">Caixa de Seleção (Múltiplas opções)</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-600">Categoria</label>
+                                <select
+                                  value={q.category || 'Ensino'}
+                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'category', e.target.value as any)}
+                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                >
+                                  {QUESTION_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {cat}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="flex items-center pt-5">
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={q.required ?? true}
+                                    onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
+                                    className="accent-[#006837] w-4 h-4 cursor-pointer"
+                                  />
+                                  <span>Resposta Obrigatória</span>
+                                </label>
+                              </div>
+                            </div>
+
+                            {q.type === 'SCALE' && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Alternativas Padrão da Escala CPA:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'].map((opt) => (
+                                    <span
+                                      key={opt}
+                                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs"
+                                    >
+                                      {opt}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {q.type === 'YES_NO' && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Opções de Resposta:
+                                </span>
+                                <div className="flex gap-2">
+                                  <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#006837] text-xs font-bold">Sim</span>
+                                  <span className="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Não</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {['RADIO', 'CHECKBOX'].includes(q.type) && (
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Opções da Pergunta:
+                                </span>
+                                <div className="space-y-1.5">
+                                  {(q.options || ['Opção 1', 'Opção 2']).map((opt, oIdx) => (
+                                    <div key={oIdx} className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={opt}
+                                        onChange={(e) => handleUpdateQuestionOption(q.id, oIdx, e.target.value)}
+                                        className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveQuestionOption(q.id, oIdx)}
+                                        className="text-slate-400 hover:text-rose-600 p-1"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddQuestionOption(q.id)}
+                                    className="text-xs font-bold text-[#006837] hover:underline pt-1 flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Adicionar mais uma opção</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ETAPA 5 — REVISÃO E FINALIZAÇÃO */}
+              {wizardStep === 5 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-[#006837]" />
+                      Revisão e Finalização
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Confira o resumo completo do formulário antes de publicar.
+                    </p>
+                  </div>
+
+                  {/* Card Ficha Resumo */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                    <div className="space-y-1">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold">
+                        {formCampus}
+                      </span>
+                      <h5 className="text-base font-bold text-slate-900">
+                        {formTitle.trim() ? formTitle : 'Novo Formulário sem título'}
+                      </h5>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {formDescription.trim() ? formDescription : 'Sem descrição cadastrada.'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200/80 text-xs">
+                      <div>
+                        <span className="text-slate-400 font-medium block">Período Letivo:</span>
+                        <span className="font-bold text-slate-800">{formPeriodo}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Categoria:</span>
+                        <span className="font-bold text-slate-800">{formCategory}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Total de Questões:</span>
+                        <span className="font-bold text-[#006837]">{formQuestions.length} perguntas</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Anonimato:</span>
+                        <span className="font-bold text-emerald-700">
+                          {formAnonymous ? 'Garantido (SINAES)' : 'Desativado'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Resumo Quantitativo de Perguntas por Segmento */}
+                  <div className="space-y-2">
+                    <h5 className="text-xs font-bold text-slate-800">
+                      Distribuição do Questionário por Público
+                    </h5>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {/* Gerais */}
+                      <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">Perguntas Gerais</span>
+                        <p className="text-lg font-black text-slate-900">
+                          {formQuestions.filter((q) => q.audiences.includes('todos')).length}
+                        </p>
+                        <span className="text-[10px] text-slate-400">Todos os Públicos</span>
+                      </div>
+
+                      {/* Discentes */}
+                      <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-1">
+                        <span className="text-[10px] font-bold text-indigo-700 uppercase">Discentes</span>
+                        <p className="text-lg font-black text-indigo-950">
+                          {formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length}
+                        </p>
+                        <span className="text-[10px] text-indigo-600">Exclusivas Alunos</span>
+                      </div>
+
+                      {/* Docentes */}
+                      <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-1">
+                        <span className="text-[10px] font-bold text-[#006837] uppercase">Docentes</span>
+                        <p className="text-lg font-black text-emerald-950">
+                          {formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length}
+                        </p>
+                        <span className="text-[10px] text-[#006837]">Exclusivas Professores</span>
+                      </div>
+
+                      {/* TAEs */}
+                      <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-1">
+                        <span className="text-[10px] font-bold text-amber-800 uppercase">Técnicos (TAEs)</span>
+                        <p className="text-lg font-black text-amber-950">
+                          {formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length}
+                        </p>
+                        <span className="text-[10px] text-amber-700">Exclusivas Servidores</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Escolha do Status de Publicação */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                    <span className="text-xs font-bold text-slate-800 block">
+                      Status Inicial do Formulário
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label
+                        onClick={() => setPublishStatus('Ativo')}
+                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
+                          publishStatus === 'Ativo'
+                            ? 'border-[#006837] bg-emerald-50/80 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="publishStatus"
+                          checked={publishStatus === 'Ativo'}
+                          onChange={() => setPublishStatus('Ativo')}
+                          className="accent-[#006837] w-4 h-4 cursor-pointer"
+                        />
+                        <div>
+                          <p className="text-xs font-bold">🟢 Publicar como Ativo</p>
+                          <p className="text-[10px] text-slate-500 font-normal">
+                            Disponível para receber respostas da comunidade.
+                          </p>
+                        </div>
+                      </label>
+
+                      <label
+                        onClick={() => setPublishStatus('Rascunho')}
+                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
+                          publishStatus === 'Rascunho'
+                            ? 'border-amber-500 bg-amber-50/80 text-amber-950 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="publishStatus"
+                          checked={publishStatus === 'Rascunho'}
+                          onChange={() => setPublishStatus('Rascunho')}
+                          className="accent-amber-600 w-4 h-4 cursor-pointer"
+                        />
+                        <div>
+                          <p className="text-xs font-bold">🟡 Manter em Rascunho</p>
+                          <p className="text-[10px] text-slate-500 font-normal">
+                            Permanece salvo para edições posteriores.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
-              </form>
-            )}
+              )}
+
+            </div>
+
+            {/* RODAPÉ DO WIZARD (TODAS AS ETAPAS POSSUEM) */}
+            <div className="bg-slate-50 border-t border-slate-200/80 p-4 sm:p-5 flex items-center justify-between gap-3 shrink-0">
+              {/* Esquerda: Cancelar */}
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+
+              {/* Direita: Voltar, Salvar progresso, Seguinte / Finalizar */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Botão Voltar (Desabilitado na Etapa 1) */}
+                <button
+                  type="button"
+                  disabled={wizardStep === 1}
+                  onClick={() => setWizardStep((prev) => Math.max(1, prev - 1))}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
+                    wizardStep === 1
+                      ? 'opacity-40 cursor-not-allowed text-slate-400 border-slate-200 bg-slate-100'
+                      : 'text-slate-700 border-slate-300 bg-white hover:bg-slate-100'
+                  }`}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Voltar</span>
+                </button>
+
+                {/* Botão Salvar Progresso (Permanece como Rascunho) */}
+                <button
+                  type="button"
+                  onClick={handleSaveProgressDraft}
+                  className="px-3.5 py-2 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200/80 border border-emerald-300/80 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Salvar como Rascunho para continuar depois"
+                >
+                  <Save className="w-3.5 h-3.5 text-[#006837]" />
+                  <span>Salvar progresso</span>
+                </button>
+
+                {/* Botão Seguinte / Finalizar */}
+                {wizardStep < 5 ? (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep((prev) => Math.min(5, prev + 1))}
+                    className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Seguinte</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleFinalizeForm}
+                    className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Finalizar Formulário</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
