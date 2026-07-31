@@ -28,6 +28,7 @@ import {
   AlertCircle,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   RefreshCw,
   Layers,
   Sparkle,
@@ -1918,6 +1919,14 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     'Eixo 5: Infraestrutura Física',
   ]);
   const [formQuestions, setFormQuestions] = useState<SmartQuestion[]>([]);
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Record<string, boolean>>({});
+
+  const toggleQuestionExpanded = (id: string) => {
+    setExpandedQuestionIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   // Open Create Wizard
   const handleOpenCreateModal = () => {
@@ -1940,9 +1949,10 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       'Eixo 3: Políticas Acadêmicas',
       'Eixo 5: Infraestrutura Física',
     ]);
+    const initQId = `q-${Date.now()}-1`;
     setFormQuestions([
       {
-        id: `q-${Date.now()}-1`,
+        id: initQId,
         title: 'Como você avalia o apoio acadêmico e as instalações gerais do campus?',
         description: 'Estas perguntas serão exibidas para todos os participantes da avaliação.',
         type: 'SCALE',
@@ -1952,6 +1962,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
       },
     ]);
+    setExpandedQuestionIds({ [initQId]: true });
     setIsCreateModalOpen(true);
   };
 
@@ -1964,6 +1975,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormCampus(form.campus || 'IFCE Campus Tauá');
     setFormPeriodo(form.periodo || '2026.2');
     setFormQuestions(form.questions || []);
+    setExpandedQuestionIds({});
     setPublishStatus(form.status === 'Ativo' ? 'Ativo' : 'Rascunho');
     setSelectedSegment('alunos');
     const existingSegs: string[] = [];
@@ -2082,10 +2094,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
   // Question Manipulation Helpers for Steps 2 and 4
   const handleAddGeneralQuestion = () => {
+    const newId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setFormQuestions((prev) => [
       ...prev,
       {
-        id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: newId,
         title: '',
         type: 'SCALE',
         required: true,
@@ -2094,13 +2107,15 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
       },
     ]);
+    setExpandedQuestionIds({ [newId]: true });
   };
 
   const handleAddSegmentQuestion = (seg: 'alunos' | 'docentes' | 'taes') => {
+    const newId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setFormQuestions((prev) => [
       ...prev,
       {
-        id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: newId,
         title: '',
         type: 'SCALE',
         required: true,
@@ -2109,6 +2124,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
       },
     ]);
+    setExpandedQuestionIds({ [newId]: true });
   };
 
   const handleRemoveWizardQuestion = (id: string) => {
@@ -3067,6 +3083,271 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     );
   }
 
+  const renderQuestionCard = (q: SmartQuestion, qIdx: number, totalCount: number) => {
+    const isExpanded = !!expandedQuestionIds[q.id];
+
+    const getTypeLabel = (type: string) => {
+      switch (type) {
+        case 'SCALE':
+          return 'Escala CPA';
+        case 'YES_NO':
+          return 'Sim / Não';
+        case 'RADIO':
+          return 'Múltipla Escolha';
+        case 'CHECKBOX':
+          return 'Caixa de Seleção';
+        default:
+          return 'Escala CPA';
+      }
+    };
+
+    if (!isExpanded) {
+      // COMPACT MINIMIZED CARD (~50px height)
+      return (
+        <div
+          key={q.id}
+          className="min-h-[50px] py-2 px-3.5 sm:px-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-[#006837]/50 transition-all"
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <span className="px-2 py-0.5 bg-[#006837] text-white text-[11px] font-extrabold rounded-md shrink-0">
+              Pergunta {String(qIdx + 1).padStart(2, '0')}
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+              {q.title.trim() ? q.title : 'Sem título'}
+            </span>
+            {q.required && (
+              <span className="text-rose-500 font-extrabold text-xs shrink-0" title="Resposta Obrigatória">
+                *
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="hidden sm:inline-flex px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase mr-1">
+              {getTypeLabel(q.type)}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => handleMoveWizardQuestion(q.id, 'up')}
+              disabled={qIdx === 0}
+              className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+              title="Mover para cima"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMoveWizardQuestion(q.id, 'down')}
+              disabled={qIdx === totalCount - 1}
+              className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+              title="Mover para baixo"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRemoveWizardQuestion(q.id)}
+              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer mr-1"
+              title="Excluir pergunta"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Expand Button */}
+            <button
+              type="button"
+              onClick={() => toggleQuestionExpanded(q.id)}
+              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#006837] border border-emerald-200 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+              title="Expandir pergunta"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Expandir</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // EXPANDED QUESTION CARD
+    return (
+      <div
+        key={q.id}
+        className="p-4 sm:p-5 rounded-2xl border-2 border-[#006837]/30 bg-white shadow-xs space-y-3.5 transition-all"
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0">
+              {qIdx + 1}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold uppercase">
+              Pergunta {String(qIdx + 1).padStart(2, '0')}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleMoveWizardQuestion(q.id, 'up')}
+              disabled={qIdx === 0}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+              title="Mover para cima"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMoveWizardQuestion(q.id, 'down')}
+              disabled={qIdx === totalCount - 1}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
+              title="Mover para baixo"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRemoveWizardQuestion(q.id)}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer mr-1"
+              title="Excluir pergunta"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Minimize Button */}
+            <button
+              type="button"
+              onClick={() => toggleQuestionExpanded(q.id)}
+              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+              title="Minimizar pergunta"
+            >
+              <ChevronUp className="w-3.5 h-3.5 text-[#006837]" />
+              <span className="text-[11px]">Minimizar</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-slate-700">Enunciado da Pergunta</label>
+          <input
+            type="text"
+            value={q.title}
+            onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
+            placeholder="Ex: Como você avalia a infraestrutura física dos laboratórios do campus?"
+            className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
+            <select
+              value={q.type}
+              onChange={(e) => handleUpdateWizardQuestionField(q.id, 'type', e.target.value as any)}
+              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+            >
+              <option value="SCALE">Escala CPA (Ótimo, Regular, Ruim...)</option>
+              <option value="YES_NO">Sim / Não</option>
+              <option value="RADIO">Múltipla Escolha (Única opção)</option>
+              <option value="CHECKBOX">Caixa de Seleção (Múltiplas opções)</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-600">Categoria</label>
+            <select
+              value={q.category || 'Ensino'}
+              onChange={(e) => handleUpdateWizardQuestionField(q.id, 'category', e.target.value as any)}
+              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
+            >
+              {QUESTION_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center pt-5">
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={q.required ?? true}
+                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
+                className="accent-[#006837] w-4 h-4 cursor-pointer"
+              />
+              <span>Resposta Obrigatória</span>
+            </label>
+          </div>
+        </div>
+
+        {q.type === 'SCALE' && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              Alternativas Padrão da Escala CPA:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'].map((opt) => (
+                <span
+                  key={opt}
+                  className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs"
+                >
+                  {opt}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {q.type === 'YES_NO' && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              Opções de Resposta:
+            </span>
+            <div className="flex gap-2">
+              <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#006837] text-xs font-bold">Sim</span>
+              <span className="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Não</span>
+            </div>
+          </div>
+        )}
+
+        {['RADIO', 'CHECKBOX'].includes(q.type) && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+              Opções da Pergunta:
+            </span>
+            <div className="space-y-1.5">
+              {(q.options || ['Opção 1', 'Opção 2']).map((opt, oIdx) => (
+                <div key={oIdx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={opt}
+                    onChange={(e) => handleUpdateQuestionOption(q.id, oIdx, e.target.value)}
+                    className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveQuestionOption(q.id, oIdx)}
+                    className="text-slate-400 hover:text-rose-600 p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleAddQuestionOption(q.id)}
+                className="text-xs font-bold text-[#006837] hover:underline pt-1 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Adicionar mais uma opção</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-200">
       {/* Top Banner & Header exact requirements:
@@ -3572,50 +3853,34 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
             
-            {/* CABEÇALHO DO WIZARD */}
-            <div className="bg-slate-50 border-b border-slate-200/80 p-5 sm:p-6 space-y-4">
+            {/* CABEÇALHO DO WIZARD (COMPACTO) */}
+            <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3.5 space-y-2.5 shrink-0">
               {/* Header Top Row: Title & Close */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#006837] text-[10px] font-black uppercase tracking-wider border border-emerald-200/80">
-                      Assistente de Criação • CPA IFCE
-                    </span>
-                    {editingForm && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
-                        Edição de Formulário
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Realtime Dynamic Header Title */}
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate tracking-tight">
-                    {formTitle.trim() ? formTitle : 'Novo Formulário'}
-                  </h3>
-                </div>
-
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate tracking-tight">
+                  {formTitle.trim() ? formTitle : 'Novo Formulário'}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+                  className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
                   title="Fechar assistente"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Progress Counter */}
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1">
-                <span className="flex items-center gap-1.5 text-slate-700 font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-[#006837]" />
-                  Etapa {wizardStep} de {WIZARD_STEPS.length}
+              {/* Progress Counter Line */}
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span>
+                  Etapa {wizardStep} de {WIZARD_STEPS.length} • {WIZARD_STEPS[wizardStep - 1]?.label}
                 </span>
-                <span className="text-[#006837] font-black">
-                  {wizardStep * 20}% concluído
+                <span className="text-[#006837] font-extrabold">
+                  {wizardStep * 20}%
                 </span>
               </div>
 
-              {/* Progress Line */}
+              {/* Discrete Progress Bar */}
               <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#006837] transition-all duration-300 rounded-full"
@@ -3624,7 +3889,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               </div>
 
               {/* STEPPER INDICATOR */}
-              <div className="grid grid-cols-5 gap-1 pt-1">
+              <div className="grid grid-cols-5 gap-1 pt-0.5">
                 {WIZARD_STEPS.map((step) => {
                   const isActive = wizardStep === step.id;
                   const isCompleted = wizardStep > step.id;
@@ -3634,28 +3899,20 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       key={step.id}
                       type="button"
                       onClick={() => setWizardStep(step.id)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer text-center group ${
+                      className={`py-1 px-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         isActive
-                          ? 'bg-white shadow-xs border border-emerald-200 text-[#006837]'
+                          ? 'bg-[#006837] text-white shadow-2xs'
                           : isCompleted
-                          ? 'text-emerald-700 hover:bg-emerald-50/50'
-                          : 'text-slate-400 hover:text-slate-600'
+                          ? 'bg-emerald-100/80 text-[#006837] hover:bg-emerald-100'
+                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200/70'
                       }`}
                     >
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all mb-1 ${
-                          isActive
-                            ? 'bg-[#006837] text-white shadow-xs'
-                            : isCompleted
-                            ? 'bg-emerald-100 text-[#006837]'
-                            : 'bg-slate-100 text-slate-400'
-                        }`}
-                      >
-                        {isCompleted ? <Check className="w-3.5 h-3.5" /> : step.id}
-                      </div>
-                      <span className="text-[10px] font-bold line-clamp-1">
-                        {step.label}
-                      </span>
+                      {isCompleted ? (
+                        <Check className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <span className="text-[11px]">{step.id}</span>
+                      )}
+                      <span className="hidden sm:inline truncate text-[10px]">{step.label}</span>
                     </button>
                   );
                 })}
@@ -3737,34 +3994,24 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
               {/* ETAPA 2 — PERGUNTAS GERAIS */}
               {wizardStep === 2 && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <HelpCircle className="w-5 h-5 text-[#006837]" />
-                        Perguntas Gerais
-                      </h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Estas perguntas serão exibidas para todos os participantes da avaliação.
-                      </p>
-                    </div>
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <HelpCircle className="w-4.5 h-4.5 text-[#006837]" />
+                      <span>Perguntas Gerais</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#006837] text-[11px] font-extrabold">
+                        {formQuestions.filter((q) => q.audiences.includes('todos')).length}
+                      </span>
+                    </h4>
 
                     <button
                       type="button"
                       onClick={handleAddGeneralQuestion}
-                      className="px-3.5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0"
+                      className="px-3.5 py-1.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer shrink-0"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                       <span>Adicionar Pergunta Geral</span>
                     </button>
-                  </div>
-
-                  {/* Informational Alert Box */}
-                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
-                    <Info className="w-4 h-4 text-[#006837] shrink-0 mt-0.5" />
-                    <p className="text-xs text-emerald-950 leading-relaxed font-medium">
-                      Todas as perguntas criadas nesta etapa são classificadas automaticamente como <strong>"Todos"</strong> e serão aplicadas sem distinção de público.
-                    </p>
                   </div>
 
                   {/* Questions List (Filtered for 'todos') */}
@@ -3785,181 +4032,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-                      {formQuestions
-                        .filter((q) => q.audiences.includes('todos'))
-                        .map((q, qIdx) => (
-                          <div
-                            key={q.id}
-                            className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-[#006837]/40 transition-all space-y-3"
-                          >
-                            {/* Question Header Row */}
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-lg bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                                  {qIdx + 1}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold uppercase">
-                                  Público: Todos
-                                </span>
-                              </div>
-
-                              {/* Order & Remove Actions */}
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveWizardQuestion(q.id, 'up')}
-                                  disabled={qIdx === 0}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
-                                  title="Mover para cima"
-                                >
-                                  <ArrowUp className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveWizardQuestion(q.id, 'down')}
-                                  disabled={qIdx === formQuestions.filter((item) => item.audiences.includes('todos')).length - 1}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
-                                  title="Mover para baixo"
-                                >
-                                  <ArrowDown className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveWizardQuestion(q.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Excluir pergunta"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Enunciado da Pergunta */}
-                            <div className="space-y-1">
-                              <label className="text-[11px] font-bold text-slate-700">Enunciado da Pergunta</label>
-                              <input
-                                type="text"
-                                value={q.title}
-                                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
-                                placeholder="Ex: Como você avalia a infraestrutura física dos laboratórios do campus?"
-                                className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                              />
-                            </div>
-
-                            {/* Tipo, Categoria e Obrigatoriedade */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
-                                <select
-                                  value={q.type}
-                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'type', e.target.value as any)}
-                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                >
-                                  <option value="SCALE">Escala CPA (Ótimo, Regular, Ruim...)</option>
-                                  <option value="YES_NO">Sim / Não</option>
-                                  <option value="RADIO">Múltipla Escolha (Única opção)</option>
-                                  <option value="CHECKBOX">Caixa de Seleção (Múltiplas opções)</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-slate-600">Categoria</label>
-                                <select
-                                  value={q.category || 'Ensino'}
-                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'category', e.target.value as any)}
-                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                >
-                                  {QUESTION_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                      {cat}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="flex items-center pt-5">
-                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={q.required ?? true}
-                                    onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
-                                    className="accent-[#006837] w-4 h-4 cursor-pointer"
-                                  />
-                                  <span>Resposta Obrigatória</span>
-                                </label>
-                              </div>
-                            </div>
-
-                            {/* Alternativas Padrão para Escala CPA */}
-                            {q.type === 'SCALE' && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Alternativas Padrão da Escala CPA:
-                                </span>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'].map((opt) => (
-                                    <span
-                                      key={opt}
-                                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs"
-                                    >
-                                      {opt}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Alternativas para Sim / Não */}
-                            {q.type === 'YES_NO' && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Opções de Resposta:
-                                </span>
-                                <div className="flex gap-2">
-                                  <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#006837] text-xs font-bold">Sim</span>
-                                  <span className="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Não</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Opções Editáveis para RADIO e CHECKBOX */}
-                            {['RADIO', 'CHECKBOX'].includes(q.type) && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Opções da Pergunta:
-                                </span>
-                                <div className="space-y-1.5">
-                                  {(q.options || ['Opção 1', 'Opção 2']).map((opt, oIdx) => (
-                                    <div key={oIdx} className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={opt}
-                                        onChange={(e) => handleUpdateQuestionOption(q.id, oIdx, e.target.value)}
-                                        className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveQuestionOption(q.id, oIdx)}
-                                        className="text-slate-400 hover:text-rose-600 p-1"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAddQuestionOption(q.id)}
-                                    className="text-xs font-bold text-[#006837] hover:underline pt-1 flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Adicionar mais uma opção</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                      {(() => {
+                        const filtered = formQuestions.filter((q) => q.audiences.includes('todos'));
+                        return filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length));
+                      })()}
                     </div>
                   )}
                 </div>
@@ -4228,174 +4305,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-                      {formQuestions
-                        .filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'))
-                        .map((q, qIdx) => (
-                          <div
-                            key={q.id}
-                            className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-[#006837]/40 transition-all space-y-3"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-lg bg-[#006837] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                                  {qIdx + 1}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold uppercase">
-                                  Público: {selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs'}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveWizardQuestion(q.id, 'up')}
-                                  disabled={qIdx === 0}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
-                                  title="Mover para cima"
-                                >
-                                  <ArrowUp className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveWizardQuestion(q.id, 'down')}
-                                  disabled={qIdx === formQuestions.filter((item) => item.audiences.includes(selectedSegment) && !item.audiences.includes('todos')).length - 1}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 cursor-pointer"
-                                  title="Mover para baixo"
-                                >
-                                  <ArrowDown className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveWizardQuestion(q.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Excluir pergunta"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[11px] font-bold text-slate-700">Enunciado da Pergunta</label>
-                              <input
-                                type="text"
-                                value={q.title}
-                                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
-                                placeholder="Digite a pergunta específica..."
-                                className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
-                                <select
-                                  value={q.type}
-                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'type', e.target.value as any)}
-                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                >
-                                  <option value="SCALE">Escala CPA (Ótimo, Regular, Ruim...)</option>
-                                  <option value="YES_NO">Sim / Não</option>
-                                  <option value="RADIO">Múltipla Escolha (Única opção)</option>
-                                  <option value="CHECKBOX">Caixa de Seleção (Múltiplas opções)</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-slate-600">Categoria</label>
-                                <select
-                                  value={q.category || 'Ensino'}
-                                  onChange={(e) => handleUpdateWizardQuestionField(q.id, 'category', e.target.value as any)}
-                                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                >
-                                  {QUESTION_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                      {cat}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="flex items-center pt-5">
-                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={q.required ?? true}
-                                    onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
-                                    className="accent-[#006837] w-4 h-4 cursor-pointer"
-                                  />
-                                  <span>Resposta Obrigatória</span>
-                                </label>
-                              </div>
-                            </div>
-
-                            {q.type === 'SCALE' && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Alternativas Padrão da Escala CPA:
-                                </span>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'].map((opt) => (
-                                    <span
-                                      key={opt}
-                                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs"
-                                    >
-                                      {opt}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {q.type === 'YES_NO' && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Opções de Resposta:
-                                </span>
-                                <div className="flex gap-2">
-                                  <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#006837] text-xs font-bold">Sim</span>
-                                  <span className="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Não</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {['RADIO', 'CHECKBOX'].includes(q.type) && (
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                  Opções da Pergunta:
-                                </span>
-                                <div className="space-y-1.5">
-                                  {(q.options || ['Opção 1', 'Opção 2']).map((opt, oIdx) => (
-                                    <div key={oIdx} className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={opt}
-                                        onChange={(e) => handleUpdateQuestionOption(q.id, oIdx, e.target.value)}
-                                        className="flex-1 h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveQuestionOption(q.id, oIdx)}
-                                        className="text-slate-400 hover:text-rose-600 p-1"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAddQuestionOption(q.id)}
-                                    className="text-xs font-bold text-[#006837] hover:underline pt-1 flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Adicionar mais uma opção</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                      {(() => {
+                        const filtered = formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'));
+                        return filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length));
+                      })()}
                     </div>
                   )}
                 </div>
