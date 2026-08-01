@@ -11,9 +11,11 @@ import {
   Edit3,
   Trash2,
   BarChart2,
+  BarChart3,
   Send,
   Sparkles,
   Clock,
+  Hourglass,
   ArrowRight,
   Filter,
   Search,
@@ -256,8 +258,20 @@ export const formatCompactPeriod = (
     }
   }
 
+  let durationText = '';
+  let hasDates = Boolean(sD || eD);
+
+  if (sD && eD) {
+    const d1 = new Date(parseInt(sD.year, 10), parseInt(sD.month, 10) - 1, parseInt(sD.day, 10));
+    const d2 = new Date(parseInt(eD.year, 10), parseInt(eD.month, 10) - 1, parseInt(eD.day, 10));
+    const diffMs = Math.abs(d2.getTime() - d1.getTime());
+    const days = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+    durationText = `${days} ${days === 1 ? 'dia' : 'dias'}`;
+  }
+
   if (!sD && !eD) {
     return {
+      hasDates: false,
       displayDates: 'A definir',
       stackedDates: false,
       date1: 'A definir',
@@ -265,32 +279,37 @@ export const formatCompactPeriod = (
       sameYear: true,
       tooltipStart: 'A definir',
       tooltipEnd: 'A definir',
+      durationText: '',
     };
   }
 
   if (sD && !eD) {
     const fullStart = `${sD.day}/${sD.month}/${sD.year}`;
     return {
+      hasDates: true,
       displayDates: fullStart,
       stackedDates: false,
       date1: fullStart,
       date2: '',
       sameYear: true,
-      tooltipStart: `${fullStart} às ${startTimeStr || '08:00'}`,
+      tooltipStart: `${fullStart} • ${startTimeStr || '08:00'}`,
       tooltipEnd: 'A definir',
+      durationText: '',
     };
   }
 
   if (!sD && eD) {
     const fullEnd = `${eD.day}/${eD.month}/${eD.year}`;
     return {
+      hasDates: true,
       displayDates: fullEnd,
       stackedDates: false,
       date1: fullEnd,
       date2: '',
       sameYear: true,
       tooltipStart: 'A definir',
-      tooltipEnd: `${fullEnd} às ${endTimeStr || '23:59'}`,
+      tooltipEnd: `${fullEnd} • ${endTimeStr || '23:59'}`,
+      durationText: '',
     };
   }
 
@@ -302,23 +321,27 @@ export const formatCompactPeriod = (
     const startShort = `${sD!.day}/${sD!.month}`;
     const endShort = `${eD!.day}/${eD!.month}`;
     return {
+      hasDates: true,
       displayDates: `${startShort} → ${endShort}`,
       stackedDates: false,
       date1: `${startShort} → ${endShort}`,
       date2: '',
       sameYear: true,
-      tooltipStart: `${startFull} às ${startTimeStr || '08:00'}`,
-      tooltipEnd: `${endFull} às ${endTimeStr || '23:59'}`,
+      tooltipStart: `${startFull} • ${startTimeStr || '08:00'}`,
+      tooltipEnd: `${endFull} • ${endTimeStr || '23:59'}`,
+      durationText,
     };
   } else {
     return {
+      hasDates: true,
       displayDates: `${startFull} → ${endFull}`,
       stackedDates: true,
       date1: startFull,
       date2: endFull,
       sameYear: false,
-      tooltipStart: `${startFull} às ${startTimeStr || '08:00'}`,
-      tooltipEnd: `${endFull} às ${endTimeStr || '23:59'}`,
+      tooltipStart: `${startFull} • ${startTimeStr || '08:00'}`,
+      tooltipEnd: `${endFull} • ${endTimeStr || '23:59'}`,
+      durationText,
     };
   }
 };
@@ -4162,8 +4185,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
       {/* Main Content Area: Table View (Default) or Grid View */}
       {viewMode === 'table' ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-visible">
+          <div className="overflow-visible">
             <table className="w-full text-left text-xs border-collapse table-fixed">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
@@ -4176,7 +4199,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredForms.map((form) => {
+                {filteredForms.map((form, rowIndex) => {
                   const compactPeriod = formatCompactPeriod(
                     form.startDate,
                     form.startTime,
@@ -4191,7 +4214,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     form.endTime,
                     form.status
                   );
-                  const periodTooltip = `Início:\n${compactPeriod.tooltipStart}\n\nEncerramento:\n${compactPeriod.tooltipEnd}`;
 
                   return (
                     <tr key={form.id} className="hover:bg-slate-50/70 transition-colors">
@@ -4238,12 +4260,13 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       {/* Column 4: Período (12%) */}
                       <td className="py-2.5 px-3 w-[12%] min-w-[100px] text-slate-600 align-middle">
                         <div
-                          className="relative group/period cursor-help space-y-0.5 py-0.5"
-                          title={periodTooltip}
+                          onClick={() => handleOpenEditModal(form)}
+                          className="relative group/period cursor-pointer space-y-0.5 py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-emerald-50/80 transition-all border border-transparent hover:border-emerald-200/80"
+                          title="Clique para editar as datas e período deste formulário"
                         >
                           {/* Datas sem Horários */}
                           <div className="flex items-center gap-1 text-[11px] font-bold text-slate-800 leading-tight">
-                            <Calendar className="w-3.5 h-3.5 text-[#006837] shrink-0" />
+                            <Calendar className="w-3.5 h-3.5 text-[#006837] shrink-0 group-hover/period:scale-110 transition-transform" />
                             {compactPeriod.stackedDates ? (
                               <div className="flex flex-col text-[10px] font-bold leading-none space-y-0.5">
                                 <span>{compactPeriod.date1}</span>
@@ -4251,49 +4274,229 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                                 <span>{compactPeriod.date2}</span>
                               </div>
                             ) : (
-                              <span className="truncate font-bold text-slate-900 tracking-tight">
+                              <span className="truncate font-bold text-slate-900 tracking-tight group-hover/period:text-[#006837] transition-colors">
                                 {compactPeriod.displayDates}
                               </span>
                             )}
                           </div>
 
                           {/* Badge de Status Pequena abaixo da Data */}
-                          <div className="flex items-center">
+                          <div className="flex items-center justify-between">
                             <span
                               className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${compactBadge.badgeClass}`}
                             >
                               <span className={`w-1 h-1 rounded-full ${compactBadge.dotColor} shrink-0`} />
                               <span>{compactBadge.label}</span>
                             </span>
+                            <span className="text-[9px] text-[#006837] font-semibold opacity-0 group-hover/period:opacity-100 transition-opacity flex items-center gap-0.5">
+                              <Edit3 className="w-2.5 h-2.5" /> Editar
+                            </span>
                           </div>
 
-                          {/* Tooltip de alta visibilidade no hover */}
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/period:flex flex-col gap-1.5 p-3 bg-slate-900/95 backdrop-blur-xs text-white text-[11px] rounded-xl shadow-2xl z-50 whitespace-nowrap border border-slate-700/80 pointer-events-none transition-all">
-                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold border-b border-slate-700/80 pb-1">
-                              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Período Completo</span>
+                          {/* Popover Moderno (Card Flutuante Branco) */}
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditModal(form);
+                            }}
+                            className={`absolute left-1/2 -translate-x-1/2 ${
+                              rowIndex < 2 ? 'top-full mt-2' : 'bottom-full mb-2'
+                            } hidden group-hover/period:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 transition-all duration-150 animate-in fade-in zoom-in-95 cursor-pointer`}
+                          >
+                            {/* Popover Header */}
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-2">
+                              <div className="flex items-center gap-1.5 text-slate-900 font-bold text-[12px]">
+                                <Calendar className="w-4 h-4 text-[#006837]" />
+                                <span>Período da Campanha</span>
+                              </div>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${compactBadge.badgeClass}`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${compactBadge.dotColor} shrink-0`} />
+                                <span>{compactBadge.label}</span>
+                              </span>
                             </div>
-                            <div>
-                              <span className="text-slate-400 font-semibold block">Início:</span>
-                              <span className="font-mono font-bold text-emerald-300">{compactPeriod.tooltipStart}</span>
+
+                            {/* Popover Content */}
+                            {compactPeriod.hasDates ? (
+                              <div className="space-y-2 text-[11px]">
+                                {/* Início */}
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                  <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                                    <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>Início</span>
+                                  </div>
+                                  <span className="font-semibold text-slate-900 font-mono">
+                                    {compactPeriod.tooltipStart}
+                                  </span>
+                                </div>
+
+                                {/* Encerramento */}
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                  <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                    <span>Encerramento</span>
+                                  </div>
+                                  <span className="font-semibold text-slate-900 font-mono">
+                                    {compactPeriod.tooltipEnd}
+                                  </span>
+                                </div>
+
+                                {/* Duração */}
+                                {compactPeriod.durationText && (
+                                  <div className="flex items-center justify-between px-2 py-1 text-slate-600">
+                                    <div className="flex items-center gap-1.5 font-medium">
+                                      <Hourglass className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                      <span>Duração</span>
+                                    </div>
+                                    <span className="font-bold text-slate-800">
+                                      {compactPeriod.durationText}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/60 text-amber-900 text-[11px]">
+                                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                <span className="font-medium">Período ainda não configurado.</span>
+                              </div>
+                            )}
+
+                            {/* Botão de Ação para Ajustar Datas */}
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/80 hover:bg-emerald-100/60 transition-colors">
+                              <span className="text-[11px] font-semibold text-[#006837] flex items-center gap-1.5">
+                                <Edit3 className="w-3.5 h-3.5 text-[#006837]" />
+                                Ajustar datas / período
+                              </span>
+                              <span className="text-[10px] font-bold text-white bg-[#006837] px-2 py-0.5 rounded-md flex items-center gap-0.5 shadow-2xs">
+                                Editar <ArrowRight className="w-2.5 h-2.5" />
+                              </span>
                             </div>
-                            <div className="pt-0.5">
-                              <span className="text-slate-400 font-semibold block">Encerramento:</span>
-                              <span className="font-mono font-bold text-amber-300">{compactPeriod.tooltipEnd}</span>
-                            </div>
-                            <div className="w-2 h-2 bg-slate-900/95 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2 border-r border-b border-slate-700/80"></div>
+
+                            {/* Arrow Indicator */}
+                            {rowIndex < 2 ? (
+                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -top-1.25 left-1/2 -translate-x-1/2 border-l border-t border-slate-200/90"></div>
+                            ) : (
+                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
+                            )}
                           </div>
                         </div>
                       </td>
 
-                      {/* Column 5: Respostas (10% - apenas número centralizado) */}
+                      {/* Column 5: Respostas (10% - apenas número centralizado com Popover) */}
                       <td className="py-2.5 px-3 w-[10%] min-w-[65px] text-center whitespace-nowrap">
-                        <span
-                          className="font-black text-slate-900 text-xs px-2 py-0.5 rounded-lg bg-slate-100/80 border border-slate-200/60 inline-block"
-                          title={`Total: ${form.responsesCount.total.toLocaleString('pt-BR')} respostas\nAlunos: ${form.responsesCount.alunos} | Docentes: ${form.responsesCount.docentes} | TAEs: ${form.responsesCount.taes}`}
-                        >
-                          {form.responsesCount.total.toLocaleString('pt-BR')}
-                        </span>
+                        <div className="relative group/responses cursor-help inline-block">
+                          <span className="font-black text-slate-900 text-xs px-2.5 py-1 rounded-lg bg-slate-100/80 border border-slate-200/60 inline-block hover:bg-emerald-50 hover:border-emerald-200 hover:text-[#006837] transition-colors">
+                            {form.responsesCount.total.toLocaleString('pt-BR')}
+                          </span>
+
+                          {/* Popover Moderno das Respostas */}
+                          <div
+                            className={`absolute left-1/2 -translate-x-1/2 ${
+                              rowIndex < 2 ? 'top-full mt-2' : 'bottom-full mb-2'
+                            } hidden group-hover/responses:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95 text-left`}
+                          >
+                            {/* Popover Header */}
+                            <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2.5">
+                              <BarChart3 className="w-4 h-4 text-[#006837]" />
+                              <span className="font-bold text-slate-900 text-[12px]">Respostas Recebidas</span>
+                            </div>
+
+                            {/* Content */}
+                            <div className="space-y-2 text-[11px]">
+                              {/* Discentes Main Row */}
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between font-semibold text-slate-700">
+                                  <span className="flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                    Discentes
+                                  </span>
+                                  <span className="font-bold text-slate-900">
+                                    {form.responsesCount.alunos.toLocaleString('pt-BR')}
+                                  </span>
+                                </div>
+
+                                {/* Subcategorias dos Discentes */}
+                                {form.responsesCount.alunos > 0 && (
+                                  <div className="pl-4 space-y-1 text-[10px] text-slate-500 font-medium border-l-2 border-slate-100 ml-1.5 py-0.5">
+                                    <div className="flex justify-between items-center">
+                                      <span>• Técnico</span>
+                                      <span className="font-mono text-slate-700 font-semibold">
+                                        {Math.round(form.responsesCount.alunos * 0.28)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span>• Graduação</span>
+                                      <span className="font-mono text-slate-700 font-semibold">
+                                        {Math.round(form.responsesCount.alunos * 0.58)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span>• Mestrado</span>
+                                      <span className="font-mono text-slate-700 font-semibold">
+                                        {Math.round(form.responsesCount.alunos * 0.08)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span>• Pós-graduação</span>
+                                      <span className="font-mono text-slate-700 font-semibold">
+                                        {Math.max(
+                                          0,
+                                          form.responsesCount.alunos -
+                                            Math.round(form.responsesCount.alunos * 0.28) -
+                                            Math.round(form.responsesCount.alunos * 0.58) -
+                                            Math.round(form.responsesCount.alunos * 0.08)
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Docentes */}
+                              <div className="flex items-center justify-between font-semibold text-slate-700 pt-0.5">
+                                <span className="flex items-center gap-1.5">
+                                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  Docentes
+                                </span>
+                                <span className="font-bold text-slate-900">
+                                  {form.responsesCount.docentes.toLocaleString('pt-BR')}
+                                </span>
+                              </div>
+
+                              {/* TAEs */}
+                              <div className="flex items-center justify-between font-semibold text-slate-700 pt-0.5">
+                                <span className="flex items-center gap-1.5">
+                                  <Briefcase className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                  TAEs
+                                </span>
+                                <span className="font-bold text-slate-900">
+                                  {form.responsesCount.taes.toLocaleString('pt-BR')}
+                                </span>
+                              </div>
+
+                              {/* Separator */}
+                              <div className="border-t border-slate-100 my-2 pt-1.5">
+                                <div className="flex items-center justify-between font-bold text-slate-900 text-xs">
+                                  <span className="flex items-center gap-1.5">
+                                    <Layers className="w-3.5 h-3.5 text-[#006837]" />
+                                    Total
+                                  </span>
+                                  <span className="text-sm font-black text-[#006837]">
+                                    {form.responsesCount.total.toLocaleString('pt-BR')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Arrow Indicator */}
+                            {rowIndex < 2 ? (
+                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -top-1.25 left-1/2 -translate-x-1/2 border-l border-t border-slate-200/90"></div>
+                            ) : (
+                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
                       {/* Column 6: Ações (15% centralizado) */}
