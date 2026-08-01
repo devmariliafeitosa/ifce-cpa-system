@@ -18,6 +18,7 @@ import {
   Hourglass,
   ArrowRight,
   Filter,
+  FilterX,
   Search,
   ListFilter,
   CheckCircle2,
@@ -945,7 +946,7 @@ interface FormRowActionButtonProps {
   handleStartResponding: (form: SmartForm) => void;
   handleOpenGoogleFormsLink: (form: SmartForm) => void;
   setViewingMetricsForm: (form: SmartForm) => void;
-  handleOpenEditModal: (form: SmartForm) => void;
+  handleOpenEditModal: (form: SmartForm, targetStep?: number) => void;
   handleDuplicateForm: (form: SmartForm) => void;
   handleSendCampaign: (form: SmartForm) => void;
   handleOpenQRCodeForForm?: (form: SmartForm) => void;
@@ -2181,6 +2182,65 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [campusFilter, setCampusFilter] = useState<string>('todos');
   const [periodFilter, setPeriodFilter] = useState<string>('todos');
 
+  // Extrai dinamicamente apenas os períodos de formulários efetivamente cadastrados/ativos no sistema
+  const availablePeriods = React.useMemo(() => {
+    const periodMap = new Map<string, string>();
+
+    forms.forEach((f) => {
+      // Tenta capturar padrão de semestre no título ou período (ex: 2026.2, 2025.1)
+      const semesterMatch = (f.title + ' ' + (f.periodo || '')).match(/\b20\d{2}\.[12]\b/);
+      if (semesterMatch) {
+        const sem = semesterMatch[0];
+        periodMap.set(sem, `Semestre ${sem}`);
+      }
+
+      if (f.periodo && f.periodo.trim()) {
+        const trimmed = f.periodo.trim();
+        if (/^\d{4}\.[12]$/.test(trimmed)) {
+          periodMap.set(trimmed, `Semestre ${trimmed}`);
+        } else if (!semesterMatch) {
+          if (f.startDate) {
+            const parts = f.startDate.split('-');
+            if (parts.length === 3) {
+              const year = parts[0];
+              const month = parseInt(parts[1], 10);
+              const sem = `${year}.${month >= 7 ? 2 : 1}`;
+              periodMap.set(sem, `Semestre ${sem}`);
+            }
+          } else {
+            const dateMatch = trimmed.match(/20\d{2}/);
+            if (dateMatch) {
+              const year = dateMatch[0];
+              const sem = `${year}.1`;
+              periodMap.set(sem, `Semestre ${sem}`);
+            } else {
+              periodMap.set(trimmed, trimmed);
+            }
+          }
+        }
+      } else if (f.startDate && !semesterMatch) {
+        const parts = f.startDate.split('-');
+        if (parts.length === 3) {
+          const year = parts[0];
+          const month = parseInt(parts[1], 10);
+          const sem = `${year}.${month >= 7 ? 2 : 1}`;
+          periodMap.set(sem, `Semestre ${sem}`);
+        }
+      }
+    });
+
+    return Array.from(periodMap.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => b.value.localeCompare(a.value));
+  }, [forms]);
+
+  // Se o período filtrado não existir mais, volta para 'todos'
+  useEffect(() => {
+    if (periodFilter !== 'todos' && !availablePeriods.some((p) => p.value === periodFilter)) {
+      setPeriodFilter('todos');
+    }
+  }, [availablePeriods, periodFilter]);
+
   // Import Google Form Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importSearchTerm, setImportSearchTerm] = useState('');
@@ -2449,9 +2509,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   };
 
   // Open Edit Wizard
-  const handleOpenEditModal = (form: SmartForm) => {
+  const handleOpenEditModal = (form: SmartForm, targetStep: number = 1) => {
     setEditingForm(form);
-    setWizardStep(1);
+    setWizardStep(targetStep);
     setFormTitle(form.title);
     setFormDescription(form.description);
     setFormCampus(form.campus || 'IFCE Campus Tauá');
@@ -3216,8 +3276,32 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         (q) => q.audiences.includes('todos') || q.audiences.includes(audienceFilter as any)
       );
     const matchesCampus = campusFilter === 'todos' || f.campus === campusFilter;
-    const matchesPeriod =
-      periodFilter === 'todos' || (f.periodo && f.periodo.toLowerCase().includes(periodFilter.toLowerCase()));
+    const matchesPeriod = (() => {
+      if (periodFilter === 'todos') return true;
+      const filterLower = periodFilter.toLowerCase();
+
+      if (f.periodo && f.periodo.toLowerCase().includes(filterLower)) return true;
+      if (f.title && f.title.toLowerCase().includes(filterLower)) return true;
+
+      if (f.startDate) {
+        const parts = f.startDate.split('-');
+        if (parts.length === 3) {
+          const year = parts[0];
+          const month = parseInt(parts[1], 10);
+          const sem = `${year}.${month >= 7 ? 2 : 1}`;
+          if (sem.toLowerCase() === filterLower) return true;
+        }
+      }
+
+      const yearOnly = filterLower.split('.')[0];
+      if (yearOnly.length === 4 && !isNaN(Number(yearOnly))) {
+        if (f.periodo && f.periodo.includes(yearOnly)) return true;
+        if (f.startDate && f.startDate.includes(yearOnly)) return true;
+        if (f.createdAt && f.createdAt.includes(yearOnly)) return true;
+      }
+
+      return false;
+    })();
 
     return matchesSearch && matchesStatus && matchesAudience && matchesCampus && matchesPeriod;
   });
@@ -4152,10 +4236,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               className="w-full h-9 pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
             >
               <option value="todos">Todos os Períodos</option>
-              <option value="2026.2">Semestre 2026.2</option>
-              <option value="2026.1">Semestre 2026.1</option>
-              <option value="2025.2">Semestre 2025.2</option>
-              <option value="2025.1">Semestre 2025.1</option>
+              {availablePeriods.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -4184,7 +4269,36 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       </div>
 
       {/* Main Content Area: Table View (Default) or Grid View */}
-      {viewMode === 'table' ? (
+      {filteredForms.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-2xs my-2 animate-in fade-in duration-200">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200/80 shadow-2xs">
+            <FilterX className="w-8 h-8 text-slate-400" />
+          </div>
+          <div className="max-w-md space-y-1.5">
+            <h3 className="text-base font-extrabold text-slate-800">
+              Nenhum formulário encontrado
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+              Não existem formulários cadastrados que correspondam aos filtros selecionados (Campus, Status, Público-Alvo, Período ou Busca).
+            </p>
+          </div>
+          {(searchTerm.trim() !== '' || statusFilter !== 'todos' || audienceFilter !== 'todos' || campusFilter !== 'todos' || periodFilter !== 'todos') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('todos');
+                setAudienceFilter('todos');
+                setCampusFilter('todos');
+                setPeriodFilter('todos');
+              }}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] text-xs font-bold rounded-xl transition-all cursor-pointer border border-emerald-200/80 shadow-2xs active:scale-98"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[#006837]" />
+              <span>Limpar Filtros</span>
+            </button>
+          )}
+        </div>
+      ) : viewMode === 'table' ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-visible">
           <div className="overflow-visible">
             <table className="w-full text-left text-xs border-collapse table-fixed">
@@ -4260,7 +4374,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       {/* Column 4: Período (12%) */}
                       <td className="py-2.5 px-3 w-[12%] min-w-[100px] text-slate-600 align-middle">
                         <div
-                          onClick={() => handleOpenEditModal(form)}
+                          onClick={() => handleOpenEditModal(form, 5)}
                           className="relative group/period cursor-pointer space-y-0.5 py-1 px-1.5 -mx-1.5 rounded-lg hover:bg-emerald-50/80 transition-all border border-transparent hover:border-emerald-200/80"
                           title="Clique para editar as datas e período deste formulário"
                         >
@@ -4297,11 +4411,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenEditModal(form);
+                              handleOpenEditModal(form, 5);
                             }}
-                            className={`absolute left-1/2 -translate-x-1/2 ${
-                              rowIndex < 2 ? 'top-full mt-2' : 'bottom-full mb-2'
-                            } hidden group-hover/period:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 transition-all duration-150 animate-in fade-in zoom-in-95 cursor-pointer`}
+                            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/period:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 transition-all duration-150 animate-in fade-in zoom-in-95 cursor-pointer"
                           >
                             {/* Popover Header */}
                             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-2">
@@ -4374,11 +4486,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                             </div>
 
                             {/* Arrow Indicator */}
-                            {rowIndex < 2 ? (
-                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -top-1.25 left-1/2 -translate-x-1/2 border-l border-t border-slate-200/90"></div>
-                            ) : (
-                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
-                            )}
+                            <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
                           </div>
                         </div>
                       </td>
@@ -4392,9 +4500,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
                           {/* Popover Moderno das Respostas */}
                           <div
-                            className={`absolute left-1/2 -translate-x-1/2 ${
-                              rowIndex < 2 ? 'top-full mt-2' : 'bottom-full mb-2'
-                            } hidden group-hover/responses:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95 text-left`}
+                            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/responses:flex flex-col w-72 p-3.5 bg-white text-slate-800 text-xs rounded-xl shadow-xl border border-slate-200/90 z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95 text-left"
                           >
                             {/* Popover Header */}
                             <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2.5">
@@ -4490,11 +4596,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                             </div>
 
                             {/* Arrow Indicator */}
-                            {rowIndex < 2 ? (
-                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -top-1.25 left-1/2 -translate-x-1/2 border-l border-t border-slate-200/90"></div>
-                            ) : (
-                              <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
-                            )}
+                            <div className="w-2.5 h-2.5 bg-white rotate-45 absolute -bottom-1.25 left-1/2 -translate-x-1/2 border-r border-b border-slate-200/90"></div>
                           </div>
                         </div>
                       </td>

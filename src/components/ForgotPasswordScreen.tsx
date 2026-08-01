@@ -80,13 +80,25 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
         {/* Success Alert */}
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-xs text-emerald-800 animate-in fade-in duration-200">
-            <CheckCircle2 className="w-5 h-5 text-[#0B7A3E] flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-semibold">{successMessage}</p>
-              <p className="text-emerald-700/90 text-[11px]">
-                Acesse sua caixa de entrada institucional e siga as instruções para redefinir sua senha.
-              </p>
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3 text-xs text-emerald-800 animate-in fade-in duration-200">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[#0B7A3E] flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold">{successMessage}</p>
+                <p className="text-emerald-700/90 text-[11px]">
+                  Acesse sua caixa de entrada institucional e siga as instruções para redefinir sua senha.
+                </p>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-emerald-200/60 flex justify-end">
+              <button
+                type="button"
+                onClick={() => onNavigate('reset-password')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0B7A3E] hover:bg-[#045C2D] text-white font-semibold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer"
+              >
+                <span>Simular clique no link recebido por e-mail</span>
+                <Send className="w-3 h-3" />
+              </button>
             </div>
           </div>
         )}

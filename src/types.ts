@@ -1,4 +1,4 @@
-export type AuthView = 'login' | 'forgot-password' | 'register';
+export type AuthView = 'login' | 'forgot-password' | 'register' | 'reset-password';
 
 export type TargetAudience = 'todos' | 'alunos' | 'docentes' | 'taes';
 
