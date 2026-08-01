@@ -2,6 +2,8 @@ export type AuthView = 'login' | 'forgot-password' | 'register';
 
 export type TargetAudience = 'todos' | 'alunos' | 'docentes' | 'taes';
 
+export type StudentLevel = 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao';
+
 export interface UserCoordinator {
   id: string;
   name: string;
@@ -43,6 +45,7 @@ export interface SmartQuestion {
   category?: QuestionCategory;
   options?: string[];
   audiences: TargetAudience[]; // ['todos'], or ['alunos'], or ['docentes', 'taes']
+  studentLevel?: StudentLevel; // Subsegmentação para discentes: 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao'
 }
 
 export interface FormParticipantAnswer {
@@ -66,12 +69,17 @@ export interface Campaign {
   campus: string;
   segment: TargetAudience;
   startDate: string;
+  startTime?: string;
   endDate: string;
+  endTime?: string;
   customMessage: string;
   createdAt: string;
-  status: 'Ativa' | 'Agendada' | 'Concluída' | 'Rascunho';
+  status: 'Ativa' | 'Agendada' | 'Encerrada' | 'Concluída' | 'Rascunho';
   sentEmailsCount: number;
   uniqueTokenUrl?: string;
+  qrCodeAccessCount?: number;
+  qrCodeResponsesCount?: number;
+  qrCodeUrl?: string;
 }
 
 export interface SmartForm {
@@ -79,10 +87,14 @@ export interface SmartForm {
   title: string;
   description: string;
   campus: string;
-  status: 'Ativo' | 'Rascunho' | 'Encerrado';
+  status: 'Ativo' | 'Agendada' | 'Ativa' | 'Encerrada' | 'Encerrado' | 'Rascunho';
   createdAt: string;
   updatedAt?: string;
   periodo?: string;
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
   lastSync?: string;
   googleFormId?: string;
   googleFormLink?: string;

@@ -55,11 +55,314 @@ import {
   Globe,
   PauseCircle,
   PlayCircle,
+  QrCode,
 } from 'lucide-react';
-import { SmartForm, SmartQuestion, TargetAudience, FormSubmission, QuestionCategory, Campaign } from '../types';
+import { SmartForm, SmartQuestion, TargetAudience, StudentLevel, FormSubmission, QuestionCategory, Campaign } from '../types';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
 import { createGoogleForm, listGoogleForms, getGoogleFormDetails, GoogleFormFile } from '../services/googleFormsService';
 import { getAccessToken, googleSignIn } from '../lib/googleAuth';
+import { CampaignQRCodeModal } from './CampaignQRCodeModal';
+
+// Helper to calculate campaign/form status automatically based on current date/time
+export const getCampaignStatus = (
+  startDateStr?: string,
+  startTimeStr: string = '08:00',
+  endDateStr?: string,
+  endTimeStr: string = '23:59',
+  currentStatus: string = 'Ativa'
+): 'Agendada' | 'Ativa' | 'Encerrada' | 'Rascunho' => {
+  if (currentStatus === 'Rascunho') return 'Rascunho';
+
+  if (!startDateStr || !endDateStr) {
+    if (currentStatus === 'Agendada') return 'Agendada';
+    if (currentStatus === 'Encerrado' || currentStatus === 'Encerrada') return 'Encerrada';
+    return 'Ativa';
+  }
+
+  const parseDate = (dStr: string, tStr: string) => {
+    let y = 0, m = 0, d = 0;
+    if (dStr.includes('-')) {
+      const parts = dStr.split('-');
+      y = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10) - 1;
+      d = parseInt(parts[2], 10);
+    } else if (dStr.includes('/')) {
+      const parts = dStr.split('/');
+      d = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10) - 1;
+      y = parseInt(parts[2], 10);
+    } else {
+      return new Date();
+    }
+    const [hh, mm] = (tStr || '00:00').split(':').map((v) => parseInt(v, 10) || 0);
+    return new Date(y, m, d, hh, mm, 0);
+  };
+
+  const now = new Date();
+  const start = parseDate(startDateStr, startTimeStr);
+  const end = parseDate(endDateStr, endTimeStr);
+
+  if (now < start) return 'Agendada';
+  if (now > end) return 'Encerrada';
+  return 'Ativa';
+};
+
+export const getCountdownBadgeInfo = (
+  startDateStr?: string,
+  startTimeStr: string = '08:00',
+  endDateStr?: string,
+  endTimeStr: string = '23:59',
+  currentStatus: string = 'Ativa'
+) => {
+  const status = getCampaignStatus(startDateStr, startTimeStr, endDateStr, endTimeStr, currentStatus);
+
+  if (status === 'Rascunho') {
+    return {
+      text: 'Rascunho em edição',
+      badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 font-semibold',
+    };
+  }
+
+  if (!startDateStr || !endDateStr) {
+    return {
+      text: status === 'Ativa' ? 'Campanha Ativa' : status === 'Agendada' ? 'Campanha Agendada' : 'Campanha Encerrada',
+      badgeClass:
+        status === 'Ativa'
+          ? 'bg-emerald-50 text-[#006837] border-emerald-200 font-bold'
+          : status === 'Agendada'
+          ? 'bg-amber-50 text-amber-800 border-amber-200 font-bold'
+          : 'bg-rose-50 text-rose-800 border-rose-200 font-semibold',
+    };
+  }
+
+  const parseDate = (dStr: string, tStr: string) => {
+    let y = 0, m = 0, d = 0;
+    if (dStr.includes('-')) {
+      const parts = dStr.split('-');
+      y = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10) - 1;
+      d = parseInt(parts[2], 10);
+    } else if (dStr.includes('/')) {
+      const parts = dStr.split('/');
+      d = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10) - 1;
+      y = parseInt(parts[2], 10);
+    } else {
+      return new Date();
+    }
+    const [hh, mm] = (tStr || '00:00').split(':').map((v) => parseInt(v, 10) || 0);
+    return new Date(y, m, d, hh, mm, 0);
+  };
+
+  const now = new Date();
+  const start = parseDate(startDateStr, startTimeStr);
+  const end = parseDate(endDateStr, endTimeStr);
+
+  if (status === 'Agendada') {
+    const diffMs = start.getTime() - now.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    let text = '';
+    if (diffDays > 1) {
+      text = `Inicia em ${diffDays} dias`;
+    } else if (diffDays === 1) {
+      text = `Inicia amanhã às ${startTimeStr}`;
+    } else if (diffHours > 0) {
+      text = `Inicia em ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+    } else {
+      text = 'Inicia em instantes';
+    }
+
+    return {
+      text: `⏳ ${text}`,
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200 font-bold',
+    };
+  }
+
+  if (status === 'Ativa') {
+    const diffMs = end.getTime() - now.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    let text = '';
+    if (diffDays > 1) {
+      text = `Restam ${diffDays} dias`;
+    } else if (diffDays === 1) {
+      text = `Resta 1 dia (encerra amanhã)`;
+    } else if (diffHours > 0) {
+      text = `Restam ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+    } else {
+      text = 'Encerra em breve';
+    }
+
+    return {
+      text: `⏳ ${text}`,
+      badgeClass: 'bg-emerald-50 text-[#006837] border-emerald-200 font-bold',
+    };
+  }
+
+  return {
+    text: '⌛ Respostas Encerradas',
+    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 font-semibold',
+  };
+};
+
+export const formatCompactPeriod = (
+  startDateStr?: string,
+  startTimeStr: string = '08:00',
+  endDateStr?: string,
+  endTimeStr: string = '23:59',
+  periodoRaw?: string
+) => {
+  const parseStr = (str?: string) => {
+    if (!str) return null;
+    const s = str.trim();
+    if (s.includes('-')) {
+      const parts = s.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return { day: parts[2].padStart(2, '0'), month: parts[1].padStart(2, '0'), year: parts[0] };
+        } else {
+          return { day: parts[0].padStart(2, '0'), month: parts[1].padStart(2, '0'), year: parts[2] };
+        }
+      }
+    }
+    if (s.includes('/')) {
+      const parts = s.split('/');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return { day: parts[2].padStart(2, '0'), month: parts[1].padStart(2, '0'), year: parts[0] };
+        } else {
+          return { day: parts[0].padStart(2, '0'), month: parts[1].padStart(2, '0'), year: parts[2] };
+        }
+      }
+    }
+    return null;
+  };
+
+  let sD = parseStr(startDateStr);
+  let eD = parseStr(endDateStr);
+
+  if (!sD || !eD) {
+    if (periodoRaw) {
+      const matches = periodoRaw.match(/(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})/g);
+      if (matches && matches.length >= 2) {
+        if (!sD) sD = parseStr(matches[0]);
+        if (!eD) eD = parseStr(matches[1]);
+      } else if (matches && matches.length === 1) {
+        if (!sD) sD = parseStr(matches[0]);
+      }
+    }
+  }
+
+  if (!sD && !eD) {
+    return {
+      displayDates: 'A definir',
+      stackedDates: false,
+      date1: 'A definir',
+      date2: '',
+      sameYear: true,
+      tooltipStart: 'A definir',
+      tooltipEnd: 'A definir',
+    };
+  }
+
+  if (sD && !eD) {
+    const fullStart = `${sD.day}/${sD.month}/${sD.year}`;
+    return {
+      displayDates: fullStart,
+      stackedDates: false,
+      date1: fullStart,
+      date2: '',
+      sameYear: true,
+      tooltipStart: `${fullStart} às ${startTimeStr || '08:00'}`,
+      tooltipEnd: 'A definir',
+    };
+  }
+
+  if (!sD && eD) {
+    const fullEnd = `${eD.day}/${eD.month}/${eD.year}`;
+    return {
+      displayDates: fullEnd,
+      stackedDates: false,
+      date1: fullEnd,
+      date2: '',
+      sameYear: true,
+      tooltipStart: 'A definir',
+      tooltipEnd: `${fullEnd} às ${endTimeStr || '23:59'}`,
+    };
+  }
+
+  const startFull = `${sD!.day}/${sD!.month}/${sD!.year}`;
+  const endFull = `${eD!.day}/${eD!.month}/${eD!.year}`;
+  const sameYear = sD!.year === eD!.year;
+
+  if (sameYear) {
+    const startShort = `${sD!.day}/${sD!.month}`;
+    const endShort = `${eD!.day}/${eD!.month}`;
+    return {
+      displayDates: `${startShort} → ${endShort}`,
+      stackedDates: false,
+      date1: `${startShort} → ${endShort}`,
+      date2: '',
+      sameYear: true,
+      tooltipStart: `${startFull} às ${startTimeStr || '08:00'}`,
+      tooltipEnd: `${endFull} às ${endTimeStr || '23:59'}`,
+    };
+  } else {
+    return {
+      displayDates: `${startFull} → ${endFull}`,
+      stackedDates: true,
+      date1: startFull,
+      date2: endFull,
+      sameYear: false,
+      tooltipStart: `${startFull} às ${startTimeStr || '08:00'}`,
+      tooltipEnd: `${endFull} às ${endTimeStr || '23:59'}`,
+    };
+  }
+};
+
+export const getCompactStatusBadge = (
+  startDateStr?: string,
+  startTimeStr: string = '08:00',
+  endDateStr?: string,
+  endTimeStr: string = '23:59',
+  currentStatus: string = 'Ativa'
+) => {
+  const status = getCampaignStatus(startDateStr, startTimeStr, endDateStr, endTimeStr, currentStatus);
+
+  if (status === 'Ativa') {
+    return {
+      status,
+      label: 'Ativa',
+      dotColor: 'bg-[#006837]',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200/80 font-bold',
+    };
+  }
+  if (status === 'Agendada') {
+    return {
+      status,
+      label: 'Agendada',
+      dotColor: 'bg-amber-500',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200/80 font-bold',
+    };
+  }
+  if (status === 'Encerrada') {
+    return {
+      status,
+      label: 'Encerrada',
+      dotColor: 'bg-rose-500',
+      badgeClass: 'bg-rose-50 text-rose-800 border-rose-200/80 font-bold',
+    };
+  }
+  return {
+    status: 'Rascunho',
+    label: 'Rascunho',
+    dotColor: 'bg-slate-400',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold',
+  };
+};
 
 export interface DriveFormMock {
   id: string;
@@ -622,6 +925,7 @@ interface FormRowActionButtonProps {
   handleOpenEditModal: (form: SmartForm) => void;
   handleDuplicateForm: (form: SmartForm) => void;
   handleSendCampaign: (form: SmartForm) => void;
+  handleOpenQRCodeForForm?: (form: SmartForm) => void;
   handleToggleCampaignStatus: (form: SmartForm) => void;
   setDeletingForm: (form: SmartForm) => void;
 }
@@ -637,6 +941,7 @@ export const FormRowActionButton: React.FC<FormRowActionButtonProps> = ({
   handleOpenEditModal,
   handleDuplicateForm,
   handleSendCampaign,
+  handleOpenQRCodeForForm,
   handleToggleCampaignStatus,
   setDeletingForm,
 }) => {
@@ -852,6 +1157,20 @@ export const FormRowActionButton: React.FC<FormRowActionButtonProps> = ({
               <span>Enviar Campanha</span>
             </button>
 
+            {handleOpenQRCodeForForm && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  handleOpenQRCodeForForm(form);
+                }}
+                className="w-full px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-xl flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
+              >
+                <QrCode className="w-4 h-4 text-[#006837]" />
+                <span>Divulgação (Gerar QR Code)</span>
+              </button>
+            )}
+
             <div className="border-t border-slate-100 my-1" />
 
             {/* GRUPO 3: GERENCIAMENTO */}
@@ -904,7 +1223,7 @@ export const FormRowActionButton: React.FC<FormRowActionButtonProps> = ({
 interface SendCampaignWizardModalProps {
   form: SmartForm;
   onClose: () => void;
-  onLaunchCampaign: (campaign: Campaign) => void;
+  onLaunchCampaign: (campaign: Campaign, options?: { sendEmail: boolean; openQrCode: boolean }) => void;
   onSaveProgressDraft?: (campaign: Campaign) => void;
   showNotification: (type: 'success' | 'error' | 'info', message: string) => void;
 }
@@ -921,12 +1240,26 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
     `Campanha de Avaliação Institucional 2026.2 - ${form.title}`
   );
   const [campus, setCampus] = useState(form.campus || 'Campus Tauá');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => form.startDate || new Date().toISOString().split('T')[0]);
+  const [startTime, setStartTime] = useState(() => form.startTime || '08:00');
   const [endDate, setEndDate] = useState(() => {
+    if (form.endDate) return form.endDate;
     const d = new Date();
-    d.setDate(d.getDate() + 90);
+    d.setDate(d.getDate() + 15);
     return d.toISOString().split('T')[0];
   });
+  const [endTime, setEndTime] = useState(() => form.endTime || '23:59');
+  const [durationPreset, setDurationPreset] = useState<number | 'custom'>(15);
+
+  const handleSelectCampaignPreset = (days: number) => {
+    setDurationPreset(days);
+    const base = startDate ? new Date(startDate + 'T00:00:00') : new Date();
+    base.setDate(base.getDate() + days);
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, '0');
+    const d = String(base.getDate()).padStart(2, '0');
+    setEndDate(`${y}-${m}-${d}`);
+  };
 
   const [segments, setSegments] = useState<{
     discentes: boolean;
@@ -942,6 +1275,8 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
 
   const [customMessage, setCustomMessage] = useState(DEFAULT_MESSAGE);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [dispatchEmailOption, setDispatchEmailOption] = useState(true);
+  const [generateQrCodeOption, setGenerateQrCodeOption] = useState(true);
 
   // Participant estimated count calculation
   const countDiscentes = segments.discentes ? 1250 : 0;
@@ -1010,6 +1345,25 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
       return;
     }
 
+    const startObj = new Date(`${startDate}T${startTime || '08:00'}:00`);
+    const endObj = new Date(`${endDate}T${endTime || '23:59'}:00`);
+
+    if (isNaN(startObj.getTime()) || isNaN(endObj.getTime())) {
+      showNotification('error', 'Datas ou horários inválidos informados.');
+      setStep(1);
+      setShowConfirmModal(false);
+      return;
+    }
+
+    if (endObj <= startObj) {
+      showNotification('error', 'A data/horário de encerramento deve ser posterior ao início.');
+      setStep(1);
+      setShowConfirmModal(false);
+      return;
+    }
+
+    const computedStatus = getCampaignStatus(startDate, startTime, endDate, endTime, 'Ativa');
+
     const newCampaign: Campaign = {
       id: `camp-${Date.now()}`,
       formId: form.id,
@@ -1025,17 +1379,22 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
           ? 'docentes'
           : 'taes',
       startDate: formatDateBR(startDate),
+      startTime,
       endDate: formatDateBR(endDate),
+      endTime,
       customMessage,
       createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'Ativa',
+      status: computedStatus,
       sentEmailsCount: totalRecipients,
       uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=suap-${Math.floor(
         100000 + Math.random() * 900000
       )}`,
     };
 
-    onLaunchCampaign(newCampaign);
+    onLaunchCampaign(newCampaign, {
+      sendEmail: dispatchEmailOption,
+      openQrCode: generateQrCodeOption,
+    });
     setShowConfirmModal(false);
     onClose();
   };
@@ -1178,24 +1537,80 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Data Inicial</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
-                  />
+                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <label className="text-xs font-bold text-slate-800">Data e Horário de Início</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        setDurationPreset('custom');
+                      }}
+                      className="w-full h-9 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] font-medium"
+                    />
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full h-9 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] font-medium"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Data Final</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
-                  />
+                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <label className="text-xs font-bold text-slate-800">Data e Horário de Encerramento</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                        setDurationPreset('custom');
+                      }}
+                      className="w-full h-9 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] font-medium"
+                    />
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full h-9 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Configuração rápida */}
+                <div className="space-y-1.5 sm:col-span-2 pt-1 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Configuração rápida de duração
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[7, 15, 30, 45].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => handleSelectCampaignPreset(d)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          durationPreset === d
+                            ? 'bg-[#006837] text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {d} dias
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setDurationPreset('custom')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        durationPreset === 'custom'
+                          ? 'bg-[#006837] text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Personalizado
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1645,16 +2060,44 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
           <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3.5">
               <div className="p-3 bg-emerald-100 text-[#006837] rounded-xl shrink-0">
-                <Send className="w-6 h-6" />
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-slate-900 leading-snug">
-                  Deseja realmente enviar esta campanha?
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-slate-900 leading-snug">
+                  Campanha criada com sucesso!
                 </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Após o envio, todos os participantes receberão um e-mail institucional com o link personalizado para responder à avaliação.
+                <p className="text-xs text-slate-600 font-semibold">
+                  Como deseja divulgar esta avaliação?
                 </p>
               </div>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              <label className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={dispatchEmailOption}
+                  onChange={(e) => setDispatchEmailOption(e.target.checked)}
+                  className="accent-[#006837] w-4 h-4 cursor-pointer"
+                />
+                <div className="text-xs">
+                  <span className="font-bold block text-slate-900">☑ Enviar por e-mail institucional</span>
+                  <span className="text-[10px] text-slate-500">Disparo automático de convites via SUAP</span>
+                </div>
+              </label>
+
+              <label className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={generateQrCodeOption}
+                  onChange={(e) => setGenerateQrCodeOption(e.target.checked)}
+                  className="accent-[#006837] w-4 h-4 cursor-pointer"
+                />
+                <div className="text-xs">
+                  <span className="font-bold block text-slate-900">☑ Gerar QR Code da campanha</span>
+                  <span className="text-[10px] text-slate-500">Abre o cartaz de divulgação em alta resolução para impressão</span>
+                </div>
+              </label>
             </div>
 
             <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
@@ -1671,7 +2114,7 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
                 className="px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition-all active:scale-95 flex items-center gap-2"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Enviar Agora</span>
+                <span>Confirmar & Divulgar</span>
               </button>
             </div>
           </div>
@@ -1909,8 +2352,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
   const [formPeriodo, setFormPeriodo] = useState('2026.2');
   const [formCategory, setFormCategory] = useState<string>('Autoavaliação Institucional');
-  const [formStartDate, setFormStartDate] = useState('2026-08-15');
-  const [formEndDate, setFormEndDate] = useState('2026-12-30');
+  const [formStartDate, setFormStartDate] = useState('2026-09-15');
+  const [formStartTime, setFormStartTime] = useState('08:00');
+  const [formEndDate, setFormEndDate] = useState('2026-09-30');
+  const [formEndTime, setFormEndTime] = useState('23:59');
+  const [formDurationPreset, setFormDurationPreset] = useState<number | 'custom'>(15);
   const [formAnonymous, setFormAnonymous] = useState(true);
   const [formAudiences, setFormAudiences] = useState<TargetAudience[]>(['alunos', 'docentes', 'taes']);
   const [formEixos, setFormEixos] = useState<string[]>([
@@ -1928,6 +2374,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }));
   };
 
+  const handleSelectPresetDays = (days: number) => {
+    setFormDurationPreset(days);
+    const baseDate = formStartDate ? new Date(formStartDate + 'T00:00:00') : new Date();
+    baseDate.setDate(baseDate.getDate() + days);
+    const year = baseDate.getFullYear();
+    const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const day = String(baseDate.getDate()).padStart(2, '0');
+    setFormEndDate(`${year}-${month}-${day}`);
+  };
+
   // Open Create Wizard
   const handleOpenCreateModal = () => {
     setEditingForm(null);
@@ -1937,8 +2393,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormCampus('IFCE Campus Tauá');
     setFormPeriodo('2026.2');
     setFormCategory('Autoavaliação Institucional');
-    setFormStartDate('2026-08-15');
-    setFormEndDate('2026-12-30');
+    setFormStartDate('2026-09-15');
+    setFormStartTime('08:00');
+    setFormEndDate('2026-09-30');
+    setFormEndTime('23:59');
+    setFormDurationPreset(15);
     setFormAnonymous(true);
     setFormAudiences(['alunos', 'docentes', 'taes']);
     setSelectedSegment('alunos');
@@ -1974,9 +2433,14 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormDescription(form.description);
     setFormCampus(form.campus || 'IFCE Campus Tauá');
     setFormPeriodo(form.periodo || '2026.2');
+    setFormStartDate(form.startDate || '2026-09-15');
+    setFormStartTime(form.startTime || '08:00');
+    setFormEndDate(form.endDate || '2026-09-30');
+    setFormEndTime(form.endTime || '23:59');
+    setFormDurationPreset('custom');
     setFormQuestions(form.questions || []);
     setExpandedQuestionIds({});
-    setPublishStatus(form.status === 'Ativo' ? 'Ativo' : 'Rascunho');
+    setPublishStatus(form.status === 'Rascunho' ? 'Rascunho' : 'Ativo');
     setSelectedSegment('alunos');
     const existingSegs: string[] = [];
     if (form.questions?.some((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos'))) existingSegs.push('alunos');
@@ -2004,6 +2468,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
             },
           ];
 
+    const computedStatus = 'Rascunho';
+
     if (editingForm) {
       const updated: SmartForm = {
         ...editingForm,
@@ -2011,9 +2477,13 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         description: formDescription,
         campus: formCampus,
         periodo: formPeriodo,
+        startDate: formStartDate,
+        startTime: formStartTime,
+        endDate: formEndDate,
+        endTime: formEndTime,
         questions: questionsToSave,
         updatedAt: new Date().toLocaleDateString('pt-BR'),
-        status: 'Rascunho',
+        status: computedStatus,
       };
       setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
       showNotification('success', `Progresso salvo! Formulário "${titleToSave}" mantido em Rascunho.`);
@@ -2024,7 +2494,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         description: formDescription,
         campus: formCampus,
         periodo: formPeriodo,
-        status: 'Rascunho',
+        startDate: formStartDate,
+        startTime: formStartTime,
+        endDate: formEndDate,
+        endTime: formEndTime,
+        status: computedStatus,
         createdAt: new Date().toLocaleDateString('pt-BR'),
         questions: questionsToSave,
         responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
@@ -2054,21 +2528,59 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
             },
           ];
 
+    if (publishStatus !== 'Rascunho') {
+      if (!formStartDate || !formEndDate) {
+        showNotification('error', 'Por favor, defina o período de respostas (data inicial e final).');
+        return;
+      }
+
+      const startObj = new Date(`${formStartDate}T${formStartTime || '08:00'}:00`);
+      const endObj = new Date(`${formEndDate}T${formEndTime || '23:59'}:00`);
+
+      if (isNaN(startObj.getTime()) || isNaN(endObj.getTime())) {
+        showNotification('error', 'Datas ou horários inválidos informados para o período de respostas.');
+        return;
+      }
+
+      if (endObj <= startObj) {
+        showNotification('error', 'A data/horário de encerramento não pode ser anterior ou igual ao início.');
+        return;
+      }
+    }
+
+    const computedStatus =
+      publishStatus === 'Rascunho'
+        ? 'Rascunho'
+        : getCampaignStatus(formStartDate, formStartTime, formEndDate, formEndTime, publishStatus);
+
+    const formatDateShort = (dStr: string) => {
+      if (!dStr) return '';
+      const p = dStr.split('-');
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return dStr;
+    };
+
+    const formattedPeriodo = `${formatDateShort(formStartDate)} ${formStartTime} - ${formatDateShort(formEndDate)} ${formEndTime}`;
+
     if (editingForm) {
       const updated: SmartForm = {
         ...editingForm,
         title: titleToSave,
         description: formDescription,
         campus: formCampus,
-        periodo: formPeriodo,
+        periodo: formattedPeriodo,
+        startDate: formStartDate,
+        startTime: formStartTime,
+        endDate: formEndDate,
+        endTime: formEndTime,
         questions: questionsToSave,
         updatedAt: new Date().toLocaleDateString('pt-BR'),
-        status: publishStatus,
+        status: computedStatus,
       };
       setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
       showNotification(
         'success',
-        `Formulário "${titleToSave}" atualizado e ${publishStatus === 'Ativo' ? 'PUBLICADO com status Ativo' : 'salvo como Rascunho'}!`
+        `Formulário "${titleToSave}" atualizado e salvo como ${computedStatus.toUpperCase()}!`
       );
     } else {
       const newForm: SmartForm = {
@@ -2076,8 +2588,12 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         title: titleToSave,
         description: formDescription,
         campus: formCampus,
-        periodo: formPeriodo,
-        status: publishStatus,
+        periodo: formattedPeriodo,
+        startDate: formStartDate,
+        startTime: formStartTime,
+        endDate: formEndDate,
+        endTime: formEndTime,
+        status: computedStatus,
         createdAt: new Date().toLocaleDateString('pt-BR'),
         questions: questionsToSave,
         responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
@@ -2085,7 +2601,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       setForms([newForm, ...forms]);
       showNotification(
         'success',
-        `Formulário "${titleToSave}" cadastrado e ${publishStatus === 'Ativo' ? 'PUBLICADO com status Ativo' : 'salvo como Rascunho'}!`
+        `Formulário "${titleToSave}" cadastrado e publicado com status ${computedStatus.toUpperCase()}!`
       );
     }
 
@@ -2195,6 +2711,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Participant Responder Mode ("Visão do Participante")
   const [respondingForm, setRespondingForm] = useState<SmartForm | null>(null);
   const [participantSegment, setParticipantSegment] = useState<'alunos' | 'docentes' | 'taes' | null>(null);
+  const [participantStudentLevel, setParticipantStudentLevel] = useState<StudentLevel>('graduacao');
   const [participantAnswers, setParticipantAnswers] = useState<Record<string, string | string[]>>({});
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
@@ -2215,6 +2732,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
   // Campaign Configuration State
   const [campaignModalForm, setCampaignModalForm] = useState<SmartForm | null>(null);
+  const [viewingQrCodeCampaign, setViewingQrCodeCampaign] = useState<Campaign | null>(null);
+  const [submittedCampaignIds, setSubmittedCampaignIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('cpa_submitted_campaign_ids');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cpa_submitted_campaign_ids', JSON.stringify(submittedCampaignIds));
+  }, [submittedCampaignIds]);
+
   const [campaignTitle, setCampaignTitle] = useState('');
   const [campaignCampus, setCampaignCampus] = useState('Campus Tauá');
   const [campaignSegment, setCampaignSegment] = useState<TargetAudience>('todos');
@@ -2262,6 +2789,33 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setCampaignCustomMessage(
       `Prezado(a) participante,\n\nA Comissão Própria de Avaliação (CPA) do IFCE convida você a responder à "${form.title}".\n\nSua opinião é fundamental para orientar as melhorias de ensino, infraestrutura, biblioteca e gestão no campus. O preenchimento leva cerca de 3 a 5 minutos.\n\nAtenciosamente,\nCoordenação da CPA - IFCE.`
     );
+    setOpenActionMenuId(null);
+  };
+
+  const handleOpenQRCodeForForm = (form: SmartForm) => {
+    let campaign = campaignsList.find((c) => c.formId === form.id);
+    if (!campaign) {
+      campaign = {
+        id: `camp-${Date.now()}`,
+        formId: form.id,
+        formTitle: form.title,
+        title: `Campanha de Avaliação - ${form.title}`,
+        campus: form.campus || 'Campus Tauá',
+        segment: 'todos',
+        startDate: new Date().toLocaleDateString('pt-BR'),
+        endDate: '30/12/2026',
+        customMessage: 'Convite para Avaliação Institucional CPA IFCE',
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        status: form.status === 'Ativo' ? 'Ativa' : 'Rascunho',
+        sentEmailsCount: 2450,
+        uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=suap-${Math.floor(
+          100000 + Math.random() * 900000
+        )}`,
+        qrCodeAccessCount: 184,
+        qrCodeResponsesCount: 142,
+      };
+    }
+    setViewingQrCodeCampaign(campaign);
     setOpenActionMenuId(null);
   };
 
@@ -2505,7 +3059,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setRespondingForm(form);
     setParticipantSegment(null);
     setParticipantAnswers({});
-    setResponseSubmitted(false);
+    setResponseSubmitted(submittedCampaignIds.includes(form.id));
   };
 
   // Filter questions for current participant segment
@@ -2513,7 +3067,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     if (!respondingForm || !participantSegment) return [];
     return respondingForm.questions.filter((q) => {
       if (q.audiences.includes('todos')) return true;
-      return q.audiences.includes(participantSegment);
+      if (!q.audiences.includes(participantSegment)) return false;
+
+      // Subsegmentation filtering for Discentes
+      if (participantSegment === 'alunos') {
+        const level = q.studentLevel || 'todos';
+        if (level === 'todos') return true;
+        return level === participantStudentLevel;
+      }
+
+      return true;
     });
   };
 
@@ -2541,6 +3104,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         })
       );
 
+      setSubmittedCampaignIds((prev) => Array.from(new Set([...prev, respondingForm.id])));
       setIsSubmittingResponse(false);
       setResponseSubmitted(true);
       showNotification(
@@ -3101,6 +3665,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       }
     };
 
+    const isStudentQuestion = q.audiences.includes('alunos') || (selectedSegment === 'alunos' && wizardStep === 4);
+
     if (!isExpanded) {
       // COMPACT MINIMIZED CARD (~50px height)
       return (
@@ -3123,6 +3689,15 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {isStudentQuestion && q.studentLevel && q.studentLevel !== 'todos' && (
+              <span className="hidden md:inline-flex px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-extrabold rounded-md mr-1">
+                {q.studentLevel === 'tecnico' && 'Ensino Técnico'}
+                {q.studentLevel === 'graduacao' && 'Graduação'}
+                {q.studentLevel === 'mestrado' && 'Mestrado'}
+                {q.studentLevel === 'pos_graduacao' && 'Pós-graduação'}
+              </span>
+            )}
+
             <span className="hidden sm:inline-flex px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase mr-1">
               {getTypeLabel(q.type)}
             </span>
@@ -3183,6 +3758,14 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
             <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold uppercase">
               Pergunta {String(qIdx + 1).padStart(2, '0')}
             </span>
+            {isStudentQuestion && q.studentLevel && q.studentLevel !== 'todos' && (
+              <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-900 text-[10px] font-extrabold">
+                {q.studentLevel === 'tecnico' && 'Ensino Técnico'}
+                {q.studentLevel === 'graduacao' && 'Graduação'}
+                {q.studentLevel === 'mestrado' && 'Mestrado'}
+                {q.studentLevel === 'pos_graduacao' && 'Pós-graduação'}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -3237,7 +3820,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`grid grid-cols-1 ${isStudentQuestion ? 'sm:grid-cols-2 md:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-slate-600">Tipo de Pergunta</label>
             <select
@@ -3266,6 +3849,25 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               ))}
             </select>
           </div>
+
+          {isStudentQuestion && (
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-indigo-900 flex items-center justify-between">
+                <span>Aplicar para</span>
+              </label>
+              <select
+                value={q.studentLevel || 'todos'}
+                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'studentLevel', e.target.value as any)}
+                className="w-full h-9 px-2.5 bg-indigo-50/70 border border-indigo-200/90 rounded-xl text-xs font-bold text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 cursor-pointer"
+              >
+                <option value="todos">Todos os Discentes</option>
+                <option value="tecnico">Ensino Técnico</option>
+                <option value="graduacao">Graduação</option>
+                <option value="mestrado">Mestrado</option>
+                <option value="pos_graduacao">Pós-graduação</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex items-center pt-5">
             <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
@@ -3562,90 +4164,140 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       {viewMode === 'table' ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse table-fixed">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                  <th className="py-3.5 px-4 min-w-[240px]">Título</th>
-                  <th className="py-3.5 px-4">Campus</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Período</th>
-                  <th className="py-3.5 px-4">Quantidade de respostas</th>
-                  <th className="py-3.5 px-4">Última sincronização</th>
-                  <th className="py-3.5 px-4 text-center">Ações</th>
+                  <th className="py-2.5 px-3 w-[35%] min-w-[160px]">Título</th>
+                  <th className="py-2.5 px-3 w-[18%] min-w-[100px]">Campus</th>
+                  <th className="py-2.5 px-3 w-[10%] min-w-[85px] text-center">Status</th>
+                  <th className="py-2.5 px-3 w-[12%] min-w-[100px]">Período</th>
+                  <th className="py-2.5 px-3 w-[10%] min-w-[65px] text-center">Respostas</th>
+                  <th className="py-2.5 px-3 w-[15%] min-w-[90px] text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredForms.map((form) => (
-                  <tr key={form.id} className="hover:bg-slate-50/70 transition-colors">
-                    {/* Column 1: Título */}
-                    <td className="py-3.5 px-4">
-                      <div className="space-y-1">
-                        <p className="font-bold text-slate-900 hover:text-[#006837] transition-colors leading-snug">
-                          {form.title}
-                        </p>
-                        <p className="text-[11px] text-slate-500 line-clamp-1 max-w-sm font-normal">
-                          {form.description}
-                        </p>
-                        <div className="flex items-center gap-1.5 pt-0.5">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                            {form.questions.length} perguntas
-                          </span>
-                          {form.googleFormLink && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1">
-                              <FileSpreadsheet className="w-3 h-3 text-[#006837]" /> Google Forms OK
+                {filteredForms.map((form) => {
+                  const compactPeriod = formatCompactPeriod(
+                    form.startDate,
+                    form.startTime,
+                    form.endDate,
+                    form.endTime,
+                    form.periodo
+                  );
+                  const compactBadge = getCompactStatusBadge(
+                    form.startDate,
+                    form.startTime,
+                    form.endDate,
+                    form.endTime,
+                    form.status
+                  );
+                  const periodTooltip = `Início:\n${compactPeriod.tooltipStart}\n\nEncerramento:\n${compactPeriod.tooltipEnd}`;
+
+                  return (
+                    <tr key={form.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* Column 1: Título (35%) */}
+                      <td className="py-2.5 px-3 w-[35%] min-w-[160px]">
+                        <div className="space-y-0.5">
+                          <p
+                            className="font-bold text-slate-900 hover:text-[#006837] transition-colors leading-snug line-clamp-2"
+                            title={form.title}
+                          >
+                            {form.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 font-normal" title={form.description}>
+                            {form.description}
+                          </p>
+                          <div className="flex items-center gap-1 pt-0.5">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                              {form.questions.length} perguntas
                             </span>
-                          )}
+                            {form.googleFormLink && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1">
+                                <FileSpreadsheet className="w-3 h-3 text-[#006837]" /> Google Forms OK
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Column 2: Campus */}
-                    <td className="py-3.5 px-4 font-semibold text-slate-600 whitespace-nowrap">
-                      {form.campus}
-                    </td>
+                      {/* Column 2: Campus (18%) */}
+                      <td className="py-2.5 px-3 w-[18%] min-w-[100px] font-semibold text-slate-600 truncate" title={form.campus}>
+                        {form.campus}
+                      </td>
 
-                    {/* Column 3: Status */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                          form.status === 'Ativo'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : form.status === 'Rascunho'
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}
-                      >
-                        ● {form.status}
-                      </span>
-                    </td>
+                      {/* Column 3: Status (10%) */}
+                      <td className="py-2.5 px-3 w-[10%] min-w-[85px] text-center whitespace-nowrap">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${compactBadge.badgeClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${compactBadge.dotColor} shrink-0`} />
+                          <span>{compactBadge.label}</span>
+                        </span>
+                      </td>
 
-                    {/* Column 4: Período */}
-                    <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>{form.periodo || '15/05/2025 - 30/11/2025'}</span>
-                      </div>
-                    </td>
+                      {/* Column 4: Período (12%) */}
+                      <td className="py-2.5 px-3 w-[12%] min-w-[100px] text-slate-600 align-middle">
+                        <div
+                          className="relative group/period cursor-help space-y-0.5 py-0.5"
+                          title={periodTooltip}
+                        >
+                          {/* Datas sem Horários */}
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-800 leading-tight">
+                            <Calendar className="w-3.5 h-3.5 text-[#006837] shrink-0" />
+                            {compactPeriod.stackedDates ? (
+                              <div className="flex flex-col text-[10px] font-bold leading-none space-y-0.5">
+                                <span>{compactPeriod.date1}</span>
+                                <span className="text-[9px] text-slate-400 font-extrabold text-center">↓</span>
+                                <span>{compactPeriod.date2}</span>
+                              </div>
+                            ) : (
+                              <span className="truncate font-bold text-slate-900 tracking-tight">
+                                {compactPeriod.displayDates}
+                              </span>
+                            )}
+                          </div>
 
-                    {/* Column 5: Quantidade de respostas */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="space-y-0.5">
-                        <p className="font-bold text-slate-900">
-                          {form.responsesCount.total.toLocaleString('pt-BR')} respostas
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          Alunos: {form.responsesCount.alunos} • Docentes: {form.responsesCount.docentes} • TAEs: {form.responsesCount.taes}
-                        </p>
-                      </div>
-                    </td>
+                          {/* Badge de Status Pequena abaixo da Data */}
+                          <div className="flex items-center">
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${compactBadge.badgeClass}`}
+                            >
+                              <span className={`w-1 h-1 rounded-full ${compactBadge.dotColor} shrink-0`} />
+                              <span>{compactBadge.label}</span>
+                            </span>
+                          </div>
 
-                    {/* Column 6: Última sincronização */}
-                    <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap font-mono text-[11px]">
-                      {form.lastSync || '28/07/2026 15:30'}
-                    </td>
+                          {/* Tooltip de alta visibilidade no hover */}
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/period:flex flex-col gap-1.5 p-3 bg-slate-900/95 backdrop-blur-xs text-white text-[11px] rounded-xl shadow-2xl z-50 whitespace-nowrap border border-slate-700/80 pointer-events-none transition-all">
+                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold border-b border-slate-700/80 pb-1">
+                              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Período Completo</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 font-semibold block">Início:</span>
+                              <span className="font-mono font-bold text-emerald-300">{compactPeriod.tooltipStart}</span>
+                            </div>
+                            <div className="pt-0.5">
+                              <span className="text-slate-400 font-semibold block">Encerramento:</span>
+                              <span className="font-mono font-bold text-amber-300">{compactPeriod.tooltipEnd}</span>
+                            </div>
+                            <div className="w-2 h-2 bg-slate-900/95 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2 border-r border-b border-slate-700/80"></div>
+                          </div>
+                        </div>
+                      </td>
 
-                    {/* Column 7: Ações (Olho, Avião e 3 Pontos) */}
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      {/* Column 5: Respostas (10% - apenas número centralizado) */}
+                      <td className="py-2.5 px-3 w-[10%] min-w-[65px] text-center whitespace-nowrap">
+                        <span
+                          className="font-black text-slate-900 text-xs px-2 py-0.5 rounded-lg bg-slate-100/80 border border-slate-200/60 inline-block"
+                          title={`Total: ${form.responsesCount.total.toLocaleString('pt-BR')} respostas\nAlunos: ${form.responsesCount.alunos} | Docentes: ${form.responsesCount.docentes} | TAEs: ${form.responsesCount.taes}`}
+                        >
+                          {form.responsesCount.total.toLocaleString('pt-BR')}
+                        </span>
+                      </td>
+
+                      {/* Column 6: Ações (15% centralizado) */}
+                      <td className="py-2.5 px-3 w-[15%] min-w-[90px] text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
                         {/* 1. Ícone do Olho: Visualizar / Responder */}
                         <button
@@ -3665,7 +4317,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           <Send className="w-4 h-4" />
                         </button>
 
-                        {/* 3. Ícone de 3 Pontos: Menu de Mais Opções Inteligente (Drop-up/Drop-down) */}
+                        {/* 3. Ícone de QR Code: Divulgação */}
+                        <button
+                          onClick={() => handleOpenQRCodeForForm(form)}
+                          className="p-1.5 text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer border border-emerald-200/80"
+                          title="Divulgação (Gerar QR Code)"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+
+                        {/* 4. Ícone de 3 Pontos: Menu de Mais Opções Inteligente (Drop-up/Drop-down) */}
                         <FormRowActionButton
                           form={form}
                           isOpen={openActionMenuId === form.id}
@@ -3677,13 +4338,15 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           handleOpenEditModal={handleOpenEditModal}
                           handleDuplicateForm={handleDuplicateForm}
                           handleSendCampaign={handleSendCampaign}
+                          handleOpenQRCodeForForm={handleOpenQRCodeForForm}
                           handleToggleCampaignStatus={handleToggleCampaignStatus}
                           setDeletingForm={setDeletingForm}
                         />
                       </div>
                     </td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -3709,17 +4372,43 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                        form.status === 'Ativo'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : form.status === 'Rascunho'
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}
-                    >
-                      ● {form.status}
-                    </span>
+                    {(() => {
+                      const computedStatus = getCampaignStatus(
+                        form.startDate,
+                        form.startTime,
+                        form.endDate,
+                        form.endTime,
+                        form.status
+                      );
+                      const countdown = getCountdownBadgeInfo(
+                        form.startDate,
+                        form.startTime,
+                        form.endDate,
+                        form.endTime,
+                        form.status
+                      );
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1 ${
+                              computedStatus === 'Ativa'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : computedStatus === 'Agendada'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : computedStatus === 'Encerrada'
+                                ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            <span>{computedStatus}</span>
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-md border ${countdown.badgeClass}`}>
+                            {countdown.text}
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     <span className="text-[11px] font-semibold text-slate-400">
                       {form.campus}
@@ -4409,6 +5098,154 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     </div>
                   </div>
 
+                  {/* SEÇÃO: PERÍODO DE RESPOSTAS */}
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-[#006837]" />
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900">Período de Respostas</h5>
+                          <p className="text-[11px] text-slate-500">
+                            Defina as datas e horários de abertura e encerramento da coleta de dados.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status calculados & Badge de Contagem */}
+                      {(() => {
+                        const countdown = getCountdownBadgeInfo(
+                          formStartDate,
+                          formStartTime,
+                          formEndDate,
+                          formEndTime,
+                          publishStatus
+                        );
+                        return (
+                          <div className={`px-3 py-1 rounded-full text-xs border inline-flex items-center gap-1.5 self-start sm:self-center ${countdown.badgeClass}`}>
+                            <span>{countdown.text}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Inputs: Data e Horário de Início / Encerramento */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Data e Horário de Início */}
+                      <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          <span>Início do Período</span>
+                          <span className="text-[10px] text-emerald-800 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-full">Obrigatório</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1">📅 Data</span>
+                            <input
+                              type="date"
+                              required
+                              value={formStartDate}
+                              onChange={(e) => {
+                                setFormStartDate(e.target.value);
+                                setFormDurationPreset('custom');
+                              }}
+                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1">🕒 Horário</span>
+                            <input
+                              type="time"
+                              value={formStartTime}
+                              onChange={(e) => setFormStartTime(e.target.value)}
+                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Data e Horário de Encerramento */}
+                      <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          <span>Encerramento</span>
+                          <span className="text-[10px] text-emerald-800 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-full">Obrigatório</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1">📅 Data</span>
+                            <input
+                              type="date"
+                              required
+                              value={formEndDate}
+                              onChange={(e) => {
+                                setFormEndDate(e.target.value);
+                                setFormDurationPreset('custom');
+                              }}
+                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1">🕒 Horário</span>
+                            <input
+                              type="time"
+                              value={formEndTime}
+                              onChange={(e) => setFormEndTime(e.target.value)}
+                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Configuração Rápida de Duração */}
+                    <div className="space-y-2 pt-1 border-t border-slate-100">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Configuração Rápida de Duração
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {[7, 15, 30, 45].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => handleSelectPresetDays(days)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                              formDurationPreset === days
+                                ? 'bg-[#006837] text-white shadow-2xs'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
+                            }`}
+                          >
+                            {days} dias
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setFormDurationPreset('custom')}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                            formDurationPreset === 'custom'
+                              ? 'bg-[#006837] text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
+                          }`}
+                        >
+                          Personalizado
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Validation warning if end <= start */}
+                    {(() => {
+                      if (!formStartDate || !formEndDate) return null;
+                      const s = new Date(`${formStartDate}T${formStartTime || '00:00'}:00`);
+                      const e = new Date(`${formEndDate}T${formEndTime || '23:59'}:00`);
+                      if (e <= s) {
+                        return (
+                          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2 font-medium">
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                            <span>Atenção: A data de encerramento deve ser posterior à data de início.</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
                   {/* Escolha do Status de Publicação */}
                   <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
                     <span className="text-xs font-bold text-slate-800 block">
@@ -4656,6 +5493,36 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     Alterar
                   </button>
                 </div>
+
+                {/* Subsegmentation Level Selector for Discentes */}
+                {participantSegment === 'alunos' && (
+                  <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                        <GraduationCap className="w-4 h-4 text-indigo-700 shrink-0" />
+                        <span>Nível de Ensino (Integrado ao SUAP):</span>
+                      </div>
+                      <select
+                        value={participantStudentLevel}
+                        onChange={(e) => setParticipantStudentLevel(e.target.value as StudentLevel)}
+                        className="h-8 px-3 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                      >
+                        <option value="tecnico">Ensino Técnico</option>
+                        <option value="graduacao">Graduação (ex: ENADE)</option>
+                        <option value="mestrado">Mestrado</option>
+                        <option value="pos_graduacao">Pós-graduação</option>
+                      </select>
+                    </div>
+                    <p className="text-[11px] text-indigo-700 leading-snug">
+                      O sistema identificou o aluno no nível <strong>
+                        {participantStudentLevel === 'tecnico' && 'Ensino Técnico'}
+                        {participantStudentLevel === 'graduacao' && 'Graduação'}
+                        {participantStudentLevel === 'mestrado' && 'Mestrado'}
+                        {participantStudentLevel === 'pos_graduacao' && 'Pós-graduação'}
+                      </strong>. Serão exibidas apenas questões marcadas como "Todos os Discentes" ou exclusivas deste nível.
+                    </p>
+                  </div>
+                )}
 
                 {/* Info Note: How Filtering Helped */}
                 <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -5144,13 +6011,28 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         <SendCampaignWizardModal
           form={campaignModalForm}
           onClose={() => setCampaignModalForm(null)}
-          onLaunchCampaign={(newCampaign) => {
+          onLaunchCampaign={(newCampaign, options) => {
             setCampaignsList((prev) => [newCampaign, ...prev]);
-            setCampaignModalForm(null);
-            showNotification(
-              'success',
-              `Campanha "${newCampaign.title}" criada e enviada com sucesso!`
+            setForms((prevForms) =>
+              prevForms.map((f) => (f.id === newCampaign.formId ? { ...f, status: 'Ativo' } : f))
             );
+            setCampaignModalForm(null);
+
+            if (options?.sendEmail !== false) {
+              showNotification(
+                'success',
+                `Campanha "${newCampaign.title}" configurada com sucesso! Convocação disparada para o e-mail institucional (${newCampaign.sentEmailsCount} participantes).`
+              );
+            } else {
+              showNotification(
+                'success',
+                `Campanha "${newCampaign.title}" criada e ativada com sucesso!`
+              );
+            }
+
+            if (options?.openQrCode) {
+              setViewingQrCodeCampaign(newCampaign);
+            }
           }}
           onSaveProgressDraft={(draftCampaign) => {
             setCampaignsList((prev) => [draftCampaign, ...prev]);
@@ -5158,6 +6040,19 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               'info',
               `Rascunho da campanha "${draftCampaign.title}" salvo com sucesso!`
             );
+          }}
+          showNotification={showNotification}
+        />
+      )}
+
+      {/* MODAL 7: QR Code e Material de Divulgação da Campanha */}
+      {viewingQrCodeCampaign && (
+        <CampaignQRCodeModal
+          campaign={viewingQrCodeCampaign}
+          onClose={() => setViewingQrCodeCampaign(null)}
+          onUpdateCampaign={(updated) => {
+            setCampaignsList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+            setViewingQrCodeCampaign(updated);
           }}
           showNotification={showNotification}
         />

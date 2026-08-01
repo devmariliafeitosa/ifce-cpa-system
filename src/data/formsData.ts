@@ -7,10 +7,14 @@ export const INITIAL_SMART_FORMS: SmartForm[] = [
     description:
       'Formulário único da CPA com direcionamento inteligente de perguntas por público-alvo (Alunos, Docentes e TAEs). Evita que participantes respondam itens fora do seu segmento.',
     campus: 'Campus Tauá',
-    status: 'Ativo',
+    status: 'Ativa',
     createdAt: '15/05/2025',
     updatedAt: '28/07/2025',
-    periodo: '15/05/2025 - 30/11/2025',
+    startDate: '2026-08-01',
+    startTime: '08:00',
+    endDate: '2026-12-31',
+    endTime: '23:59',
+    periodo: '01/08/2026 08:00 - 31/12/2026 23:59',
     lastSync: '28/07/2026 15:30',
     questions: [
       {
@@ -90,9 +94,13 @@ export const INITIAL_SMART_FORMS: SmartForm[] = [
     description:
       'Instrumento focado no diagnóstico das rotinas operacionais, suporte administrativo e bem-estar dos servidores docentes e técnicos.',
     campus: 'Campus Tauá',
-    status: 'Ativo',
+    status: 'Agendada',
     createdAt: '01/06/2025',
-    periodo: '01/06/2025 - 15/12/2025',
+    startDate: '2026-09-15',
+    startTime: '08:00',
+    endDate: '2026-09-30',
+    endTime: '23:59',
+    periodo: '15/09/2026 08:00 - 30/09/2026 23:59',
     lastSync: '28/07/2026 14:15',
     questions: [
       {
