@@ -59,12 +59,12 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
       else if (seg === 'TAEs') segmentAnswers = form.responsesCount?.taes ?? Math.round(totalResponses * 0.10);
 
       let approvalRate = 0;
-      let classification: 'Potencialidade' | 'Mediana' | 'Fragilidade' = 'Mediana';
+      let classification: 'Potencialidade' | 'Mediana' | 'Fragilidade' | 'Sem respostas' = 'Sem respostas';
       let alternatives: ReportQuestionAlternative[] = [];
 
       if (segmentAnswers === 0) {
         approvalRate = 0;
-        classification = 'Mediana';
+        classification = 'Sem respostas';
 
         if (q.type === 'SCALE') {
           alternatives = [
@@ -190,13 +190,16 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
       else fragCount++;
     });
 
-    const potPct = totalQ > 0 ? Math.round((potCount / totalQ) * 100) : 0;
-    const medPct = totalQ > 0 ? Math.round((medCount / totalQ) * 100) : 0;
-    const fragPct = totalQ > 0 ? Math.round((fragCount / totalQ) * 100) : 0;
+    const potPct = (totalResponses > 0 && totalQ > 0) ? Math.round((potCount / totalQ) * 100) : 0;
+    const medPct = (totalResponses > 0 && totalQ > 0) ? Math.round((medCount / totalQ) * 100) : 0;
+    const fragPct = (totalResponses > 0 && totalQ > 0) ? Math.round((fragCount / totalQ) * 100) : 0;
 
-    let dimClass: 'Potencialidade' | 'Mediana' | 'Fragilidade' = 'Mediana';
-    if (potPct >= 60) dimClass = 'Potencialidade';
-    else if (fragPct >= 40) dimClass = 'Fragilidade';
+    let dimClass: 'Potencialidade' | 'Mediana' | 'Fragilidade' | 'Sem respostas' = 'Sem respostas';
+    if (totalResponses > 0) {
+      if (potPct >= 60) dimClass = 'Potencialidade';
+      else if (fragPct >= 40) dimClass = 'Fragilidade';
+      else dimClass = 'Mediana';
+    }
 
     dimensions.push({
       dimension: dimName,
@@ -213,15 +216,17 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
   let totalMed = 0;
   let totalFrag = 0;
 
-  allSegmentQuestions.forEach((q) => {
-    if (q.classification === 'Potencialidade') totalPot++;
-    else if (q.classification === 'Mediana') totalMed++;
-    else totalFrag++;
-  });
+  if (totalResponses > 0) {
+    allSegmentQuestions.forEach((q) => {
+      if (q.classification === 'Potencialidade') totalPot++;
+      else if (q.classification === 'Mediana') totalMed++;
+      else if (q.classification === 'Fragilidade') totalFrag++;
+    });
+  }
 
-  const potencialidadePct = totalReportQuestions > 0 ? Math.round((totalPot / totalReportQuestions) * 100) : 0;
-  const medianaPct = totalReportQuestions > 0 ? Math.round((totalMed / totalReportQuestions) * 100) : 0;
-  const fragilidadePct = totalReportQuestions > 0 ? Math.round((totalFrag / totalReportQuestions) * 100) : 0;
+  const potencialidadePct = (totalResponses > 0 && totalReportQuestions > 0) ? Math.round((totalPot / totalReportQuestions) * 100) : 0;
+  const medianaPct = (totalResponses > 0 && totalReportQuestions > 0) ? Math.round((totalMed / totalReportQuestions) * 100) : 0;
+  const fragilidadePct = (totalResponses > 0 && totalReportQuestions > 0) ? Math.round((totalFrag / totalReportQuestions) * 100) : 0;
 
   return {
     id: form.id,
@@ -234,7 +239,7 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
     totalResponses,
     totalQuestions: questionsCount,
     responseRate,
-    avgResponseTime: '5.2 min',
+    avgResponseTime: totalResponses > 0 ? '5.2 min' : '—',
     updatedAt: form.updatedAt || form.createdAt || new Date().toLocaleDateString('pt-BR'),
     potencialidadePct,
     medianaPct,

@@ -274,7 +274,7 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                     <span className="text-[11px] font-semibold text-slate-600 block">Tempo Médio</span>
                     <span className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                      {campaign.avgResponseTime}
+                      {campaign.totalResponses > 0 ? campaign.avgResponseTime : '—'}
                     </span>
                     <span className="text-[10px] text-slate-600 block mt-0.5">por preenchimento</span>
                   </div>
@@ -345,7 +345,13 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
                 {/* Synthesis Note */}
                 <div className="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-xl text-xs text-slate-700 leading-relaxed">
                   <span className="font-bold text-[#006837] block mb-1">Síntese Metodológica da CPA:</span>
-                  Os dados apresentados foram ponderados com base nos critérios fixados pela Resolução da Comissão Própria de Avaliação do IFCE. As dimensões com percentual de aprovação igual ou superior a 70% são classificadas como <strong>Potencialidades</strong>; entre 50% e 69% como <strong>Avaliações Medianas</strong>; e abaixo de 50% como <strong>Fragilidades</strong>.
+                  {campaign.totalResponses === 0 ? (
+                    <span>Ainda não existem respostas suficientes para aplicação da metodologia institucional da CPA.</span>
+                  ) : (
+                    <span>
+                      Os dados apresentados foram ponderados com base nos critérios fixados pela Resolução da Comissão Própria de Avaliação do IFCE. As dimensões com percentual de aprovação igual ou superior a 70% são classificadas como <strong>Potencialidades</strong>; entre 50% e 69% como <strong>Avaliações Medianas</strong>; e abaixo de 50% como <strong>Fragilidades</strong>.
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -368,16 +374,21 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
               questions.forEach((q) => {
                 if (q.classification === 'Potencialidade') potCount++;
                 else if (q.classification === 'Mediana') medCount++;
-                else fragCount++;
+                else if (q.classification === 'Fragilidade') fragCount++;
               });
 
               const totalQ = questions.length;
               const potPct = totalQ > 0 ? Math.round((potCount / totalQ) * 100) : 0;
               const fragPct = totalQ > 0 ? Math.round((fragCount / totalQ) * 100) : 0;
 
-              let catStatus: 'Potencialidade' | 'Mediana' | 'Fragilidade' = 'Mediana';
-              if (potPct >= 60) catStatus = 'Potencialidade';
-              else if (fragPct >= 40) catStatus = 'Fragilidade';
+              let catStatus: 'Potencialidade' | 'Mediana' | 'Fragilidade' | 'Sem respostas' = 'Mediana';
+              if (campaign.totalResponses === 0) {
+                catStatus = 'Sem respostas';
+              } else if (potPct >= 60) {
+                catStatus = 'Potencialidade';
+              } else if (fragPct >= 40) {
+                catStatus = 'Fragilidade';
+              }
 
               return (
                 <div
@@ -412,7 +423,9 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
                       <div className="text-right">
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                            catStatus === 'Potencialidade'
+                            catStatus === 'Sem respostas'
+                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : catStatus === 'Potencialidade'
                               ? 'bg-emerald-100 text-[#006837]'
                               : catStatus === 'Mediana'
                               ? 'bg-amber-100 text-amber-800'
@@ -446,49 +459,61 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
 
                             <span
                               className={`text-[10px] px-2.5 py-0.5 rounded-md font-bold whitespace-nowrap ${
-                                q.classification === 'Potencialidade'
+                                q.classification === 'Sem respostas' || campaign.totalResponses === 0 || q.totalAnswers === 0
+                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  : q.classification === 'Potencialidade'
                                   ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
                                   : q.classification === 'Mediana'
                                   ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                   : 'bg-rose-50 text-rose-700 border border-rose-200'
                               }`}
                             >
-                              {q.classification} ({q.approvalRate}%)
+                              {q.classification === 'Sem respostas' || campaign.totalResponses === 0 || q.totalAnswers === 0
+                                ? 'Sem respostas'
+                                : `${q.classification} (${q.approvalRate}%)`}
                             </span>
                           </div>
 
-                          {/* Alternatives Bar breakdown */}
-                          <div className="space-y-2 pt-1 border-t border-slate-100">
-                            {q.alternatives.map((alt, aIdx) => (
-                              <div key={aIdx} className="space-y-1 text-[11px]">
-                                <div className="flex justify-between font-medium text-slate-700">
-                                  <span>{alt.option}</span>
-                                  <span className="font-bold text-slate-900">
-                                    {alt.percentage}% ({alt.count.toLocaleString('pt-BR')} respostas)
-                                  </span>
-                                </div>
+                          {campaign.totalResponses === 0 || q.totalAnswers === 0 ? (
+                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 font-medium text-center">
+                              Ainda não existem respostas suficientes para aplicação da metodologia institucional da CPA.
+                            </div>
+                          ) : (
+                            <>
+                              {/* Alternatives Bar breakdown */}
+                              <div className="space-y-2 pt-1 border-t border-slate-100">
+                                {q.alternatives.map((alt, aIdx) => (
+                                  <div key={aIdx} className="space-y-1 text-[11px]">
+                                    <div className="flex justify-between font-medium text-slate-700">
+                                      <span>{alt.option}</span>
+                                      <span className="font-bold text-slate-900">
+                                        {alt.percentage}% ({alt.count.toLocaleString('pt-BR')} respostas)
+                                      </span>
+                                    </div>
 
-                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                  <div
-                                    style={{ width: `${alt.percentage}%` }}
-                                    className={`h-full rounded-full transition-all ${
-                                      aIdx === 0
-                                        ? 'bg-[#006837]'
-                                        : aIdx === 1
-                                        ? 'bg-emerald-500'
-                                        : aIdx === 2
-                                        ? 'bg-amber-500'
-                                        : 'bg-slate-400'
-                                    }`}
-                                  />
-                                </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                      <div
+                                        style={{ width: `${alt.percentage}%` }}
+                                        className={`h-full rounded-full transition-all ${
+                                          aIdx === 0
+                                            ? 'bg-[#006837]'
+                                            : aIdx === 1
+                                            ? 'bg-emerald-500'
+                                            : aIdx === 2
+                                            ? 'bg-amber-500'
+                                            : 'bg-slate-400'
+                                        }`}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
 
-                          <div className="text-[10px] text-slate-600 pt-1">
-                            Total de respostas válidas nesta questão: <strong>{q.totalAnswers.toLocaleString('pt-BR')}</strong>
-                          </div>
+                              <div className="text-[10px] text-slate-600 pt-1">
+                                Total de respostas válidas nesta questão: <strong>{q.totalAnswers.toLocaleString('pt-BR')}</strong>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>

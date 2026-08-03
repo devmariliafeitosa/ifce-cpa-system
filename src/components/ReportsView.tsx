@@ -72,7 +72,7 @@ const DonutChart: React.FC<{
           cy="65"
           r={radius}
           fill="transparent"
-          stroke="#f1f5f9"
+          stroke={potencialidadePct > 0 || medianaPct > 0 || fragilidadePct > 0 ? '#f1f5f9' : '#e2e8f0'}
           strokeWidth={strokeWidth}
         />
         {/* Segment 1: Potencialidade */}
@@ -504,7 +504,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     {selectedCampaign.responseRate}%
                   </span>
                   <p className="text-[11px] text-slate-500 font-medium">
-                    Adesão da comunidade
+                    {selectedCampaign.totalResponses > 0 ? 'Adesão da comunidade' : 'Nenhum participante respondeu.'}
                   </p>
                 </div>
               </div>
@@ -521,10 +521,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                 </div>
                 <div>
                   <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">
-                    {selectedCampaign.totalResponses > 0 ? `${selectedCampaign.avgResponseTime}` : '--'}
+                    {selectedCampaign.totalResponses > 0 ? `${selectedCampaign.avgResponseTime}` : '—'}
                   </span>
                   <p className="text-[11px] text-slate-500 font-medium">
-                    Duração por formulário
+                    {selectedCampaign.totalResponses > 0 ? 'Duração por formulário' : 'Sem dados'}
                   </p>
                 </div>
               </div>
@@ -545,9 +545,13 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     Classificação consolidada do instrumento
                   </p>
                 </div>
-                {selectedCampaign.totalResponses === 0 && (
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 self-start sm:self-center">
-                    Classificação Geral: Sem dados suficientes
+                {selectedCampaign.totalResponses === 0 ? (
+                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 self-start sm:self-center">
+                    Status da campanha • Sem respostas
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-[#006837] border border-emerald-200 self-start sm:self-center">
+                    Classificação Geral: {selectedCampaign.potencialidadePct >= 70 ? 'Potencialidade' : selectedCampaign.fragilidadePct >= 40 ? 'Fragilidade' : 'Mediana'}
                   </span>
                 )}
               </div>
@@ -557,7 +561,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center gap-2 font-medium">
                   <Info className="w-4 h-4 text-[#006837] shrink-0" />
                   <span>
-                    Os indicadores serão calculados automaticamente assim que os primeiros participantes responderem ao formulário.
+                    Ainda não existem respostas suficientes para gerar indicadores.
                   </span>
                 </div>
               )}
@@ -688,21 +692,36 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     </div>
 
                     {/* Value & Compact Classification Badge */}
-                    <div className="flex items-baseline justify-between pt-0.5">
-                      <span className="text-lg font-black text-slate-900 tracking-tight">
-                        {dim.potencialidadePct}%
-                      </span>
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider ${
-                          dim.classification === 'Potencialidade'
-                            ? 'bg-emerald-100 text-[#006837]'
-                            : dim.classification === 'Mediana'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-700'
-                        }`}
-                      >
-                        {dim.classification}
-                      </span>
+                    <div className="flex items-center justify-between pt-0.5">
+                      {selectedCampaign.totalResponses === 0 ? (
+                        <>
+                          <span className="text-[11px] font-medium text-slate-400">
+                            Status:
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                            Sem respostas
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg font-black text-slate-900 tracking-tight">
+                            {dim.potencialidadePct}%
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider ${
+                              dim.classification === 'Potencialidade'
+                                ? 'bg-emerald-100 text-[#006837]'
+                                : dim.classification === 'Mediana'
+                                ? 'bg-amber-100 text-amber-800'
+                                : dim.classification === 'Fragilidade'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {dim.classification}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -785,14 +804,18 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span
                               className={`text-[10px] px-2 py-0.5 rounded-md font-extrabold whitespace-nowrap ${
-                                q.classification === 'Potencialidade'
+                                q.classification === 'Sem respostas' || q.totalAnswers === 0
+                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  : q.classification === 'Potencialidade'
                                   ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
                                   : q.classification === 'Mediana'
                                   ? 'bg-amber-50 text-amber-800 border border-amber-200'
                                   : 'bg-rose-50 text-rose-800 border border-rose-200'
                               }`}
                             >
-                              {q.classification} • {q.approvalRate}%
+                              {q.classification === 'Sem respostas' || q.totalAnswers === 0
+                                ? 'Sem respostas'
+                                : `${q.classification} • ${q.approvalRate}%`}
                             </span>
                           </div>
                         </button>
@@ -807,56 +830,72 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
                               className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-4"
                             >
-                              {/* Barra de Progresso e Percentuais */}
-                              <div className="space-y-2.5 max-w-2xl">
-                                <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                                  <span>Distribuição das Avaliações</span>
-                                  <span className="text-[#006837] font-black">{q.approvalRate}% Aprovação</span>
+                              {q.totalAnswers === 0 || selectedCampaign.totalResponses === 0 ? (
+                                <div className="py-6 px-4 text-center space-y-2 bg-white rounded-xl border border-slate-200/80 my-1 shadow-2xs">
+                                  <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto text-xl border border-slate-200 shadow-2xs">
+                                    📋
+                                  </div>
+                                  <p className="text-xs font-bold text-slate-800">
+                                    Nenhum participante respondeu esta pergunta até o momento.
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                                    Os resultados serão calculados automaticamente após o recebimento das primeiras respostas.
+                                  </p>
                                 </div>
-
-                                <div className="space-y-1.5">
-                                  {q.alternatives.map((alt, idx) => (
-                                    <div key={idx} className="space-y-0.5">
-                                      <div className="flex justify-between text-xs font-medium text-slate-700">
-                                        <span>{alt.option}</span>
-                                        <span className="font-extrabold text-slate-900">
-                                          {alt.percentage}% ({alt.count.toLocaleString('pt-BR')})
-                                        </span>
-                                      </div>
-                                      <div className="h-2.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
-                                        <div
-                                          style={{ width: `${alt.percentage}%` }}
-                                          className={`h-full rounded-full transition-all ${
-                                            idx === 0
-                                              ? 'bg-[#006837]'
-                                              : idx === 1
-                                              ? 'bg-amber-400'
-                                              : idx === 2
-                                              ? 'bg-rose-500'
-                                              : 'bg-slate-400'
-                                          }`}
-                                        />
-                                      </div>
+                              ) : (
+                                <>
+                                  {/* Barra de Progresso e Percentuais */}
+                                  <div className="space-y-2.5 max-w-2xl">
+                                    <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                                      <span>Distribuição das Avaliações</span>
+                                      <span className="text-[#006837] font-black">{q.approvalRate}% Aprovação</span>
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
 
-                              {/* Métricas Adicionais */}
-                              <div className="pt-2.5 border-t border-slate-200/70 flex flex-wrap items-center gap-5 text-xs text-slate-600 font-semibold">
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="w-3.5 h-3.5 text-[#006837]" />
-                                  <span>Respondentes: <strong className="text-slate-900">{q.totalAnswers.toLocaleString('pt-BR')}</strong></span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>Tempo médio: <strong className="text-slate-900">18 segundos</strong></span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Layers className="w-3.5 h-3.5 text-blue-600" />
-                                  <span>Segmento: <strong className="text-slate-900">{activeQuestionSegment}</strong></span>
-                                </div>
-                              </div>
+                                    <div className="space-y-1.5">
+                                      {q.alternatives.map((alt, idx) => (
+                                        <div key={idx} className="space-y-0.5">
+                                          <div className="flex justify-between text-xs font-medium text-slate-700">
+                                            <span>{alt.option}</span>
+                                            <span className="font-extrabold text-slate-900">
+                                              {alt.percentage}% ({alt.count.toLocaleString('pt-BR')})
+                                            </span>
+                                          </div>
+                                          <div className="h-2.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                                            <div
+                                              style={{ width: `${alt.percentage}%` }}
+                                              className={`h-full rounded-full transition-all ${
+                                                idx === 0
+                                                  ? 'bg-[#006837]'
+                                                  : idx === 1
+                                                  ? 'bg-amber-400'
+                                                  : idx === 2
+                                                  ? 'bg-rose-500'
+                                                  : 'bg-slate-400'
+                                              }`}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Métricas Adicionais */}
+                                  <div className="pt-2.5 border-t border-slate-200/70 flex flex-wrap items-center gap-5 text-xs text-slate-600 font-semibold">
+                                    <div className="flex items-center gap-1.5">
+                                      <Users className="w-3.5 h-3.5 text-[#006837]" />
+                                      <span>Respondentes: <strong className="text-slate-900">{q.totalAnswers.toLocaleString('pt-BR')}</strong></span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>Tempo médio: <strong className="text-slate-900">18 segundos</strong></span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Layers className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>Segmento: <strong className="text-slate-900">{activeQuestionSegment}</strong></span>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -910,14 +949,18 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                       </h2>
                       <span
                         className={`inline-block text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-0.5 ${
-                          drawerDimension.classification === 'Potencialidade'
+                          drawerDimension.classification === 'Sem respostas' || selectedCampaign.totalResponses === 0
+                            ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : drawerDimension.classification === 'Potencialidade'
                             ? 'bg-emerald-100 text-[#006837]'
                             : drawerDimension.classification === 'Mediana'
                             ? 'bg-amber-100 text-amber-800'
                             : 'bg-rose-100 text-rose-700'
                         }`}
                       >
-                        {drawerDimension.classification} ({drawerDimension.potencialidadePct}%)
+                        {drawerDimension.classification === 'Sem respostas' || selectedCampaign.totalResponses === 0
+                          ? 'Sem respostas'
+                          : `${drawerDimension.classification} (${drawerDimension.potencialidadePct}%)`}
                       </span>
                     </div>
                   </div>
@@ -974,29 +1017,43 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                             <h4 className="text-xs font-bold text-slate-800 leading-snug">
                               {q.questionText}
                             </h4>
-                            <span className="text-[10px] font-black text-[#006837] bg-emerald-50 px-2 py-0.5 rounded-md whitespace-nowrap">
-                              {q.approvalRate}%
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap ${
+                                q.totalAnswers === 0 || q.classification === 'Sem respostas'
+                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  : 'bg-emerald-50 text-[#006837] border border-emerald-200 font-black'
+                              }`}
+                            >
+                              {q.totalAnswers === 0 || q.classification === 'Sem respostas'
+                                ? 'Sem respostas'
+                                : `${q.approvalRate}%`}
                             </span>
                           </div>
 
-                          <div className="space-y-1.5 pt-1">
-                            {q.alternatives.map((alt, idx) => (
-                              <div key={idx} className="space-y-0.5">
-                                <div className="flex justify-between text-[11px] text-slate-600">
-                                  <span>{alt.option}</span>
-                                  <span className="font-bold">{alt.percentage}%</span>
+                          {q.totalAnswers === 0 || selectedCampaign.totalResponses === 0 ? (
+                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 text-[11px] text-slate-600 text-center font-medium">
+                              📋 Nenhum participante respondeu esta pergunta até o momento.
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5 pt-1">
+                              {q.alternatives.map((alt, idx) => (
+                                <div key={idx} className="space-y-0.5">
+                                  <div className="flex justify-between text-[11px] text-slate-600">
+                                    <span>{alt.option}</span>
+                                    <span className="font-bold">{alt.percentage}%</span>
+                                  </div>
+                                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                      style={{ width: `${alt.percentage}%` }}
+                                      className={`h-full rounded-full ${
+                                        idx === 0 ? 'bg-[#006837]' : idx === 1 ? 'bg-amber-400' : 'bg-rose-500'
+                                      }`}
+                                    />
+                                  </div>
                                 </div>
-                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                  <div
-                                    style={{ width: `${alt.percentage}%` }}
-                                    className={`h-full rounded-full ${
-                                      idx === 0 ? 'bg-[#006837]' : idx === 1 ? 'bg-amber-400' : 'bg-rose-500'
-                                    }`}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))
                     )}

@@ -11,7 +11,7 @@ export interface ReportQuestion {
   segment: 'Todos' | 'Discentes' | 'Docentes' | 'TAEs';
   totalAnswers: number;
   approvalRate: number; // e.g. 78 (%)
-  classification: 'Potencialidade' | 'Mediana' | 'Fragilidade';
+  classification: 'Potencialidade' | 'Mediana' | 'Fragilidade' | 'Sem respostas';
   alternatives: ReportQuestionAlternative[];
 }
 
@@ -20,7 +20,7 @@ export interface ReportDimensionResult {
   potencialidadePct: number;
   medianaPct: number;
   fragilidadePct: number;
-  classification: 'Potencialidade' | 'Mediana' | 'Fragilidade';
+  classification: 'Potencialidade' | 'Mediana' | 'Fragilidade' | 'Sem respostas';
 }
 
 export interface ReportCampaignData {
