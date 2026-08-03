@@ -934,7 +934,8 @@ export const WIZARD_STEPS = [
   { id: 2, label: 'Perguntas Gerais', icon: HelpCircle },
   { id: 3, label: 'Escolha de Segmento', icon: Users },
   { id: 4, label: 'Perguntas do Segmento', icon: CheckSquare },
-  { id: 5, label: 'Revisão e Finalização', icon: CheckCircle2 },
+  { id: 5, label: 'Revisão', icon: CheckCircle2 },
+  { id: 6, label: 'Envio da Campanha', icon: Send },
 ];
 
 /* Componente de Menu de Ações Contextual Inteligente (Drop-up / Drop-down) */
@@ -2450,6 +2451,25 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [formQuestions, setFormQuestions] = useState<SmartQuestion[]>([]);
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Record<string, boolean>>({});
 
+  // Step 6: Envio da Campanha state
+  const [wizardCampaignName, setWizardCampaignName] = useState('');
+  const [wizardCampaignCampus, setWizardCampaignCampus] = useState('IFCE Campus Tauá');
+  const [wizardCampaignStartDate, setWizardCampaignStartDate] = useState('2026-09-15');
+  const [wizardCampaignEndDate, setWizardCampaignEndDate] = useState('2026-09-30');
+  const [wizardCampaignEstimatedTime, setWizardCampaignEstimatedTime] = useState('4 min');
+  const [sendMethods, setSendMethods] = useState({
+    email: true,
+    qrcode: true,
+    link: false,
+  });
+  const [emailSubject, setEmailSubject] = useState('[CPA IFCE] Convite para a Avaliação Institucional 2026.2');
+  const [emailBody, setEmailBody] = useState(
+    'Prezado(a) participante,\n\nConvidamos você a participar da Avaliação Institucional do IFCE. Sua opinião é fundamental para a melhoria constante do nosso campus.'
+  );
+  const [wizardCopiedLink, setWizardCopiedLink] = useState(false);
+  const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
+  const [isCampaignSentSuccess, setIsCampaignSentSuccess] = useState(false);
+
   const toggleQuestionExpanded = (id: string) => {
     setExpandedQuestionIds((prev) => ({
       ...prev,
@@ -2689,6 +2709,80 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }
 
     setIsCreateModalOpen(false);
+  };
+
+  // Step 5 -> Step 6 Transition
+  const handleAdvanceToCampaignSend = () => {
+    const titleToUse = formTitle.trim() || 'Avaliação Institucional CPA';
+    setWizardCampaignName(titleToUse);
+    setWizardCampaignCampus(formCampus || 'IFCE Campus Tauá');
+    setWizardCampaignStartDate(formStartDate || '2026-09-15');
+    setWizardCampaignEndDate(formEndDate || '2026-09-30');
+    const qCount = formQuestions.length || 1;
+    const estMin = Math.max(2, Math.round(qCount * 0.3));
+    setWizardCampaignEstimatedTime(`${estMin} min`);
+    setWizardStep(6);
+  };
+
+  // Step 6 Confirm & Launch Campaign
+  const handleConfirmSendCampaign = () => {
+    const titleToSave = wizardCampaignName.trim() || formTitle.trim() || 'Avaliação Institucional CPA';
+    const questionsToSave =
+      formQuestions.length > 0
+        ? formQuestions
+        : [
+            {
+              id: `q-${Date.now()}-1`,
+              title: 'Como você avalia as condições de apoio acadêmico e infraestrutura do campus?',
+              type: 'SCALE',
+              required: true,
+              category: 'Ensino',
+              audiences: ['todos'],
+              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
+            },
+          ];
+
+    const formatDateShort = (dStr: string) => {
+      if (!dStr) return '';
+      const p = dStr.split('-');
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return dStr;
+    };
+
+    const formattedPeriodo = `${formatDateShort(wizardCampaignStartDate)} ${formStartTime} - ${formatDateShort(wizardCampaignEndDate)} ${formEndTime}`;
+    const computedStatus = getCampaignStatus(wizardCampaignStartDate, formStartTime, wizardCampaignEndDate, formEndTime, 'Ativo');
+
+    const newFormOrUpdated: SmartForm = {
+      id: editingForm ? editingForm.id : `form-smart-${Date.now()}`,
+      title: titleToSave,
+      description: formDescription,
+      campus: wizardCampaignCampus,
+      periodo: formattedPeriodo,
+      startDate: wizardCampaignStartDate,
+      startTime: formStartTime,
+      endDate: wizardCampaignEndDate,
+      endTime: formEndTime,
+      status: computedStatus,
+      createdAt: editingForm ? editingForm.createdAt : new Date().toLocaleDateString('pt-BR'),
+      updatedAt: new Date().toLocaleDateString('pt-BR'),
+      questions: questionsToSave,
+      responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
+    };
+
+    let updatedList: SmartForm[] = [];
+    if (editingForm) {
+      updatedList = forms.map((f) => (f.id === editingForm.id ? newFormOrUpdated : f));
+    } else {
+      updatedList = [newFormOrUpdated, ...forms];
+    }
+
+    setForms(updatedList);
+    localStorage.setItem('cpa_smart_forms', JSON.stringify(updatedList));
+    window.dispatchEvent(new CustomEvent('cpa_smart_forms_updated', { detail: updatedList }));
+
+    showNotification('success', `Campanha "${titleToSave}" enviada com sucesso!`);
+    setShowSendConfirmModal(false);
+    setIsCampaignSentSuccess(true);
   };
 
   // Question Manipulation Helpers for Steps 2 and 4
@@ -4847,6 +4941,58 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
             
+            {isCampaignSentSuccess ? (
+              <div className="p-8 text-center space-y-6 my-auto animate-in fade-in duration-200">
+                <div className="w-16 h-16 bg-emerald-100 text-[#006837] rounded-full flex items-center justify-center mx-auto shadow-md border border-emerald-200">
+                  <CheckCircle2 className="w-10 h-10" />
+                </div>
+                <div className="space-y-2 max-w-md mx-auto">
+                  <h3 className="text-xl font-black text-slate-900">Campanha enviada com sucesso!</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Os convites e informativos foram disponibilizados aos participantes. Você já pode acompanhar as respostas em tempo real pelo módulo de Relatórios.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl max-w-md mx-auto text-left space-y-1.5 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-[#006837]">{wizardCampaignName || formTitle}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#006837] font-bold text-[10px]">
+                      Ativa
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-[11px]">Campus: {wizardCampaignCampus}</p>
+                  <p className="text-slate-600 text-[11px]">Período: {wizardCampaignStartDate} até {wizardCampaignEndDate}</p>
+                  <p className="text-slate-600 text-[11px]">Público: {formAudiences.length} segmento(s)</p>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreateModalOpen(false);
+                      setIsCampaignSentSuccess(false);
+                      onSelectTab?.('reports');
+                    }}
+                    className="px-5 py-2.5 bg-[#006837] text-white font-extrabold text-xs rounded-xl hover:bg-[#045C2D] transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
+                  >
+                    <BarChart2 className="w-4 h-4" />
+                    <span>Ir para Relatórios</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreateModalOpen(false);
+                      setIsCampaignSentSuccess(false);
+                    }}
+                    className="px-5 py-2.5 bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                  >
+                    Voltar para Formulários
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             {/* CABEÇALHO DO WIZARD (COMPACTO) */}
             <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3.5 space-y-2.5 shrink-0">
               {/* Header Top Row: Title & Close */}
@@ -4870,7 +5016,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   Etapa {wizardStep} de {WIZARD_STEPS.length} • {WIZARD_STEPS[wizardStep - 1]?.label}
                 </span>
                 <span className="text-[#006837] font-extrabold">
-                  {wizardStep * 20}%
+                  {Math.round((wizardStep / WIZARD_STEPS.length) * 100)}%
                 </span>
               </div>
 
@@ -4878,12 +5024,12 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#006837] transition-all duration-300 rounded-full"
-                  style={{ width: `${wizardStep * 20}%` }}
+                  style={{ width: `${Math.round((wizardStep / WIZARD_STEPS.length) * 100)}%` }}
                 />
               </div>
 
               {/* STEPPER INDICATOR */}
-              <div className="grid grid-cols-5 gap-1 pt-0.5">
+              <div className="grid grid-cols-6 gap-1 pt-0.5">
                 {WIZARD_STEPS.map((step) => {
                   const isActive = wizardStep === step.id;
                   const isCompleted = wizardStep > step.id;
@@ -5608,6 +5754,413 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </div>
               )}
 
+              {/* ETAPA 6 — ENVIO DA CAMPANHA */}
+              {wizardStep === 6 && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* 1. RESUMO DA CAMPANHA (TOP CARD) */}
+                  <div className="p-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 via-white to-emerald-50/30 shadow-2xs space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006837] bg-emerald-100/90 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                          Resumo do Instrumento
+                        </span>
+                        <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                          {wizardCampaignName || formTitle || 'Avaliação Institucional CPA 2026.2'}
+                        </h4>
+                        <p className="text-xs text-slate-600 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <Building2 className="w-3.5 h-3.5 text-[#006837]" />
+                          <span>{wizardCampaignCampus}</span>
+                          <span>•</span>
+                          <Calendar className="w-3.5 h-3.5 text-[#006837]" />
+                          <span>{wizardCampaignStartDate} até {wizardCampaignEndDate}</span>
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-[#006837] text-xs font-extrabold border border-emerald-300/80 shrink-0">
+                        Pronto para envio
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-emerald-100/80 text-xs">
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">Perguntas Totais</span>
+                        <span className="text-sm font-black text-slate-800">{formQuestions.length} questões</span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">Segmentos</span>
+                        <span className="text-sm font-black text-[#006837]">
+                          {formAudiences.map(a => a === 'alunos' ? 'Discentes' : a === 'docentes' ? 'Docentes' : 'TAEs').join(', ') || 'Todos'}
+                        </span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">Tempo Estimado</span>
+                        <span className="text-sm font-black text-slate-800">{wizardCampaignEstimatedTime}</span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">Público Previsto</span>
+                        <span className="text-sm font-black text-slate-800">2.348 contatos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. CONFIGURAÇÃO DA CAMPANHA */}
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
+                    <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <Settings className="w-4 h-4 text-[#006837]" />
+                      Configurações da Campanha
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Nome da Campanha */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-800">Nome da Campanha</label>
+                        <input
+                          type="text"
+                          value={wizardCampaignName}
+                          onChange={(e) => setWizardCampaignName(e.target.value)}
+                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                        />
+                      </div>
+
+                      {/* Campus */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-800">Campus IFCE</label>
+                        <select
+                          value={wizardCampaignCampus}
+                          onChange={(e) => setWizardCampaignCampus(e.target.value)}
+                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                        >
+                          {IFCE_CAMPUSES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Data Início */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-800">Data de Início</label>
+                        <input
+                          type="date"
+                          value={wizardCampaignStartDate}
+                          onChange={(e) => setWizardCampaignStartDate(e.target.value)}
+                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                        />
+                      </div>
+
+                      {/* Data Encerramento */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-800">Data de Encerramento</label>
+                        <input
+                          type="date"
+                          value={wizardCampaignEndDate}
+                          onChange={(e) => setWizardCampaignEndDate(e.target.value)}
+                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                        />
+                      </div>
+
+                      {/* Tempo Estimado */}
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          <span>Tempo Estimado de Resposta</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Calculado com base nas {formQuestions.length} perguntas</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={wizardCampaignEstimatedTime}
+                          onChange={(e) => setWizardCampaignEstimatedTime(e.target.value)}
+                          placeholder="Ex: 4 min"
+                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. FORMAS DE ENVIO */}
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
+                    <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <Send className="w-4 h-4 text-[#006837]" />
+                      Métodos de Distribuição e Divulgação
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Email option */}
+                      <label
+                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                          sendMethods.email
+                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-slate-50/60 text-slate-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={sendMethods.email}
+                          onChange={(e) => setSendMethods({ ...sendMethods, email: e.target.checked })}
+                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                        />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
+                            <Mail className="w-4 h-4 text-[#006837]" />
+                            <span>E-mail Institucional</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
+                            Disparo automático de convites para contatos cadastrados no SUAP.
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* QR Code option */}
+                      <label
+                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                          sendMethods.qrcode
+                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-slate-50/60 text-slate-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={sendMethods.qrcode}
+                          onChange={(e) => setSendMethods({ ...sendMethods, qrcode: e.target.checked })}
+                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                        />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
+                            <QrCode className="w-4 h-4 text-[#006837]" />
+                            <span>QR Code para Impressão</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
+                            Geração de cartazes e informativos para afixar nos blocos do campus.
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Link option */}
+                      <label
+                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                          sendMethods.link
+                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-slate-50/60 text-slate-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={sendMethods.link}
+                          onChange={(e) => setSendMethods({ ...sendMethods, link: e.target.checked })}
+                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                        />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
+                            <Link2 className="w-4 h-4 text-[#006837]" />
+                            <span>Link Público</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
+                            URL direta para compartilhar via WhatsApp, redes e portal.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* DETALHES DO E-MAIL (SE SELECIONADO) */}
+                    {sendMethods.email && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <Mail className="w-4 h-4 text-[#006837]" />
+                            Configuração da Mensagem por E-mail
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            Será enviado para 2.348 e-mails
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Assunto do E-mail</label>
+                            <input
+                              type="text"
+                              value={emailSubject}
+                              onChange={(e) => setEmailSubject(e.target.value)}
+                              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Mensagem Personalizada</label>
+                            <textarea
+                              rows={3}
+                              value={emailBody}
+                              onChange={(e) => setEmailBody(e.target.value)}
+                              className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                            />
+                          </div>
+
+                          {/* PRÉVIA COMPACTA DO E-MAIL */}
+                          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                              Prévia do E-mail do Participante
+                            </span>
+                            <div className="text-xs text-slate-700 space-y-1 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                              <p><strong className="text-slate-900">De:</strong> Comissão Própria de Avaliação - CPA IFCE &lt;cpa@ifce.edu.br&gt;</p>
+                              <p><strong className="text-slate-900">Assunto:</strong> {emailSubject}</p>
+                              <p className="pt-1 whitespace-pre-line text-slate-600">{emailBody}</p>
+                              <div className="pt-2">
+                                <span className="inline-block px-3 py-1.5 bg-[#006837] text-white rounded-md text-[11px] font-bold">
+                                  Responder Avaliação
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DETALHES DO QR CODE (SE SELECIONADO) */}
+                    {sendMethods.qrcode && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <QrCode className="w-4 h-4 text-[#006837]" />
+                            Material de Divulgação (QR Code e Cartaz)
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => showNotification('success', 'Download do QR Code PNG iniciado!')}
+                              className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                              Baixar PNG
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => showNotification('success', 'Download do PDF do Cartaz iniciado!')}
+                              className="px-2.5 py-1 text-[11px] font-bold text-[#006837] bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                            >
+                              Baixar PDF
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Poster Preview */}
+                          <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center gap-3">
+                            <div className="w-20 h-20 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
+                              <QrCode className="w-14 h-14 text-slate-800" />
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-extrabold uppercase text-[#006837]">Prévia do Cartaz</span>
+                              <h6 className="text-xs font-bold text-slate-900 leading-tight">
+                                {wizardCampaignName || formTitle}
+                              </h6>
+                              <p className="text-[10px] text-slate-500">
+                                Escaneie com a câmera do smartphone para acessar o formulário.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-600 flex flex-col justify-center space-y-1">
+                            <span className="font-bold text-slate-900">Recomendação de Impressão</span>
+                            <p className="text-[11px] text-slate-500">
+                              Imprima em tamanho A4 e afixe em murais da biblioteca, refeitório, coordenações de curso e entradas dos blocos de aula.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DETALHES DO LINK (SE SELECIONADO) */}
+                    {sendMethods.link && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 animate-in fade-in duration-150">
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Link2 className="w-4 h-4 text-[#006837]" />
+                          Link Público de Acesso Direto
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`https://cpa.ifce.edu.br/avaliar/${editingForm?.id || '2026-2'}`}
+                            className="flex-1 h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-mono text-slate-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://cpa.ifce.edu.br/avaliar/${editingForm?.id || '2026-2'}`);
+                              setWizardCopiedLink(true);
+                              setTimeout(() => setWizardCopiedLink(false), 3000);
+                            }}
+                            className="px-3 py-2 bg-[#006837] text-white text-xs font-bold rounded-lg hover:bg-[#045C2D] transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {wizardCopiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{wizardCopiedLink ? 'Copiado!' : 'Copiar Link'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. AUDIÊNCIA E PÚBLICO */}
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-3 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#006837]" />
+                        Público Alvo Selecionado
+                      </h5>
+                      <span className="text-xs font-extrabold text-[#006837] bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                        2.348 destinatários encontrados
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {formAudiences.includes('alunos') && (
+                        <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold rounded-xl flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                          Discentes (1.850 alunos)
+                        </span>
+                      )}
+                      {formAudiences.includes('docentes') && (
+                        <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-[#006837] text-xs font-bold rounded-xl flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#006837]" />
+                          Docentes (280 professores)
+                        </span>
+                      )}
+                      {formAudiences.includes('taes') && (
+                        <span className="px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                          Técnicos Administrativos (218 TAEs)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 5. CHECKLIST DE VALIDAÇÃO */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider block">
+                      Status de Validação Pré-Envio
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
+                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
+                        <span>Perguntas cadastradas: {formQuestions.length} questões</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
+                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
+                        <span>Período configurado: {campaignStartDate} a {campaignEndDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
+                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
+                        <span>Público validado: {formAudiences.length} segmento(s)</span>
+                      </div>
+                      <div className={`flex items-center gap-2 font-semibold ${sendMethods.email || sendMethods.qrcode || sendMethods.link ? 'text-emerald-800' : 'text-rose-600'}`}>
+                        {sendMethods.email || sendMethods.qrcode || sendMethods.link ? (
+                          <CheckCircle2 className="w-4 h-4 text-[#006837]" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                        )}
+                        <span>Método de envio selecionado</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* RODAPÉ DO WIZARD (TODAS AS ETAPAS POSSUEM) */}
@@ -5649,29 +6202,39 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   <span>Salvar progresso</span>
                 </button>
 
-                {/* Botão Seguinte / Finalizar */}
+                {/* Botão Seguinte / Avançar para Envio / Enviar Campanha */}
                 {wizardStep < 5 ? (
                   <button
                     type="button"
-                    onClick={() => setWizardStep((prev) => Math.min(5, prev + 1))}
+                    onClick={() => setWizardStep((prev) => Math.min(6, prev + 1))}
                     className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Seguinte</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
+                ) : wizardStep === 5 ? (
+                  <button
+                    type="button"
+                    onClick={handleAdvanceToCampaignSend}
+                    className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Avançar para Envio</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 ) : (
                   <button
                     type="button"
-                    onClick={handleFinalizeForm}
+                    onClick={() => setShowSendConfirmModal(true)}
                     className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Finalizar Formulário</span>
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Campanha</span>
                   </button>
                 )}
               </div>
             </div>
-
+          </>
+        )}
           </div>
         </div>
       )}
@@ -6361,6 +6924,39 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           }}
           showNotification={showNotification}
         />
+      )}
+
+      {/* MODAL CONFIRMAÇÃO DE ENVIO DA CAMPANHA */}
+      {showSendConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#006837] flex items-center justify-center font-bold text-2xl mx-auto flex items-center justify-center">
+              🚀
+            </div>
+            <div className="text-center space-y-1">
+              <h4 className="text-base font-black text-slate-900">Deseja iniciar esta campanha agora?</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Após o envio, os participantes receberão automaticamente o acesso conforme os métodos selecionados.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSendConfirmModal(false)}
+                className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSendCampaign}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-[#006837] hover:bg-[#045C2D] rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                Enviar Agora
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

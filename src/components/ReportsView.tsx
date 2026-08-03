@@ -124,10 +124,10 @@ const DonutChart: React.FC<{
       {/* Center Label */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
         <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
-          {potencialidadePct}%
+          {potencialidadePct > 0 || medianaPct > 0 || fragilidadePct > 0 ? `${potencialidadePct}%` : '0%'}
         </span>
-        <span className="text-[9px] font-bold text-[#006837] uppercase tracking-wider mt-0.5">
-          Potencialidade
+        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+          {potencialidadePct > 0 || medianaPct > 0 || fragilidadePct > 0 ? 'Potencialidade' : 'Sem dados'}
         </span>
       </div>
     </div>
@@ -521,7 +521,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                 </div>
                 <div>
                   <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">
-                    {selectedCampaign.avgResponseTime} min
+                    {selectedCampaign.totalResponses > 0 ? `${selectedCampaign.avgResponseTime}` : '--'}
                   </span>
                   <p className="text-[11px] text-slate-500 font-medium">
                     Duração por formulário
@@ -536,14 +536,31 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
              ===================================================================== */}
           <section id="sec-indicadores" className="scroll-mt-4">
             <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs space-y-3">
-              <div className="border-b border-slate-100 pb-2">
-                <h2 className="text-sm font-black text-slate-900 tracking-tight">
-                  Indicadores Gerais da Campanha
-                </h2>
-                <p className="text-[11px] text-slate-500">
-                  Classificação consolidada do instrumento
-                </p>
+              <div className="border-b border-slate-100 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 tracking-tight">
+                    Indicadores Gerais da Campanha
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Classificação consolidada do instrumento
+                  </p>
+                </div>
+                {selectedCampaign.totalResponses === 0 && (
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 self-start sm:self-center">
+                    Classificação Geral: Sem dados suficientes
+                  </span>
+                )}
               </div>
+
+              {/* Mensagem discreta quando não houver respostas */}
+              {selectedCampaign.totalResponses === 0 && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center gap-2 font-medium">
+                  <Info className="w-4 h-4 text-[#006837] shrink-0" />
+                  <span>
+                    Os indicadores serão calculados automaticamente assim que os primeiros participantes responderem ao formulário.
+                  </span>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row items-center justify-around gap-4 sm:gap-6 py-1">
                 {/* Donut Chart Compacto */}
