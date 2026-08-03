@@ -50,10 +50,10 @@ const DonutChart: React.FC<{
   medianaPct: number;
   fragilidadePct: number;
   size?: number;
-}> = ({ potencialidadePct, medianaPct, fragilidadePct, size = 180 }) => {
-  const radius = 64;
-  const strokeWidth = 18;
-  const circumference = 2 * Math.PI * radius; // ~402.12
+}> = ({ potencialidadePct, medianaPct, fragilidadePct, size = 140 }) => {
+  const radius = 52;
+  const strokeWidth = 14;
+  const circumference = 2 * Math.PI * radius; // ~326.72
 
   const len1 = Math.max(0, (potencialidadePct / 100) * circumference);
   const len2 = Math.max(0, (medianaPct / 100) * circumference);
@@ -65,11 +65,11 @@ const DonutChart: React.FC<{
 
   return (
     <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 160 160" className="-rotate-90 transform">
+      <svg width={size} height={size} viewBox="0 0 130 130" className="-rotate-90 transform">
         {/* Track Background */}
         <circle
-          cx="80"
-          cy="80"
+          cx="65"
+          cy="65"
           r={radius}
           fill="transparent"
           stroke="#f1f5f9"
@@ -78,8 +78,8 @@ const DonutChart: React.FC<{
         {/* Segment 1: Potencialidade */}
         {potencialidadePct > 0 && (
           <circle
-            cx="80"
-            cy="80"
+            cx="65"
+            cy="65"
             r={radius}
             fill="transparent"
             stroke="#006837"
@@ -93,8 +93,8 @@ const DonutChart: React.FC<{
         {/* Segment 2: Mediana */}
         {medianaPct > 0 && (
           <circle
-            cx="80"
-            cy="80"
+            cx="65"
+            cy="65"
             r={radius}
             fill="transparent"
             stroke="#f59e0b"
@@ -108,8 +108,8 @@ const DonutChart: React.FC<{
         {/* Segment 3: Fragilidade */}
         {fragilidadePct > 0 && (
           <circle
-            cx="80"
-            cy="80"
+            cx="65"
+            cy="65"
             r={radius}
             fill="transparent"
             stroke="#e11d48"
@@ -122,11 +122,11 @@ const DonutChart: React.FC<{
         )}
       </svg>
       {/* Center Label */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 pointer-events-none">
-        <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
+        <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
           {potencialidadePct}%
         </span>
-        <span className="text-[10px] font-bold text-[#006837] uppercase tracking-wider mt-1">
+        <span className="text-[9px] font-bold text-[#006837] uppercase tracking-wider mt-0.5">
           Potencialidade
         </span>
       </div>
@@ -191,8 +191,8 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   // Drawer Area / Dimension State (Side Drawer for Area Details)
   const [drawerDimension, setDrawerDimension] = useState<ReportDimensionResult | null>(null);
 
-  // Accordion State for Questions (stores expanded question IDs)
-  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(new Set());
+  // Accordion State for Questions (single question open at a time)
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
 
   // Question Segment Tab (Todos | Discentes | Docentes | TAEs)
   const [activeQuestionSegment, setActiveQuestionSegment] = useState<'Todos' | 'Discentes' | 'Docentes' | 'TAEs'>('Todos');
@@ -251,17 +251,9 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     return reportCampaigns.find((c) => c.id === selectedCampaignId) || null;
   }, [reportCampaigns, selectedCampaignId]);
 
-  // Toggle Accordion Question
+  // Toggle Accordion Question (Single question open at a time)
   const toggleQuestionAccordion = (questionId: string) => {
-    setExpandedQuestionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(questionId)) {
-        next.delete(questionId);
-      } else {
-        next.add(questionId);
-      }
-      return next;
-    });
+    setExpandedQuestionId((prev) => (prev === questionId ? null : questionId));
   };
 
   // Questions for the main section filtered by dimension and active segment
@@ -300,80 +292,104 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   // Category Icon Helper
   const getCategoryIcon = (category: string) => {
     const cat = category.toLowerCase();
-    if (cat.includes('infra')) return <Building2 className="w-5 h-5 text-[#006837]" />;
-    if (cat.includes('biblio')) return <BookOpen className="w-5 h-5 text-blue-600" />;
-    if (cat.includes('ensino')) return <GraduationCap className="w-5 h-5 text-[#006837]" />;
-    if (cat.includes('gestã') || cat.includes('gestao')) return <Award className="w-5 h-5 text-amber-600" />;
-    if (cat.includes('assistê') || cat.includes('estudant')) return <Users className="w-5 h-5 text-purple-600" />;
-    return <Layers className="w-5 h-5 text-[#006837]" />;
+    if (cat.includes('infra')) return <Building2 className="w-4 h-4 text-[#006837]" />;
+    if (cat.includes('biblio')) return <BookOpen className="w-4 h-4 text-blue-600" />;
+    if (cat.includes('ensino')) return <GraduationCap className="w-4 h-4 text-[#006837]" />;
+    if (cat.includes('gestã') || cat.includes('gestao')) return <Award className="w-4 h-4 text-amber-600" />;
+    if (cat.includes('assistê') || cat.includes('estudant')) return <Users className="w-4 h-4 text-purple-600" />;
+    return <Layers className="w-4 h-4 text-[#006837]" />;
   };
 
   return (
-    <div className="w-full max-w-[95%] xl:max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-6 space-y-10 relative">
+    <div className="w-full max-w-[95%] xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4.5 relative">
       {/* =====================================================================
-          1. NOVO CABEÇALHO COMPACTO
+          1. CABEÇALHO & FILTROS EM LINHA ÚNICA
          ===================================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
-        {/* À esquerda: Título da campanha, Campus e Período */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 bg-emerald-100/70 text-[#006837] rounded-lg">
-              <BarChart3 className="w-5 h-5" />
-            </span>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+      <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* À esquerda: Título e Identificação da Campanha */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="p-1.5 bg-emerald-100/80 text-[#006837] rounded-lg flex-shrink-0">
+            <BarChart3 className="w-4 h-4" />
+          </span>
+          <div className="truncate">
+            <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
               {selectedCampaign ? selectedCampaign.title : 'Relatórios CPA'}
             </h1>
+            {selectedCampaign && (
+              <p className="text-[11px] font-medium text-slate-500 truncate">
+                {selectedCampaign.campus} • Período {selectedCampaign.period}
+              </p>
+            )}
           </div>
-          {selectedCampaign && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 pl-8">
-              <span className="px-2 py-0.5 bg-slate-100 rounded-md text-slate-700 font-bold">
-                {selectedCampaign.campus}
-              </span>
-              <span>•</span>
-              <span className="text-slate-600">Período {selectedCampaign.period}</span>
-            </div>
-          )}
         </div>
 
-        {/* À direita: Seletor da campanha & Botão Exportar PDF */}
-        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-          {/* Seletor Compacto da Campanha */}
-          <div className="relative min-w-[220px] sm:min-w-[260px]">
+        {/* À direita: Filtros em linha única (Campus | Ano | Campanha | Exportar PDF) */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap lg:justify-end">
+          {/* Filtro de Campus */}
+          <select
+            value={campusFilter}
+            onChange={(e) => setCampusFilter(e.target.value)}
+            className="h-9 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
+          >
+            <option value="todos">Todos Campi</option>
+            {availableCampuses.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtro de Ano */}
+          <select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+            className="h-9 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
+          >
+            <option value="todos">Todos Anos</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          {/* Seletor da Campanha */}
+          <div className="relative min-w-[170px] sm:min-w-[210px]">
             <button
               onClick={() => setIsCampaignSelectorOpen(!isCampaignSelectorOpen)}
-              className="w-full h-11 px-3.5 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between gap-2 shadow-xs transition-all cursor-pointer text-left"
+              className="w-full h-9 px-3 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-lg text-xs font-bold text-slate-800 flex items-center justify-between gap-1.5 shadow-2xs transition-all cursor-pointer text-left"
             >
               <span className="truncate">
                 {selectedCampaign ? selectedCampaign.title : 'Selecione uma campanha'}
               </span>
               <ChevronDown
-                className={`w-4 h-4 text-slate-500 flex-shrink-0 transition-transform ${
+                className={`w-3.5 h-3.5 text-slate-500 flex-shrink-0 transition-transform ${
                   isCampaignSelectorOpen ? 'rotate-180' : ''
                 }`}
               />
             </button>
 
-            {/* Dropdown Menu for Campaign Selection with Search */}
+            {/* Dropdown Menu da Campanha */}
             <AnimatePresence>
               {isCampaignSelectorOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  className="absolute right-0 top-full mt-2 z-40 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 space-y-2 w-72 sm:w-80 overflow-hidden flex flex-col"
+                  exit={{ opacity: 0, y: 4 }}
+                  className="absolute right-0 top-full mt-1.5 z-40 bg-white border border-slate-200 rounded-xl shadow-xl p-2.5 space-y-2 w-72 sm:w-80 overflow-hidden flex flex-col"
                 >
                   <div className="relative flex-shrink-0">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
                       value={campaignSearchTerm}
                       onChange={(e) => setCampaignSearchTerm(e.target.value)}
                       placeholder="Pesquisar campanha..."
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
                     />
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto space-y-1 pr-1 flex-1">
+                  <div className="max-h-56 overflow-y-auto space-y-1 pr-1 flex-1">
                     {filteredCampaignsList.length === 0 ? (
                       <div className="p-3 text-center text-xs text-slate-400">
                         Nenhuma campanha encontrada.
@@ -386,7 +402,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                             setSelectedCampaignId(c.id);
                             setIsCampaignSelectorOpen(false);
                           }}
-                          className={`w-full p-2.5 rounded-xl text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
+                          className={`w-full p-2 rounded-lg text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
                             c.id === selectedCampaignId
                               ? 'bg-[#006837] text-white font-bold'
                               : 'hover:bg-slate-50 text-slate-700 font-medium'
@@ -403,7 +419,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                             </div>
                           </div>
                           {c.id === selectedCampaignId && (
-                            <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" />
                           )}
                         </button>
                       ))
@@ -418,96 +434,96 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
           <button
             onClick={() => setIsPdfModalOpen(true)}
             disabled={!selectedCampaign}
-            className="h-11 px-5 bg-[#006837] hover:bg-[#00522b] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="h-9 px-3.5 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            <FileDown className="w-4 h-4" />
+            <FileDown className="w-3.5 h-3.5" />
             <span>Exportar PDF</span>
           </button>
         </div>
       </div>
 
       {selectedCampaign ? (
-        <div className="space-y-10">
+        <div className="space-y-4">
           {/* =====================================================================
-              2. CARDS SUPERIORES (AUMENTADOS E EM LINHA COM NÚMEROS EM DESTAQUE)
+              2. CARDS SUPERIORES COMPACTOS (4 EM UMA ÚNICA LINHA)
              ===================================================================== */}
-          <section id="sec-resumo" className="scroll-mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <section id="sec-resumo" className="scroll-mt-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Card 1: Perguntas */}
-              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+              <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-3 shadow-2xs hover:shadow-xs transition-all space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                     Perguntas
                   </span>
-                  <div className="p-2 bg-slate-100 rounded-xl text-slate-700">
-                    <HelpCircle className="w-5 h-5" />
+                  <div className="p-1.5 bg-slate-100 rounded-md text-slate-600">
+                    <HelpCircle className="w-3.5 h-3.5" />
                   </div>
                 </div>
                 <div>
-                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                  <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">
                     {selectedCampaign.totalQuestions}
                   </span>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Itens no instrumento
                   </p>
                 </div>
               </div>
 
               {/* Card 2: Respondentes */}
-              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+              <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-3 shadow-2xs hover:shadow-xs transition-all space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                     Respondentes
                   </span>
-                  <div className="p-2 bg-emerald-50 rounded-xl text-[#006837]">
-                    <Users className="w-5 h-5" />
+                  <div className="p-1.5 bg-emerald-50 rounded-md text-[#006837]">
+                    <Users className="w-3.5 h-3.5" />
                   </div>
                 </div>
                 <div>
-                  <span className="text-4xl font-black text-[#006837] tracking-tight block">
+                  <span className="text-2xl font-black text-[#006837] tracking-tight block leading-tight">
                     {selectedCampaign.totalResponses.toLocaleString('pt-BR')}
                   </span>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Participações validadas
                   </p>
                 </div>
               </div>
 
               {/* Card 3: Taxa de Resposta */}
-              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+              <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-3 shadow-2xs hover:shadow-xs transition-all space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                     Taxa de Resposta
                   </span>
-                  <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
-                    <TrendingUp className="w-5 h-5" />
+                  <div className="p-1.5 bg-blue-50 rounded-md text-blue-600">
+                    <TrendingUp className="w-3.5 h-3.5" />
                   </div>
                 </div>
                 <div>
-                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                  <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">
                     {selectedCampaign.responseRate}%
                   </span>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Adesão da comunidade
                   </p>
                 </div>
               </div>
 
               {/* Card 4: Tempo Médio */}
-              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+              <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-3 shadow-2xs hover:shadow-xs transition-all space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                     Tempo Médio
                   </span>
-                  <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
-                    <Clock className="w-5 h-5" />
+                  <div className="p-1.5 bg-amber-50 rounded-md text-amber-600">
+                    <Clock className="w-3.5 h-3.5" />
                   </div>
                 </div>
                 <div>
-                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                  <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">
                     {selectedCampaign.avgResponseTime} min
                   </span>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Duração por formulário
                   </p>
                 </div>
@@ -516,74 +532,74 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
           </section>
 
           {/* =====================================================================
-              3. INDICADORES GERAIS (DONUT CHART + LEGENDA AO LADO)
+              3. INDICADORES GERAIS (LEGENDA AO LADO DO GRÁFICO COMPACTO)
              ===================================================================== */}
-          <section id="sec-indicadores" className="scroll-mt-6">
-            <div className="bg-white border border-slate-200/90 rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
-              <div className="border-b border-slate-100 pb-4">
-                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+          <section id="sec-indicadores" className="scroll-mt-4">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs space-y-3">
+              <div className="border-b border-slate-100 pb-2">
+                <h2 className="text-sm font-black text-slate-900 tracking-tight">
                   Indicadores Gerais da Campanha
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Classificação consolidada do instrumento avaliativo
+                <p className="text-[11px] text-slate-500">
+                  Classificação consolidada do instrumento
                 </p>
               </div>
 
-              <div className="flex flex-col md:flex-row items-center justify-around gap-8 py-2">
-                {/* Donut Chart centralizado */}
+              <div className="flex flex-col sm:flex-row items-center justify-around gap-4 sm:gap-6 py-1">
+                {/* Donut Chart Compacto */}
                 <DonutChart
                   potencialidadePct={selectedCampaign.potencialidadePct}
                   medianaPct={selectedCampaign.medianaPct}
                   fragilidadePct={selectedCampaign.fragilidadePct}
-                  size={200}
+                  size={130}
                 />
 
-                {/* Legenda dos Indicadores ao lado */}
-                <div className="space-y-4 w-full max-w-md">
-                  {/* Item 1: Potencialidade */}
-                  <div className="p-3.5 bg-emerald-50/60 border border-emerald-200/70 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 rounded-full bg-[#006837] flex-shrink-0" />
+                {/* Legenda dos Indicadores ao Lado */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-2xl">
+                  {/* Potencialidade */}
+                  <div className="px-3 py-2 bg-emerald-50/70 border border-emerald-200/80 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#006837] flex-shrink-0" />
                       <div>
-                        <span className="text-xs font-extrabold text-slate-800 block">
+                        <span className="text-xs font-extrabold text-slate-800 block leading-tight">
                           Potencialidade
                         </span>
-                        <span className="text-[11px] text-slate-500">Aprovação ≥ 70%</span>
+                        <span className="text-[10px] text-slate-500">Aprovação ≥ 70%</span>
                       </div>
                     </div>
-                    <span className="text-xl font-black text-[#006837]">
+                    <span className="text-lg font-black text-[#006837]">
                       {selectedCampaign.potencialidadePct}%
                     </span>
                   </div>
 
-                  {/* Item 2: Avaliação Mediana */}
-                  <div className="p-3.5 bg-amber-50/60 border border-amber-200/70 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 rounded-full bg-amber-500 flex-shrink-0" />
+                  {/* Mediana */}
+                  <div className="px-3 py-2 bg-amber-50/70 border border-amber-200/80 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0" />
                       <div>
-                        <span className="text-xs font-extrabold text-slate-800 block">
-                          Avaliação Mediana
+                        <span className="text-xs font-extrabold text-slate-800 block leading-tight">
+                          Mediana
                         </span>
-                        <span className="text-[11px] text-slate-500">Aprovação 50% – 69%</span>
+                        <span className="text-[10px] text-slate-500">50% – 69%</span>
                       </div>
                     </div>
-                    <span className="text-xl font-black text-amber-600">
+                    <span className="text-lg font-black text-amber-600">
                       {selectedCampaign.medianaPct}%
                     </span>
                   </div>
 
-                  {/* Item 3: Fragilidade */}
-                  <div className="p-3.5 bg-rose-50/60 border border-rose-200/70 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 rounded-full bg-rose-600 flex-shrink-0" />
+                  {/* Fragilidade */}
+                  <div className="px-3 py-2 bg-rose-50/70 border border-rose-200/80 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600 flex-shrink-0" />
                       <div>
-                        <span className="text-xs font-extrabold text-slate-800 block">
+                        <span className="text-xs font-extrabold text-slate-800 block leading-tight">
                           Fragilidade
                         </span>
-                        <span className="text-[11px] text-slate-500">Aprovação &lt; 50%</span>
+                        <span className="text-[10px] text-slate-500">Aprovação &lt; 50%</span>
                       </div>
                     </div>
-                    <span className="text-xl font-black text-rose-600">
+                    <span className="text-lg font-black text-rose-600">
                       {selectedCampaign.fragilidadePct}%
                     </span>
                   </div>
@@ -593,16 +609,16 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
           </section>
 
           {/* =====================================================================
-              4. RESULTADOS POR ÁREA (GRID RESPONSIVO 2-4 CARDS POR LINHA)
+              4. RESULTADOS POR ÁREA (CARDS COMPACTOS ~90PX, 4-5 POR LINHA)
              ===================================================================== */}
-          <section id="sec-areas" className="scroll-mt-6 space-y-4">
+          <section id="sec-areas" className="scroll-mt-4 space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                  Resultados por Área
+                <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                  Resultados por Área Avaliada
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Desempenho por dimensão avaliativa da CPA
+                <p className="text-[11px] text-slate-500">
+                  Desempenho por dimensão da CPA
                 </p>
               </div>
 
@@ -616,67 +632,60 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5">
               {selectedCampaign.dimensions.map((dim) => {
                 const isSelected = selectedDimension === dim.dimension;
                 return (
                   <div
                     key={dim.dimension}
-                    className={`bg-white border rounded-xl p-5 transition-all flex flex-col justify-between space-y-4 relative ${
+                    onClick={() => {
+                      setSelectedDimension(isSelected ? null : dim.dimension);
+                      scrollToSection('perguntas');
+                    }}
+                    className={`bg-white border rounded-xl px-3 py-2.5 h-[88px] transition-all flex flex-col justify-between relative cursor-pointer ${
                       isSelected
-                        ? 'border-[#006837] ring-2 ring-[#006837]/20 shadow-md'
-                        : 'border-slate-200/90 hover:border-slate-300 hover:shadow-xs'
+                        ? 'border-[#006837] ring-2 ring-[#006837]/20 shadow-2xs bg-emerald-50/20'
+                        : 'border-slate-200/90 hover:border-slate-300 hover:shadow-2xs'
                     }`}
                   >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-slate-100 rounded-lg">
-                            {getCategoryIcon(dim.dimension)}
-                          </div>
-                          <h3 className="text-sm font-extrabold text-slate-900 truncate">
-                            {dim.dimension}
-                          </h3>
+                    {/* Header: Icon & Area Name */}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="p-1 bg-slate-100 rounded-md flex-shrink-0">
+                          {getCategoryIcon(dim.dimension)}
                         </div>
+                        <h3 className="text-xs font-extrabold text-slate-900 truncate">
+                          {dim.dimension}
+                        </h3>
                       </div>
-
-                      <div className="flex items-baseline justify-between pt-1">
-                        <div>
-                          <span className="text-3xl font-black text-slate-900 tracking-tight block">
-                            {dim.potencialidadePct}%
-                          </span>
-                          <span
-                            className={`inline-block text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1 ${
-                              dim.classification === 'Potencialidade'
-                                ? 'bg-emerald-100 text-[#006837]'
-                                : dim.classification === 'Mediana'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-700'
-                            }`}
-                          >
-                            {dim.classification}
-                          </span>
-                        </div>
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDrawerDimension(dim);
+                        }}
+                        title="Ver Detalhes"
+                        className="p-1 hover:bg-emerald-100 text-[#006837] rounded-md transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedDimension(dim.dimension);
-                          scrollToSection('perguntas');
-                        }}
-                        className="flex-1 py-2 px-3 bg-slate-100 hover:bg-[#006837] hover:text-white text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer text-center"
+                    {/* Value & Compact Classification Badge */}
+                    <div className="flex items-baseline justify-between pt-0.5">
+                      <span className="text-lg font-black text-slate-900 tracking-tight">
+                        {dim.potencialidadePct}%
+                      </span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider ${
+                          dim.classification === 'Potencialidade'
+                            ? 'bg-emerald-100 text-[#006837]'
+                            : dim.classification === 'Mediana'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
                       >
-                        Filtrar Perguntas
-                      </button>
-                      <button
-                        onClick={() => setDrawerDimension(dim)}
-                        title="Ver Detalhes da Área"
-                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                        {dim.classification}
+                      </span>
                     </div>
                   </div>
                 );
@@ -685,30 +694,30 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
           </section>
 
           {/* =====================================================================
-              5, 6, 7 & 8. PERGUNTAS (ACCORDION + TABS SEGMENTOS + DETALHES VISUAIS)
+              5. PERGUNTAS (ACCORDION COMPACTO - 1 PERGUNTA ABERTA POR VEZ)
              ===================================================================== */}
-          <section id="sec-perguntas" className="scroll-mt-6">
-            <div className="bg-white border border-slate-200/90 rounded-xl p-5 sm:p-7 shadow-xs space-y-6">
+          <section id="sec-perguntas" className="scroll-mt-4">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs space-y-4">
               {/* Header com Filtro de Área & Tabs Fixas de Segmento */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                    Perguntas da Área {selectedDimension ? `• ${selectedDimension}` : '• Todas as Áreas'}
+                  <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                    Perguntas {selectedDimension ? `• ${selectedDimension}` : '• Todas as Áreas'}
                   </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Clique na pergunta para expandir os gráficos e o detalhamento dos segmentos
+                  <p className="text-[11px] text-slate-500">
+                    Clique em uma pergunta para abrir os detalhes (apenas uma permanece expandida por vez)
                   </p>
                 </div>
 
                 {/* Tabs de Segmentos permanentes */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start md:self-auto">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start md:self-auto">
                   {(['Todos', 'Discentes', 'Docentes', 'TAEs'] as const).map((seg) => (
                     <button
                       key={seg}
                       onClick={() => setActiveQuestionSegment(seg)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
                         activeQuestionSegment === seg
-                          ? 'bg-white text-[#006837] shadow-xs'
+                          ? 'bg-white text-[#006837] shadow-2xs'
                           : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
@@ -720,58 +729,55 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
 
               {/* Lista Accordion de Perguntas */}
               {mainQuestions.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                <div className="p-6 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
                   Nenhuma pergunta encontrada para os filtros selecionados.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {mainQuestions.map((q) => {
-                    const isExpanded = expandedQuestionIds.has(q.id);
+                    const isExpanded = expandedQuestionId === q.id;
                     return (
                       <div
                         key={q.id}
-                        className={`border rounded-xl transition-all overflow-hidden bg-white ${
+                        className={`border rounded-lg transition-all overflow-hidden bg-white ${
                           isExpanded
-                            ? 'border-[#006837] shadow-xs'
-                            : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-[#006837] ring-1 ring-[#006837]/30 shadow-2xs'
+                            : 'border-slate-200/90 hover:border-slate-300'
                         }`}
                       >
-                        {/* Cabecalho do Accordion */}
+                        {/* Cabeçalho do Accordion (Modo Compacto) */}
                         <button
                           onClick={() => toggleQuestionAccordion(q.id)}
-                          className="w-full p-4 text-left flex items-start sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                          className="w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors cursor-pointer"
                         >
-                          <div className="flex items-start sm:items-center gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <span
-                              className={`p-1 rounded-md transition-transform ${
+                              className={`p-0.5 rounded-md transition-transform ${
                                 isExpanded ? 'rotate-90 text-[#006837]' : 'text-slate-400'
                               }`}
                             >
-                              <ChevronRight className="w-5 h-5" />
+                              <ChevronRight className="w-4 h-4" />
                             </span>
-                            <div>
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                  {q.category}
-                                </span>
-                              </div>
-                              <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-snug">
+                            <div className="truncate">
+                              <h3 className="text-xs font-bold text-slate-800 truncate">
                                 {q.questionText}
                               </h3>
                             </div>
                           </div>
 
-                          <span
-                            className={`text-[10px] px-2.5 py-1 rounded-md font-extrabold whitespace-nowrap flex-shrink-0 ${
-                              q.classification === 'Potencialidade'
-                                ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
-                                : q.classification === 'Mediana'
-                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                : 'bg-rose-50 text-rose-800 border border-rose-200'
-                            }`}
-                          >
-                            {q.classification} ({q.approvalRate}%)
-                          </span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-extrabold whitespace-nowrap ${
+                                q.classification === 'Potencialidade'
+                                  ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
+                                  : q.classification === 'Mediana'
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+                              }`}
+                            >
+                              {q.classification} • {q.approvalRate}%
+                            </span>
+                          </div>
                         </button>
 
                         {/* Conteudo Expandido (Detalhes da Pergunta) */}
@@ -781,26 +787,26 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25, ease: 'easeInOut' }}
-                              className="border-t border-slate-100 bg-slate-50/50 p-5 space-y-5"
+                              transition={{ duration: 0.2, ease: 'easeInOut' }}
+                              className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-4"
                             >
                               {/* Barra de Progresso e Percentuais */}
-                              <div className="space-y-3 max-w-2xl">
+                              <div className="space-y-2.5 max-w-2xl">
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-700">
                                   <span>Distribuição das Avaliações</span>
                                   <span className="text-[#006837] font-black">{q.approvalRate}% Aprovação</span>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                   {q.alternatives.map((alt, idx) => (
-                                    <div key={idx} className="space-y-1">
+                                    <div key={idx} className="space-y-0.5">
                                       <div className="flex justify-between text-xs font-medium text-slate-700">
                                         <span>{alt.option}</span>
                                         <span className="font-extrabold text-slate-900">
                                           {alt.percentage}% ({alt.count.toLocaleString('pt-BR')})
                                         </span>
                                       </div>
-                                      <div className="h-3 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                                      <div className="h-2.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
                                         <div
                                           style={{ width: `${alt.percentage}%` }}
                                           className={`h-full rounded-full transition-all ${
@@ -819,18 +825,18 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                                 </div>
                               </div>
 
-                              {/* Metricas Adicionais */}
-                              <div className="pt-3 border-t border-slate-200/70 flex flex-wrap items-center gap-6 text-xs text-slate-600 font-semibold">
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-[#006837]" />
+                              {/* Métricas Adicionais */}
+                              <div className="pt-2.5 border-t border-slate-200/70 flex flex-wrap items-center gap-5 text-xs text-slate-600 font-semibold">
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-[#006837]" />
                                   <span>Respondentes: <strong className="text-slate-900">{q.totalAnswers.toLocaleString('pt-BR')}</strong></span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-amber-600" />
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
                                   <span>Tempo médio: <strong className="text-slate-900">18 segundos</strong></span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Layers className="w-4 h-4 text-blue-600" />
+                                <div className="flex items-center gap-1.5">
+                                  <Layers className="w-3.5 h-3.5 text-blue-600" />
                                   <span>Segmento: <strong className="text-slate-900">{activeQuestionSegment}</strong></span>
                                 </div>
                               </div>
@@ -846,7 +852,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
           </section>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-sm">
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 text-xs">
           Selecione uma campanha no seletor para visualizar o relatório executivo.
         </div>
       )}
