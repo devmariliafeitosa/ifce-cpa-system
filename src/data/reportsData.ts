@@ -8,7 +8,7 @@ export interface ReportQuestion {
   id: string;
   questionText: string;
   category: string;
-  segment: 'Discentes' | 'Docentes' | 'TAEs';
+  segment: 'Todos' | 'Discentes' | 'Docentes' | 'TAEs';
   totalAnswers: number;
   approvalRate: number; // e.g. 78 (%)
   classification: 'Potencialidade' | 'Mediana' | 'Fragilidade';

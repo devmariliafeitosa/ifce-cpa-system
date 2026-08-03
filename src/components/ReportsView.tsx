@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   FileText,
+  FileDown,
   CheckCircle2,
   Users,
   Calendar,
@@ -9,40 +10,139 @@ import {
   Filter,
   BarChart3,
   TrendingUp,
-  Download,
-  Printer,
-  FileSpreadsheet,
+  ChevronDown,
   ChevronRight,
   Info,
   X,
   PieChart,
   Layers,
   HelpCircle,
-  Sparkles,
+  AlertTriangle,
   Search,
-  RefreshCw,
+  Building2,
+  BookOpen,
+  GraduationCap,
+  Award,
+  Sparkles,
+  ArrowRight,
+  ExternalLink,
+  Layers3,
+  ListFilter,
+  Eye,
 } from 'lucide-react';
 import {
   ReportCampaignData,
   ReportQuestion,
+  ReportDimensionResult,
 } from '../data/reportsData';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
 import { buildReportsFromSmartForms } from '../utils/reportConverter';
 import { SmartForm } from '../types';
+import { CpaPdfReportModal } from './CpaPdfReportModal';
 
 interface ReportsViewProps {
   onReturnToDashboard?: () => void;
 }
 
+// Custom SVG Donut Chart Component
+const DonutChart: React.FC<{
+  potencialidadePct: number;
+  medianaPct: number;
+  fragilidadePct: number;
+  size?: number;
+}> = ({ potencialidadePct, medianaPct, fragilidadePct, size = 180 }) => {
+  const radius = 64;
+  const strokeWidth = 18;
+  const circumference = 2 * Math.PI * radius; // ~402.12
+
+  const len1 = Math.max(0, (potencialidadePct / 100) * circumference);
+  const len2 = Math.max(0, (medianaPct / 100) * circumference);
+  const len3 = Math.max(0, (fragilidadePct / 100) * circumference);
+
+  const offset1 = 0;
+  const offset2 = len1;
+  const offset3 = len1 + len2;
+
+  return (
+    <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox="0 0 160 160" className="-rotate-90 transform">
+        {/* Track Background */}
+        <circle
+          cx="80"
+          cy="80"
+          r={radius}
+          fill="transparent"
+          stroke="#f1f5f9"
+          strokeWidth={strokeWidth}
+        />
+        {/* Segment 1: Potencialidade */}
+        {potencialidadePct > 0 && (
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="transparent"
+            stroke="#006837"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${len1} ${circumference - len1}`}
+            strokeDashoffset={-offset1}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        )}
+        {/* Segment 2: Mediana */}
+        {medianaPct > 0 && (
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="transparent"
+            stroke="#f59e0b"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${len2} ${circumference - len2}`}
+            strokeDashoffset={-offset2}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        )}
+        {/* Segment 3: Fragilidade */}
+        {fragilidadePct > 0 && (
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="transparent"
+            stroke="#e11d48"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${len3} ${circumference - len3}`}
+            strokeDashoffset={-offset3}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        )}
+      </svg>
+      {/* Center Label */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 pointer-events-none">
+        <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+          {potencialidadePct}%
+        </span>
+        <span className="text-[10px] font-bold text-[#006837] uppercase tracking-wider mt-1">
+          Potencialidade
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const ReportsView: React.FC<ReportsViewProps> = () => {
-  // Dynamic Report Campaigns state
+  // Dynamic Report Campaigns state from LocalStorage / Initial Forms
   const [reportCampaigns, setReportCampaigns] = useState<ReportCampaignData[]>(() => {
     const savedForms = localStorage.getItem('cpa_smart_forms');
     const forms: SmartForm[] = savedForms ? JSON.parse(savedForms) : INITIAL_SMART_FORMS;
     return buildReportsFromSmartForms(forms);
   });
 
-  // Listen for real-time form or response submission updates
+  // Real-time synchronization
   useEffect(() => {
     const loadFormsAndSync = () => {
       const savedForms = localStorage.getItem('cpa_smart_forms');
@@ -72,19 +172,38 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     };
   }, []);
 
-  // Filter States
+  // Filter States (Campus, Ano)
   const [campusFilter, setCampusFilter] = useState<string>('todos');
   const [yearFilter, setYearFilter] = useState<string>('todos');
-  const [semesterFilter, setSemesterFilter] = useState<string>('todos');
-  const [campaignFilter, setCampaignFilter] = useState<string>('todos');
-  const [segmentFilter, setSegmentFilter] = useState<string>('todos');
 
-  // Active Campaign State
+  // Selected Campaign State
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     reportCampaigns.length > 0 ? reportCampaigns[0].id : null
   );
 
-  // Sync selectedCampaignId if current selection is invalid or null
+  // Campaign Selector Dropdown state
+  const [isCampaignSelectorOpen, setIsCampaignSelectorOpen] = useState(false);
+  const [campaignSearchTerm, setCampaignSearchTerm] = useState('');
+
+  // Selected Area / Dimension for Main View
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
+
+  // Drawer Area / Dimension State (Side Drawer for Area Details)
+  const [drawerDimension, setDrawerDimension] = useState<ReportDimensionResult | null>(null);
+
+  // Accordion State for Questions (stores expanded question IDs)
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(new Set());
+
+  // Question Segment Tab (Todos | Discentes | Docentes | TAEs)
+  const [activeQuestionSegment, setActiveQuestionSegment] = useState<'Todos' | 'Discentes' | 'Docentes' | 'TAEs'>('Todos');
+
+  // PDF Modal State
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // Quick Nav active section
+  const [activeNavSection, setActiveNavSection] = useState<'resumo' | 'indicadores' | 'areas' | 'perguntas'>('resumo');
+
+  // Sync selectedCampaignId if list updates
   useEffect(() => {
     if (reportCampaigns.length > 0) {
       if (!selectedCampaignId || !reportCampaigns.some((c) => c.id === selectedCampaignId)) {
@@ -95,913 +214,859 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     }
   }, [reportCampaigns, selectedCampaignId]);
 
-  // Segment Tab inside Right Column (Discentes | Docentes | TAEs)
-  const [activeSegmentTab, setActiveSegmentTab] = useState<'Discentes' | 'Docentes' | 'TAEs'>('Discentes');
+  // Available Campuses
+  const availableCampuses = useMemo(() => {
+    const set = new Set<string>();
+    reportCampaigns.forEach((c) => {
+      if (c.campus) set.add(c.campus);
+    });
+    return Array.from(set);
+  }, [reportCampaigns]);
 
-  // Modal State for Question Details
-  const [selectedQuestion, setSelectedQuestion] = useState<ReportQuestion | null>(null);
+  // Available Years
+  const availableYears = useMemo(() => {
+    const set = new Set<string>();
+    reportCampaigns.forEach((c) => {
+      if (c.year) set.add(c.year);
+    });
+    return Array.from(set).sort().reverse();
+  }, [reportCampaigns]);
 
-  // Total summary metrics calculated dynamically from reportCampaigns
-  const totalReportsCount = reportCampaigns.length;
-  const finishedCampaignsCount = reportCampaigns.filter((c) => c.status === 'Finalizada').length;
-  const totalResponsesSum = reportCampaigns.reduce((acc, c) => acc + (c.totalResponses || 0), 0);
-  const latestReportDate = reportCampaigns.length > 0 ? reportCampaigns[0].updatedAt : 'Sem dados';
-
-  // Filtered List of Campaigns for Left Column
-  const filteredCampaigns = useMemo(() => {
+  // Filtered campaigns for top selector
+  const filteredCampaignsList = useMemo(() => {
     return reportCampaigns.filter((c) => {
       const matchCampus = campusFilter === 'todos' || c.campus === campusFilter;
       const matchYear = yearFilter === 'todos' || c.year === yearFilter;
-      const matchSemester = semesterFilter === 'todos' || c.semester === semesterFilter;
-      const matchCampaign = campaignFilter === 'todos' || c.id === campaignFilter || c.title === campaignFilter;
-      return matchCampus && matchYear && matchSemester && matchCampaign;
+      const matchSearch =
+        !campaignSearchTerm ||
+        c.title.toLowerCase().includes(campaignSearchTerm.toLowerCase()) ||
+        c.period.toLowerCase().includes(campaignSearchTerm.toLowerCase());
+      return matchCampus && matchYear && matchSearch;
     });
-  }, [reportCampaigns, campusFilter, yearFilter, semesterFilter, campaignFilter]);
+  }, [reportCampaigns, campusFilter, yearFilter, campaignSearchTerm]);
 
-  // Selected Campaign Object
+  // Selected Campaign Data Object
   const selectedCampaign = useMemo(() => {
     if (!selectedCampaignId) return null;
     return reportCampaigns.find((c) => c.id === selectedCampaignId) || null;
   }, [reportCampaigns, selectedCampaignId]);
 
-  // Handle "Gerar Relatório" button click
-  const handleGenerateReport = () => {
-    if (filteredCampaigns.length > 0) {
-      // Select the first matching campaign or keep current if it's in the list
-      const currentStillValid = filteredCampaigns.some((c) => c.id === selectedCampaignId);
-      if (!currentStillValid) {
-        setSelectedCampaignId(filteredCampaigns[0].id);
+  // Toggle Accordion Question
+  const toggleQuestionAccordion = (questionId: string) => {
+    setExpandedQuestionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(questionId)) {
+        next.delete(questionId);
+      } else {
+        next.add(questionId);
       }
-    } else {
-      setSelectedCampaignId(null);
+      return next;
+    });
+  };
+
+  // Questions for the main section filtered by dimension and active segment
+  const mainQuestions = useMemo(() => {
+    if (!selectedCampaign) return [];
+    let qs = selectedCampaign.questions;
+
+    // Filter by selected dimension
+    if (selectedDimension) {
+      qs = qs.filter((q) => q.category === selectedDimension);
+    }
+
+    // Filter by active segment tab
+    qs = qs.filter((q) => q.segment === activeQuestionSegment);
+
+    return qs;
+  }, [selectedCampaign, selectedDimension, activeQuestionSegment]);
+
+  // Questions for the Drawer
+  const drawerQuestions = useMemo(() => {
+    if (!selectedCampaign || !drawerDimension) return [];
+    return selectedCampaign.questions.filter(
+      (q) => q.category === drawerDimension.dimension && q.segment === activeQuestionSegment
+    );
+  }, [selectedCampaign, drawerDimension, activeQuestionSegment]);
+
+  // Scroll handler for Quick Nav Rail
+  const scrollToSection = (sectionId: string) => {
+    setActiveNavSection(sectionId as any);
+    const element = document.getElementById(`sec-${sectionId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
-  // Filter questions by selected segment inside the right column
-  const segmentQuestions = useMemo(() => {
-    if (!selectedCampaign) return [];
-    
-    // Filter by tab segment
-    let questions = selectedCampaign.questions.filter((q) => q.segment === activeSegmentTab);
-    
-    // If top filter specifies segment, also enforce it
-    if (segmentFilter !== 'todos') {
-      const mapped = segmentFilter === 'alunos' || segmentFilter === 'discentes' ? 'Discentes' : segmentFilter === 'docentes' ? 'Docentes' : 'TAEs';
-      if (activeSegmentTab !== mapped) {
-        questions = selectedCampaign.questions.filter((q) => q.segment === mapped);
-      }
-    }
-    
-    return questions;
-  }, [selectedCampaign, activeSegmentTab, segmentFilter]);
+  // Category Icon Helper
+  const getCategoryIcon = (category: string) => {
+    const cat = category.toLowerCase();
+    if (cat.includes('infra')) return <Building2 className="w-5 h-5 text-[#006837]" />;
+    if (cat.includes('biblio')) return <BookOpen className="w-5 h-5 text-blue-600" />;
+    if (cat.includes('ensino')) return <GraduationCap className="w-5 h-5 text-[#006837]" />;
+    if (cat.includes('gestã') || cat.includes('gestao')) return <Award className="w-5 h-5 text-amber-600" />;
+    if (cat.includes('assistê') || cat.includes('estudant')) return <Users className="w-5 h-5 text-purple-600" />;
+    return <Layers className="w-5 h-5 text-[#006837]" />;
+  };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
-      
-      {/* Top Header / Breadcrumb */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/60">
+    <div className="w-full max-w-[95%] xl:max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-6 space-y-10 relative">
+      {/* =====================================================================
+          1. NOVO CABEÇALHO COMPACTO
+         ===================================================================== */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+        {/* À esquerda: Título da campanha, Campus e Período */}
         <div className="space-y-1">
-          <nav className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span>Início</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[#006837] font-semibold">Relatórios Institucionais</span>
-          </nav>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <FileText className="w-6 h-6 text-[#006837]" />
-            <span>Relatórios da CPA</span>
-          </h2>
-        </div>
-        <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs self-start sm:self-auto flex items-center gap-2">
-          <Clock className="w-3.5 h-3.5 text-[#006837]" />
-          <span>Última atualização do sistema: <strong>31/07/2026</strong></span>
-        </div>
-      </div>
-
-      {/* Cards Superiores (4 small metric cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Relatórios Gerados */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between group">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Relatórios Gerados
-            </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                {totalReportsCount}
-              </span>
-              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Relatórios
-              </span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#006837] border border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <FileText className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 2: Campanhas Finalizadas */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between group">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Campanhas Finalizadas
-            </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                {finishedCampaignsCount}
-              </span>
-              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Encerradas
-              </span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#006837] border border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 3: Respostas Consolidadas */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between group">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Respostas Consolidadas
-            </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                {totalResponsesSum.toLocaleString('pt-BR')}
-              </span>
-              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Respostas
-              </span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#006837] border border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 4: Último Relatório */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between group">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Último Relatório
-            </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-base font-extrabold text-slate-800 tracking-tight">
-                {latestReportDate}
-              </span>
-              <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                Status
-              </span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#006837] border border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <Calendar className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Barra de Filtros */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-          <Filter className="w-4 h-4 text-[#006837]" />
-          <span>Filtros do Relatório</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
-          {/* Campus */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-600">Campus</label>
-            <select
-              value={campusFilter}
-              onChange={(e) => setCampusFilter(e.target.value)}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="todos">Todos os Campi</option>
-              <option value="IFCE Campus Tauá">IFCE Campus Tauá</option>
-              <option value="IFCE Campus Fortaleza">IFCE Campus Fortaleza</option>
-              <option value="IFCE Campus Crateús">IFCE Campus Crateús</option>
-              <option value="IFCE Campus Juazeiro do Norte">IFCE Campus Juazeiro</option>
-            </select>
-          </div>
-
-          {/* Ano */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-600">Ano</label>
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="todos">Todos os Anos</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
-          </div>
-
-          {/* Semestre */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-600">Semestre</label>
-            <select
-              value={semesterFilter}
-              onChange={(e) => setSemesterFilter(e.target.value)}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="todos">Todos os Semestres</option>
-              <option value="2026.1">2026.1</option>
-              <option value="2026.2">2026.2</option>
-              <option value="2025.1">2025.1</option>
-              <option value="2025.2">2025.2</option>
-            </select>
-          </div>
-
-          {/* Campanha */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-600">Campanha</label>
-            <select
-              value={campaignFilter}
-              onChange={(e) => setCampaignFilter(e.target.value)}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer truncate"
-            >
-              <option value="todos">Todas as Campanhas</option>
-              {reportCampaigns.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Segmento */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-600">Segmento</label>
-            <select
-              value={segmentFilter}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSegmentFilter(val);
-                if (val === 'discentes' || val === 'alunos') setActiveSegmentTab('Discentes');
-                else if (val === 'docentes') setActiveSegmentTab('Docentes');
-                else if (val === 'taes') setActiveSegmentTab('TAEs');
-              }}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="todos">Todos os Segmentos</option>
-              <option value="discentes">Discentes</option>
-              <option value="docentes">Docentes</option>
-              <option value="taes">TAEs</option>
-            </select>
-          </div>
-
-          {/* Botão Gerar Relatório */}
-          <div>
-            <button
-              onClick={handleGenerateReport}
-              className="w-full h-9 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-[#006837]/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Gerar Relatório</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Área Principal (Split into 2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Coluna Esquerda: Lista de Campanhas (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#006837]" />
-              <span>Campanhas Avaliativas</span>
-            </h3>
-            <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-              {filteredCampaigns.length} disponíveis
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1.5 bg-emerald-100/70 text-[#006837] rounded-lg">
+              <BarChart3 className="w-5 h-5" />
             </span>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+              {selectedCampaign ? selectedCampaign.title : 'Relatórios CPA'}
+            </h1>
           </div>
-
-          {/* Campaign List */}
-          <div className="space-y-2.5 max-h-[720px] overflow-y-auto pr-1 custom-scrollbar">
-            {filteredCampaigns.length === 0 ? (
-              <div className="text-center py-8 space-y-2">
-                <Search className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-xs font-medium text-slate-500">Nenhuma campanha encontrada com esses filtros.</p>
-                <button
-                  onClick={() => {
-                    setCampusFilter('todos');
-                    setYearFilter('todos');
-                    setSemesterFilter('todos');
-                    setCampaignFilter('todos');
-                    setSegmentFilter('todos');
-                  }}
-                  className="text-[11px] font-bold text-[#006837] hover:underline cursor-pointer"
-                >
-                  Limpar filtros
-                </button>
-              </div>
-            ) : (
-              filteredCampaigns.map((camp) => {
-                const isSelected = selectedCampaignId === camp.id;
-                const isFinished = camp.status === 'Finalizada';
-
-                return (
-                  <button
-                    key={camp.id}
-                    onClick={() => setSelectedCampaignId(camp.id)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between gap-2.5 ${
-                      isSelected
-                        ? 'bg-[#E8F5EE] border-[#006837] shadow-2xs ring-1 ring-[#006837]/30'
-                        : 'bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/70'
-                    }`}
-                  >
-                    {/* Top Row: Title + Status Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h4
-                        className={`text-xs font-bold leading-snug transition-colors ${
-                          isSelected ? 'text-[#006837]' : 'text-slate-800 group-hover:text-slate-900'
-                        }`}
-                      >
-                        {camp.title}
-                      </h4>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
-                          isFinished
-                            ? 'bg-emerald-100/80 text-emerald-800'
-                            : 'bg-amber-100/80 text-amber-800'
-                        }`}
-                      >
-                        {isFinished ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Finalizada</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-3 h-3 text-amber-600" />
-                            <span>Em andamento</span>
-                          </>
-                        )}
-                      </span>
-                    </div>
-
-                    {/* Meta details */}
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100/70">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-slate-400" />
-                        <strong>{camp.totalResponses}</strong> respostas
-                      </span>
-                      <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200/60 font-semibold text-slate-600">
-                        {camp.semester}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Coluna Direita: Detalhes do Relatório / Empty State (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {!selectedCampaign ? (
-            /* Empty State when no campaign is selected */
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-2xs">
-              <div className="w-20 h-20 rounded-2xl bg-[#E8F5EE] text-[#006837] border border-[#006837]/20 flex items-center justify-center shadow-inner">
-                <FileText className="w-10 h-10" />
-              </div>
-              <div className="max-w-md space-y-1.5">
-                <h3 className="text-lg font-bold text-slate-800">
-                  Nenhuma campanha selecionada
-                </h3>
-                <p className="text-xs text-slate-500 font-normal leading-relaxed">
-                  Selecione uma campanha na lista ao lado ou ajuste os filtros superiores para visualizar o resumo consolidado, dimensões e perguntas.
-                </p>
-              </div>
+          {selectedCampaign && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 pl-8">
+              <span className="px-2 py-0.5 bg-slate-100 rounded-md text-slate-700 font-bold">
+                {selectedCampaign.campus}
+              </span>
+              <span>•</span>
+              <span className="text-slate-600">Período {selectedCampaign.period}</span>
             </div>
-          ) : (
-            /* Detailed Report Content */
-            <motion.div
-              key={selectedCampaign.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              {/* Cabeçalho do Relatório com Ações de Exportação */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold bg-[#E8F5EE] text-[#006837] px-2.5 py-0.5 rounded-md border border-[#006837]/20">
-                        {selectedCampaign.campus}
-                      </span>
-                      <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md">
-                        {selectedCampaign.period}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md ${
-                          selectedCampaign.status === 'Finalizada'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        {selectedCampaign.status === 'Finalizada' ? '🟢 Finalizada' : '🟡 Em andamento'}
-                      </span>
-                    </div>
-
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">
-                      {selectedCampaign.title}
-                    </h3>
-                  </div>
-
-                  {/* Top Right Action Buttons (Export PDF, Excel, Print) */}
-                  <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-                    <button
-                      disabled
-                      className="opacity-75 cursor-not-allowed px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium rounded-xl flex items-center gap-1.5"
-                      title="Exportação PDF em breve"
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Exportar PDF</span>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.2 rounded font-bold">
-                        Em breve
-                      </span>
-                    </button>
-
-                    <button
-                      disabled
-                      className="opacity-75 cursor-not-allowed px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium rounded-xl flex items-center gap-1.5"
-                      title="Exportação Excel em breve"
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Exportar Excel</span>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.2 rounded font-bold">
-                        Em breve
-                      </span>
-                    </button>
-
-                    <button
-                      disabled
-                      className="opacity-75 cursor-not-allowed p-2 bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium rounded-xl flex items-center gap-1.5"
-                      title="Impressão em breve"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="hidden sm:inline">Imprimir</span>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.2 rounded font-bold">
-                        Em breve
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Indicadores do Relatório (4 KPI Cards Internos) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
-                  <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Total de Perguntas
-                    </span>
-                    <p className="text-base font-extrabold text-slate-800">
-                      {selectedCampaign.totalQuestions}
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Participantes
-                    </span>
-                    <p className="text-base font-extrabold text-slate-800">
-                      {selectedCampaign.totalResponses}
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Taxa de Resposta
-                    </span>
-                    <p className="text-base font-extrabold text-[#006837]">
-                      {selectedCampaign.responseRate}%
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Tempo Médio
-                    </span>
-                    <p className="text-base font-extrabold text-slate-800">
-                      {selectedCampaign.avgResponseTime}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo Geral (Gráfico de Barras Horizontal) */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-[#006837]" />
-                    <span>Resumo Geral de Avaliação</span>
-                  </h3>
-                  <span className="text-xs text-slate-500 font-medium">
-                    Metodologia Institucional CPA
-                  </span>
-                </div>
-
-                {/* Progress Bar Display */}
-                <div className="space-y-3">
-                  {/* Single Stacked Bar Visual */}
-                  <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                    <div
-                      style={{ width: `${selectedCampaign.potencialidadePct}%` }}
-                      className="bg-[#006837] h-full transition-all duration-500"
-                      title={`Potencialidades: ${selectedCampaign.potencialidadePct}%`}
-                    />
-                    <div
-                      style={{ width: `${selectedCampaign.medianaPct}%` }}
-                      className="bg-amber-500 h-full transition-all duration-500"
-                      title={`Avaliação Mediana: ${selectedCampaign.medianaPct}%`}
-                    />
-                    <div
-                      style={{ width: `${selectedCampaign.fragilidadePct}%` }}
-                      className="bg-rose-500 h-full transition-all duration-500"
-                      title={`Fragilidades: ${selectedCampaign.fragilidadePct}%`}
-                    />
-                  </div>
-
-                  {/* Horizontal Bar Breakdown Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    {/* Potencialidades */}
-                    <div className="bg-emerald-50/60 border border-emerald-200/70 p-3.5 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#006837]" />
-                          Potencialidades
-                        </span>
-                        <span className="text-sm font-extrabold text-[#006837]">
-                          {selectedCampaign.potencialidadePct}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-emerald-200/50 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          style={{ width: `${selectedCampaign.potencialidadePct}%` }}
-                          className="bg-[#006837] h-full"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Mediana */}
-                    <div className="bg-amber-50/60 border border-amber-200/70 p-3.5 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                          Avaliação Mediana
-                        </span>
-                        <span className="text-sm font-extrabold text-amber-700">
-                          {selectedCampaign.medianaPct}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-amber-200/50 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          style={{ width: `${selectedCampaign.medianaPct}%` }}
-                          className="bg-amber-500 h-full"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fragilidades */}
-                    <div className="bg-rose-50/60 border border-rose-200/70 p-3.5 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                          Fragilidades
-                        </span>
-                        <span className="text-sm font-extrabold text-rose-700">
-                          {selectedCampaign.fragilidadePct}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-rose-200/50 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          style={{ width: `${selectedCampaign.fragilidadePct}%` }}
-                          className="bg-rose-500 h-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resultado por Dimensão (Tabela) */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-[#006837]" />
-                    <span>Resultado por Dimensão Avaliativa</span>
-                  </h3>
-                  <span className="text-xs text-slate-500 font-medium">
-                    {selectedCampaign.dimensions.length} dimensões mapeadas
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                        <th className="py-2.5 px-3">Dimensão</th>
-                        <th className="py-2.5 px-3 text-center">Potencialidade</th>
-                        <th className="py-2.5 px-3 text-center">Mediana</th>
-                        <th className="py-2.5 px-3 text-center">Fragilidade</th>
-                        <th className="py-2.5 px-3 text-right">Classificação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {selectedCampaign.dimensions.map((dim, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-3 px-3 font-semibold text-slate-800">
-                            {dim.dimension}
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-[#006837]">
-                            {dim.potencialidadePct}%
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-amber-600">
-                            {dim.medianaPct}%
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-rose-600">
-                            {dim.fragilidadePct}%
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            {dim.classification === 'Potencialidade' && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                🟢 Potencialidade
-                              </span>
-                            )}
-                            {dim.classification === 'Mediana' && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                🟡 Mediana
-                              </span>
-                            )}
-                            {dim.classification === 'Fragilidade' && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                                🔴 Fragilidade
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Resultado por Segmento (3 Abas + Lista de Perguntas) */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#006837]" />
-                      <span>Resultado por Segmento</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 font-normal">
-                      Selecione um segmento para filtrar as perguntas correspondentes
-                    </p>
-                  </div>
-
-                  {/* 3 Abas: Discentes | Docentes | TAEs */}
-                  <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
-                    <button
-                      onClick={() => setActiveSegmentTab('Discentes')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                        activeSegmentTab === 'Discentes'
-                          ? 'bg-white text-[#006837] shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Discentes
-                    </button>
-                    <button
-                      onClick={() => setActiveSegmentTab('Docentes')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                        activeSegmentTab === 'Docentes'
-                          ? 'bg-white text-[#006837] shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Docentes
-                    </button>
-                    <button
-                      onClick={() => setActiveSegmentTab('TAEs')}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                        activeSegmentTab === 'TAEs'
-                          ? 'bg-white text-[#006837] shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      TAEs
-                    </button>
-                  </div>
-                </div>
-
-                {/* Question Cards List */}
-                <div className="space-y-3 pt-2">
-                  {segmentQuestions.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-500">
-                      Nenhuma pergunta registrada para este segmento nesta campanha.
-                    </div>
-                  ) : (
-                    segmentQuestions.map((q) => {
-                      return (
-                        <div
-                          key={q.id}
-                          className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
-                        >
-                          <div className="space-y-1.5 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">
-                                {q.category}
-                              </span>
-                              <span className="text-[10px] font-bold bg-[#E8F5EE] text-[#006837] px-2 py-0.5 rounded-md">
-                                {q.segment}
-                              </span>
-                            </div>
-                            <h4 className="text-xs font-bold text-slate-800 leading-relaxed">
-                              {q.questionText}
-                            </h4>
-                          </div>
-
-                          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                            {/* Classification Badge */}
-                            <div className="text-right">
-                              {q.classification === 'Potencialidade' && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                  🟢 Potencialidade ({q.approvalRate}%)
-                                </span>
-                              )}
-                              {q.classification === 'Mediana' && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                  🟡 Mediana ({q.approvalRate}%)
-                                </span>
-                              )}
-                              {q.classification === 'Fragilidade' && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                                  🔴 Fragilidade ({q.approvalRate}%)
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Button Ver detalhes */}
-                            <button
-                              onClick={() => setSelectedQuestion(q)}
-                              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#006837] text-xs font-bold rounded-xl border border-emerald-200/80 transition-colors cursor-pointer active:scale-95"
-                            >
-                              Ver detalhes
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </motion.div>
           )}
         </div>
+
+        {/* À direita: Seletor da campanha & Botão Exportar PDF */}
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          {/* Seletor Compacto da Campanha */}
+          <div className="relative min-w-[220px] sm:min-w-[260px]">
+            <button
+              onClick={() => setIsCampaignSelectorOpen(!isCampaignSelectorOpen)}
+              className="w-full h-11 px-3.5 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between gap-2 shadow-xs transition-all cursor-pointer text-left"
+            >
+              <span className="truncate">
+                {selectedCampaign ? selectedCampaign.title : 'Selecione uma campanha'}
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-500 flex-shrink-0 transition-transform ${
+                  isCampaignSelectorOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu for Campaign Selection with Search */}
+            <AnimatePresence>
+              {isCampaignSelectorOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="absolute right-0 top-full mt-2 z-40 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 space-y-2 w-72 sm:w-80 overflow-hidden flex flex-col"
+                >
+                  <div className="relative flex-shrink-0">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      value={campaignSearchTerm}
+                      onChange={(e) => setCampaignSearchTerm(e.target.value)}
+                      placeholder="Pesquisar campanha..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
+                    />
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-1 pr-1 flex-1">
+                    {filteredCampaignsList.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        Nenhuma campanha encontrada.
+                      </div>
+                    ) : (
+                      filteredCampaignsList.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setSelectedCampaignId(c.id);
+                            setIsCampaignSelectorOpen(false);
+                          }}
+                          className={`w-full p-2.5 rounded-xl text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            c.id === selectedCampaignId
+                              ? 'bg-[#006837] text-white font-bold'
+                              : 'hover:bg-slate-50 text-slate-700 font-medium'
+                          }`}
+                        >
+                          <div className="truncate pr-2">
+                            <div className="truncate">{c.title}</div>
+                            <div
+                              className={`text-[10px] mt-0.5 ${
+                                c.id === selectedCampaignId ? 'text-emerald-100' : 'text-slate-400'
+                              }`}
+                            >
+                              {c.campus} • {c.period}
+                            </div>
+                          </div>
+                          {c.id === selectedCampaignId && (
+                            <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Botão Exportar PDF */}
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            disabled={!selectedCampaign}
+            className="h-11 px-5 bg-[#006837] hover:bg-[#00522b] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Exportar PDF</span>
+          </button>
+        </div>
       </div>
 
-      {/* Pop-up da Pergunta (Modal) */}
+      {selectedCampaign ? (
+        <div className="space-y-10">
+          {/* =====================================================================
+              2. CARDS SUPERIORES (AUMENTADOS E EM LINHA COM NÚMEROS EM DESTAQUE)
+             ===================================================================== */}
+          <section id="sec-resumo" className="scroll-mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Perguntas */}
+              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    Perguntas
+                  </span>
+                  <div className="p-2 bg-slate-100 rounded-xl text-slate-700">
+                    <HelpCircle className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                    {selectedCampaign.totalQuestions}
+                  </span>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Itens no instrumento
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Respondentes */}
+              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    Respondentes
+                  </span>
+                  <div className="p-2 bg-emerald-50 rounded-xl text-[#006837]">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-4xl font-black text-[#006837] tracking-tight block">
+                    {selectedCampaign.totalResponses.toLocaleString('pt-BR')}
+                  </span>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Participações validadas
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Taxa de Resposta */}
+              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    Taxa de Resposta
+                  </span>
+                  <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                    {selectedCampaign.responseRate}%
+                  </span>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Adesão da comunidade
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 4: Tempo Médio */}
+              <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs hover:shadow-md transition-all space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    Tempo Médio
+                  </span>
+                  <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-4xl font-black text-slate-900 tracking-tight block">
+                    {selectedCampaign.avgResponseTime} min
+                  </span>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Duração por formulário
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* =====================================================================
+              3. INDICADORES GERAIS (DONUT CHART + LEGENDA AO LADO)
+             ===================================================================== */}
+          <section id="sec-indicadores" className="scroll-mt-6">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Indicadores Gerais da Campanha
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Classificação consolidada do instrumento avaliativo
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-around gap-8 py-2">
+                {/* Donut Chart centralizado */}
+                <DonutChart
+                  potencialidadePct={selectedCampaign.potencialidadePct}
+                  medianaPct={selectedCampaign.medianaPct}
+                  fragilidadePct={selectedCampaign.fragilidadePct}
+                  size={200}
+                />
+
+                {/* Legenda dos Indicadores ao lado */}
+                <div className="space-y-4 w-full max-w-md">
+                  {/* Item 1: Potencialidade */}
+                  <div className="p-3.5 bg-emerald-50/60 border border-emerald-200/70 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3.5 h-3.5 rounded-full bg-[#006837] flex-shrink-0" />
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-800 block">
+                          Potencialidade
+                        </span>
+                        <span className="text-[11px] text-slate-500">Aprovação ≥ 70%</span>
+                      </div>
+                    </div>
+                    <span className="text-xl font-black text-[#006837]">
+                      {selectedCampaign.potencialidadePct}%
+                    </span>
+                  </div>
+
+                  {/* Item 2: Avaliação Mediana */}
+                  <div className="p-3.5 bg-amber-50/60 border border-amber-200/70 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3.5 h-3.5 rounded-full bg-amber-500 flex-shrink-0" />
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-800 block">
+                          Avaliação Mediana
+                        </span>
+                        <span className="text-[11px] text-slate-500">Aprovação 50% – 69%</span>
+                      </div>
+                    </div>
+                    <span className="text-xl font-black text-amber-600">
+                      {selectedCampaign.medianaPct}%
+                    </span>
+                  </div>
+
+                  {/* Item 3: Fragilidade */}
+                  <div className="p-3.5 bg-rose-50/60 border border-rose-200/70 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3.5 h-3.5 rounded-full bg-rose-600 flex-shrink-0" />
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-800 block">
+                          Fragilidade
+                        </span>
+                        <span className="text-[11px] text-slate-500">Aprovação &lt; 50%</span>
+                      </div>
+                    </div>
+                    <span className="text-xl font-black text-rose-600">
+                      {selectedCampaign.fragilidadePct}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* =====================================================================
+              4. RESULTADOS POR ÁREA (GRID RESPONSIVO 2-4 CARDS POR LINHA)
+             ===================================================================== */}
+          <section id="sec-areas" className="scroll-mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Resultados por Área
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Desempenho por dimensão avaliativa da CPA
+                </p>
+              </div>
+
+              {selectedDimension && (
+                <button
+                  onClick={() => setSelectedDimension(null)}
+                  className="text-xs font-bold text-[#006837] hover:underline cursor-pointer"
+                >
+                  Exibir Todas
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {selectedCampaign.dimensions.map((dim) => {
+                const isSelected = selectedDimension === dim.dimension;
+                return (
+                  <div
+                    key={dim.dimension}
+                    className={`bg-white border rounded-xl p-5 transition-all flex flex-col justify-between space-y-4 relative ${
+                      isSelected
+                        ? 'border-[#006837] ring-2 ring-[#006837]/20 shadow-md'
+                        : 'border-slate-200/90 hover:border-slate-300 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-slate-100 rounded-lg">
+                            {getCategoryIcon(dim.dimension)}
+                          </div>
+                          <h3 className="text-sm font-extrabold text-slate-900 truncate">
+                            {dim.dimension}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="flex items-baseline justify-between pt-1">
+                        <div>
+                          <span className="text-3xl font-black text-slate-900 tracking-tight block">
+                            {dim.potencialidadePct}%
+                          </span>
+                          <span
+                            className={`inline-block text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1 ${
+                              dim.classification === 'Potencialidade'
+                                ? 'bg-emerald-100 text-[#006837]'
+                                : dim.classification === 'Mediana'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-700'
+                            }`}
+                          >
+                            {dim.classification}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedDimension(dim.dimension);
+                          scrollToSection('perguntas');
+                        }}
+                        className="flex-1 py-2 px-3 bg-slate-100 hover:bg-[#006837] hover:text-white text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer text-center"
+                      >
+                        Filtrar Perguntas
+                      </button>
+                      <button
+                        onClick={() => setDrawerDimension(dim)}
+                        title="Ver Detalhes da Área"
+                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* =====================================================================
+              5, 6, 7 & 8. PERGUNTAS (ACCORDION + TABS SEGMENTOS + DETALHES VISUAIS)
+             ===================================================================== */}
+          <section id="sec-perguntas" className="scroll-mt-6">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-5 sm:p-7 shadow-xs space-y-6">
+              {/* Header com Filtro de Área & Tabs Fixas de Segmento */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                    Perguntas da Área {selectedDimension ? `• ${selectedDimension}` : '• Todas as Áreas'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Clique na pergunta para expandir os gráficos e o detalhamento dos segmentos
+                  </p>
+                </div>
+
+                {/* Tabs de Segmentos permanentes */}
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start md:self-auto">
+                  {(['Todos', 'Discentes', 'Docentes', 'TAEs'] as const).map((seg) => (
+                    <button
+                      key={seg}
+                      onClick={() => setActiveQuestionSegment(seg)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                        activeQuestionSegment === seg
+                          ? 'bg-white text-[#006837] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {seg}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lista Accordion de Perguntas */}
+              {mainQuestions.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                  Nenhuma pergunta encontrada para os filtros selecionados.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {mainQuestions.map((q) => {
+                    const isExpanded = expandedQuestionIds.has(q.id);
+                    return (
+                      <div
+                        key={q.id}
+                        className={`border rounded-xl transition-all overflow-hidden bg-white ${
+                          isExpanded
+                            ? 'border-[#006837] shadow-xs'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {/* Cabecalho do Accordion */}
+                        <button
+                          onClick={() => toggleQuestionAccordion(q.id)}
+                          className="w-full p-4 text-left flex items-start sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-start sm:items-center gap-3">
+                            <span
+                              className={`p-1 rounded-md transition-transform ${
+                                isExpanded ? 'rotate-90 text-[#006837]' : 'text-slate-400'
+                              }`}
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  {q.category}
+                                </span>
+                              </div>
+                              <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-snug">
+                                {q.questionText}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <span
+                            className={`text-[10px] px-2.5 py-1 rounded-md font-extrabold whitespace-nowrap flex-shrink-0 ${
+                              q.classification === 'Potencialidade'
+                                ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
+                                : q.classification === 'Mediana'
+                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                : 'bg-rose-50 text-rose-800 border border-rose-200'
+                            }`}
+                          >
+                            {q.classification} ({q.approvalRate}%)
+                          </span>
+                        </button>
+
+                        {/* Conteudo Expandido (Detalhes da Pergunta) */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.25, ease: 'easeInOut' }}
+                              className="border-t border-slate-100 bg-slate-50/50 p-5 space-y-5"
+                            >
+                              {/* Barra de Progresso e Percentuais */}
+                              <div className="space-y-3 max-w-2xl">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                                  <span>Distribuição das Avaliações</span>
+                                  <span className="text-[#006837] font-black">{q.approvalRate}% Aprovação</span>
+                                </div>
+
+                                <div className="space-y-2">
+                                  {q.alternatives.map((alt, idx) => (
+                                    <div key={idx} className="space-y-1">
+                                      <div className="flex justify-between text-xs font-medium text-slate-700">
+                                        <span>{alt.option}</span>
+                                        <span className="font-extrabold text-slate-900">
+                                          {alt.percentage}% ({alt.count.toLocaleString('pt-BR')})
+                                        </span>
+                                      </div>
+                                      <div className="h-3 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                                        <div
+                                          style={{ width: `${alt.percentage}%` }}
+                                          className={`h-full rounded-full transition-all ${
+                                            idx === 0
+                                              ? 'bg-[#006837]'
+                                              : idx === 1
+                                              ? 'bg-amber-400'
+                                              : idx === 2
+                                              ? 'bg-rose-500'
+                                              : 'bg-slate-400'
+                                          }`}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Metricas Adicionais */}
+                              <div className="pt-3 border-t border-slate-200/70 flex flex-wrap items-center gap-6 text-xs text-slate-600 font-semibold">
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4 text-[#006837]" />
+                                  <span>Respondentes: <strong className="text-slate-900">{q.totalAnswers.toLocaleString('pt-BR')}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-amber-600" />
+                                  <span>Tempo médio: <strong className="text-slate-900">18 segundos</strong></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Layers className="w-4 h-4 text-blue-600" />
+                                  <span>Segmento: <strong className="text-slate-900">{activeQuestionSegment}</strong></span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-sm">
+          Selecione uma campanha no seletor para visualizar o relatório executivo.
+        </div>
+      )}
+
+      {/* =====================================================================
+          5. DRAWER LATERAL (PAINEL LATERAL DIREITA PARA DETALHES DA ÁREA)
+         ===================================================================== */}
       <AnimatePresence>
-        {selectedQuestion && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {drawerDimension && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedQuestion(null)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+              onClick={() => setDrawerDimension(null)}
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
             />
 
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.18 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-6 space-y-5"
-            >
-              {/* Modal Header */}
-              <div className="flex items-start justify-between gap-4 pb-3 border-b border-slate-100">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-[#E8F5EE] text-[#006837] px-2.5 py-0.5 rounded-md">
-                    Detalhes da Resposta
-                  </span>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-snug">
-                    {selectedQuestion.questionText}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setSelectedQuestion(null)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+            {/* Painel Lateral */}
+            <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="w-screen max-w-lg sm:max-w-xl bg-white shadow-2xl flex flex-col"
+              >
+                {/* Header do Drawer */}
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white rounded-xl shadow-xs border border-slate-200">
+                      {getCategoryIcon(drawerDimension.dimension)}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900">
+                        {drawerDimension.dimension}
+                      </h2>
+                      <span
+                        className={`inline-block text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-0.5 ${
+                          drawerDimension.classification === 'Potencialidade'
+                            ? 'bg-emerald-100 text-[#006837]'
+                            : drawerDimension.classification === 'Mediana'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
+                        {drawerDimension.classification} ({drawerDimension.potencialidadePct}%)
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Meta Info Pill Row */}
-              <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-xs">
-                <div>
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">Categoria</span>
-                  <strong className="text-slate-800 font-bold">{selectedQuestion.category}</strong>
+                  <button
+                    onClick={() => setDrawerDimension(null)}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">Segmento</span>
-                  <strong className="text-slate-800 font-bold">{selectedQuestion.segment}</strong>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase block">Respostas</span>
-                  <strong className="text-slate-800 font-bold">{selectedQuestion.totalAnswers}</strong>
-                </div>
-              </div>
 
-              {/* Tabela das Alternativas */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Distribuição de Respostas por Alternativa
-                </h4>
-                <div className="border border-slate-200/80 rounded-xl overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-600 font-bold text-[10px] uppercase border-b border-slate-200/80">
-                        <th className="py-2 px-3">Alternativa</th>
-                        <th className="py-2 px-3 text-center">Qtd.</th>
-                        <th className="py-2 px-3 text-center">Percentual</th>
-                        <th className="py-2 px-3 text-right">Distribuição</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {selectedQuestion.alternatives.map((alt, i) => (
-                        <tr key={i} className="hover:bg-slate-50/50">
-                          <td className="py-2.5 px-3 font-semibold text-slate-800">{alt.option}</td>
-                          <td className="py-2.5 px-3 text-center font-medium text-slate-600">{alt.count}</td>
-                          <td className="py-2.5 px-3 text-center font-bold text-[#006837]">
-                            {alt.percentage}%
-                          </td>
-                          <td className="py-2.5 px-3 text-right w-28">
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                              <div
-                                style={{ width: `${alt.percentage}%` }}
-                                className="bg-[#006837] h-full rounded-full"
-                              />
-                            </div>
-                          </td>
-                        </tr>
+                {/* Conteúdo do Drawer */}
+                <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                  {/* Segment Tabs no Drawer */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                    <span className="text-xs font-extrabold text-slate-600">
+                      Filtrar por Segmento:
+                    </span>
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                      {(['Todos', 'Discentes', 'Docentes', 'TAEs'] as const).map((seg) => (
+                        <button
+                          key={seg}
+                          onClick={() => setActiveQuestionSegment(seg)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            activeQuestionSegment === seg
+                              ? 'bg-white text-[#006837] shadow-xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {seg}
+                        </button>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    </div>
+                  </div>
 
-              {/* Classificação Metodologia CPA */}
-              <div className="p-3.5 rounded-xl border flex items-center justify-between gap-3 bg-slate-50/80 border-slate-200">
-                <div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                    Classificação Metodológica CPA
-                  </span>
-                  <p className="text-xs text-slate-600 mt-0.5">
-                    Métrica calculada com base no somatório das respostas Ótimo e Bom.
-                  </p>
+                  {/* Perguntas da Área no Drawer */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">
+                      Perguntas desta dimensão ({drawerQuestions.length})
+                    </h3>
+
+                    {drawerQuestions.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
+                        Nenhuma pergunta encontrada para este segmento nesta área.
+                      </div>
+                    ) : (
+                      drawerQuestions.map((q) => (
+                        <div
+                          key={q.id}
+                          className="p-4 border border-slate-200 rounded-xl space-y-3 bg-white"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-xs font-bold text-slate-800 leading-snug">
+                              {q.questionText}
+                            </h4>
+                            <span className="text-[10px] font-black text-[#006837] bg-emerald-50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                              {q.approvalRate}%
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5 pt-1">
+                            {q.alternatives.map((alt, idx) => (
+                              <div key={idx} className="space-y-0.5">
+                                <div className="flex justify-between text-[11px] text-slate-600">
+                                  <span>{alt.option}</span>
+                                  <span className="font-bold">{alt.percentage}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    style={{ width: `${alt.percentage}%` }}
+                                    className={`h-full rounded-full ${
+                                      idx === 0 ? 'bg-[#006837]' : idx === 1 ? 'bg-amber-400' : 'bg-rose-500'
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  {selectedQuestion.classification === 'Potencialidade' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      🟢 Potencialidade
-                    </span>
-                  )}
-                  {selectedQuestion.classification === 'Mediana' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                      🟡 Mediana
-                    </span>
-                  )}
-                  {selectedQuestion.classification === 'Fragilidade' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                      🔴 Fragilidade
-                    </span>
-                  )}
+                {/* Footer do Drawer */}
+                <div className="p-4 border-t border-slate-200 bg-slate-50 text-right">
+                  <button
+                    onClick={() => setDrawerDimension(null)}
+                    className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Fechar Painel
+                  </button>
                 </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => setSelectedQuestion(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                >
-                  Fechar
-                </button>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* =====================================================================
+          9. BARRA LATERAL DE NAVEGAÇÃO RÁPIDA (FLOATING QUICK NAV RAIL)
+         ===================================================================== */}
+      <div className="hidden lg:flex fixed right-4 top-1/2 -translate-y-1/2 z-30 flex-col gap-2 bg-white/90 backdrop-blur-md border border-slate-200 p-2 rounded-2xl shadow-lg">
+        <button
+          onClick={() => scrollToSection('resumo')}
+          title="Resumo Geral"
+          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
+            activeNavSection === 'resumo'
+              ? 'bg-[#006837] text-white shadow-xs'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Resumo
+          </span>
+        </button>
+
+        <button
+          onClick={() => scrollToSection('indicadores')}
+          title="Indicadores Gerais"
+          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
+            activeNavSection === 'indicadores'
+              ? 'bg-[#006837] text-white shadow-xs'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <PieChart className="w-4 h-4" />
+          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Indicadores
+          </span>
+        </button>
+
+        <button
+          onClick={() => scrollToSection('areas')}
+          title="Resultados por Área"
+          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
+            activeNavSection === 'areas'
+              ? 'bg-[#006837] text-white shadow-xs'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Áreas
+          </span>
+        </button>
+
+        <button
+          onClick={() => scrollToSection('perguntas')}
+          title="Perguntas da Área"
+          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
+            activeNavSection === 'perguntas'
+              ? 'bg-[#006837] text-white shadow-xs'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Perguntas
+          </span>
+        </button>
+      </div>
+
+      {/* MODAL DE PDF */}
+      <CpaPdfReportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        campaign={selectedCampaign}
+      />
     </div>
   );
 };
+

@@ -44,22 +44,19 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
   const reportQuestions: ReportQuestion[] = [];
 
   (form.questions || []).forEach((q: SmartQuestion, idx: number) => {
-    const audiences = q.audiences || ['todos'];
-    const targetSegments: Array<'Discentes' | 'Docentes' | 'TAEs'> = [];
-
-    if (audiences.includes('todos')) {
-      targetSegments.push('Discentes', 'Docentes', 'TAEs');
-    } else {
-      if (audiences.includes('alunos')) targetSegments.push('Discentes');
-      if (audiences.includes('docentes')) targetSegments.push('Docentes');
-      if (audiences.includes('taes')) targetSegments.push('TAEs');
-    }
+    const targetSegments: Array<'Todos' | 'Discentes' | 'Docentes' | 'TAEs'> = [
+      'Todos',
+      'Discentes',
+      'Docentes',
+      'TAEs',
+    ];
 
     targetSegments.forEach((seg) => {
       let segmentAnswers = 0;
-      if (seg === 'Discentes') segmentAnswers = form.responsesCount?.alunos ?? Math.round(totalResponses * 0.75);
-      if (seg === 'Docentes') segmentAnswers = form.responsesCount?.docentes ?? Math.round(totalResponses * 0.15);
-      if (seg === 'TAEs') segmentAnswers = form.responsesCount?.taes ?? Math.round(totalResponses * 0.10);
+      if (seg === 'Todos') segmentAnswers = totalResponses;
+      else if (seg === 'Discentes') segmentAnswers = form.responsesCount?.alunos ?? Math.round(totalResponses * 0.75);
+      else if (seg === 'Docentes') segmentAnswers = form.responsesCount?.docentes ?? Math.round(totalResponses * 0.15);
+      else if (seg === 'TAEs') segmentAnswers = form.responsesCount?.taes ?? Math.round(totalResponses * 0.10);
 
       let approvalRate = 0;
       let classification: 'Potencialidade' | 'Mediana' | 'Fragilidade' = 'Mediana';
@@ -168,9 +165,11 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
     });
   });
 
-  // Calculate dimension results
+  // Calculate dimension results using 'Todos' segment
+  const allSegmentQuestions = reportQuestions.filter((q) => q.segment === 'Todos');
+
   const dimensionsMap = new Map<string, ReportQuestion[]>();
-  reportQuestions.forEach((q) => {
+  allSegmentQuestions.forEach((q) => {
     const cat = q.category || 'Outros';
     if (!dimensionsMap.has(cat)) {
       dimensionsMap.set(cat, []);
@@ -209,12 +208,12 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
   });
 
   // Resumo Geral
-  const totalReportQuestions = reportQuestions.length;
+  const totalReportQuestions = allSegmentQuestions.length;
   let totalPot = 0;
   let totalMed = 0;
   let totalFrag = 0;
 
-  reportQuestions.forEach((q) => {
+  allSegmentQuestions.forEach((q) => {
     if (q.classification === 'Potencialidade') totalPot++;
     else if (q.classification === 'Mediana') totalMed++;
     else totalFrag++;
