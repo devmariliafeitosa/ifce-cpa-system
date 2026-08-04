@@ -1,3 +1,18 @@
+export type ParticipantSegment = 'discente' | 'docente' | 'tae';
+export type StudentLevelType = 'Técnico' | 'Graduação' | 'Especialização' | 'Mestrado' | 'Doutorado';
+
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  segment: ParticipantSegment;
+  studentLevel?: StudentLevelType;
+  matricula?: string;
+  campus: string;
+  status: 'Ativo' | 'Inativo';
+  createdAt: string;
+}
+
 export type AuthView = 'login' | 'forgot-password' | 'register' | 'reset-password';
 
 export type TargetAudience = 'todos' | 'alunos' | 'docentes' | 'taes';

@@ -116,6 +116,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               >
                 <GoogleFormsManager onReturnToDashboard={() => setActiveTab('formularios')} />
               </motion.div>
+            ) : activeTab === 'participantes' || activeTab === 'alunos' || activeTab === 'docentes' || activeTab === 'taes' ? (
+              <motion.div
+                key="participantes"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <ParticipantsView />
+              </motion.div>
             ) : (
               <motion.div
                 key={activeTab}
