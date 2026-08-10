@@ -931,11 +931,11 @@ export const IFCE_CAMPUSES = [
 
 export const WIZARD_STEPS = [
   { id: 1, label: 'Informações', icon: Info },
-  { id: 2, label: 'Perguntas Gerais', icon: HelpCircle },
-  { id: 3, label: 'Escolha de Segmento', icon: Users },
-  { id: 4, label: 'Perguntas do Segmento', icon: CheckSquare },
+  { id: 2, label: 'Perguntas', icon: HelpCircle },
+  { id: 3, label: 'Segmentos', icon: Users },
+  { id: 4, label: 'Perguntas por segmento', icon: CheckSquare },
   { id: 5, label: 'Revisão', icon: CheckCircle2 },
-  { id: 6, label: 'Envio da Campanha', icon: Send },
+  { id: 6, label: 'Envio', icon: Send },
 ];
 
 /* Componente de Menu de Ações Contextual Inteligente (Drop-up / Drop-down) */
@@ -2469,6 +2469,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [wizardCopiedLink, setWizardCopiedLink] = useState(false);
   const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
   const [isCampaignSentSuccess, setIsCampaignSentSuccess] = useState(false);
+  const [isPreviewQuestionsModalOpen, setIsPreviewQuestionsModalOpen] = useState(false);
+  const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
+  const [showQrCodePreviewModal, setShowQrCodePreviewModal] = useState(false);
 
   const toggleQuestionExpanded = (id: string) => {
     setExpandedQuestionIds((prev) => ({
@@ -2892,6 +2895,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [participantAnswers, setParticipantAnswers] = useState<Record<string, string | string[]>>({});
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
+  const [unansweredQuestionIds, setUnansweredQuestionIds] = useState<string[]>([]);
+  const [showValidationErrorBanner, setShowValidationErrorBanner] = useState(false);
 
   // Metrics & Analytics Viewer
   const [viewingMetricsForm, setViewingMetricsForm] = useState<SmartForm | null>(null);
@@ -3236,10 +3241,12 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setRespondingForm(form);
     setParticipantSegment(null);
     setParticipantAnswers({});
-    setResponseSubmitted(submittedCampaignIds.includes(form.id));
+    setResponseSubmitted(false);
+    setUnansweredQuestionIds([]);
+    setShowValidationErrorBanner(false);
   };
 
-  // Filter questions for current participant segment
+  // Filter questions for current participant segment and student level
   const getFilteredQuestionsForParticipant = (): SmartQuestion[] => {
     if (!respondingForm || !participantSegment) return [];
     return respondingForm.questions.filter((q) => {
@@ -3257,10 +3264,85 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     });
   };
 
-  // Submit Participant Answer
+  // Handle participant answer changes with live validation updates
+  const handleParticipantAnswerChange = (qId: string, val: string | string[]) => {
+    setParticipantAnswers((prev) => ({
+      ...prev,
+      [qId]: val,
+    }));
+
+    if (showValidationErrorBanner || unansweredQuestionIds.length > 0) {
+      let isFilled = false;
+      if (Array.isArray(val)) {
+        isFilled = val.length > 0;
+      } else {
+        isFilled = typeof val === 'string' && val.trim() !== '';
+      }
+
+      if (isFilled) {
+        setUnansweredQuestionIds((prev) => {
+          const remaining = prev.filter((id) => id !== qId);
+          if (remaining.length === 0) {
+            setShowValidationErrorBanner(false);
+          }
+          return remaining;
+        });
+      } else {
+        const visibleQuestions = getFilteredQuestionsForParticipant();
+        const targetQ = visibleQuestions.find((q) => q.id === qId);
+        if (targetQ?.required && !unansweredQuestionIds.includes(qId)) {
+          setUnansweredQuestionIds((prev) => [...prev, qId]);
+          setShowValidationErrorBanner(true);
+        }
+      }
+    }
+  };
+
+  // Submit Participant Answer with Mandatory Validation Rules
   const handleSubmitParticipantResponse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!respondingForm || !participantSegment) return;
+
+    // 1. Get filtered questions applicable to the active segment and student level
+    const visibleQuestions = getFilteredQuestionsForParticipant();
+
+    // 2. Identify required questions that have no answer
+    const unanswered = visibleQuestions.filter((q) => {
+      if (!q.required) return false;
+      const ans = participantAnswers[q.id];
+      if (q.type === 'CHECKBOX') {
+        return !Array.isArray(ans) || ans.length === 0;
+      }
+      return ans === undefined || ans === null || (typeof ans === 'string' && ans.trim() === '');
+    });
+
+    // 3. Block submission if required questions are unanswered
+    if (unanswered.length > 0) {
+      const unansweredIds = unanswered.map((q) => q.id);
+      setUnansweredQuestionIds(unansweredIds);
+      setShowValidationErrorBanner(true);
+
+      // Scroll automatically to the first pending unanswered question
+      const firstUnansweredId = unansweredIds[0];
+      setTimeout(() => {
+        const element = document.getElementById(`participant-question-${firstUnansweredId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          const banner = document.getElementById('validation-error-banner');
+          if (banner) {
+            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }, 50);
+
+      showNotification('error', 'Existem perguntas obrigatórias que ainda não foram respondidas.');
+      return;
+    }
+
+    // 4. All required questions answered -> submit response
+    setUnansweredQuestionIds([]);
+    setShowValidationErrorBanner(false);
 
     setIsSubmittingResponse(true);
     setTimeout(() => {
@@ -4939,7 +5021,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
             
             {isCampaignSentSuccess ? (
               <div className="p-8 text-center space-y-6 my-auto animate-in fade-in duration-200">
@@ -4993,13 +5075,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               </div>
             ) : (
               <>
-            {/* CABEÇALHO DO WIZARD (COMPACTO) */}
-            <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3.5 space-y-2.5 shrink-0">
-              {/* Header Top Row: Title & Close */}
+            {/* CABEÇALHO DO WIZARD (COMPACTO E LIMPO) */}
+            <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3 space-y-2 shrink-0">
+              {/* Header Top Row: Title, Step Subtitle & Close */}
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate tracking-tight">
-                  {formTitle.trim() ? formTitle : 'Novo Formulário'}
-                </h3>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate tracking-tight">
+                    {formTitle.trim() ? formTitle : 'Novo Formulário'}
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500">
+                    Etapa {wizardStep} de {WIZARD_STEPS.length}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
@@ -5010,16 +5097,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </button>
               </div>
 
-              {/* Progress Counter Line */}
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                <span>
-                  Etapa {wizardStep} de {WIZARD_STEPS.length} • {WIZARD_STEPS[wizardStep - 1]?.label}
-                </span>
-                <span className="text-[#006837] font-extrabold">
-                  {Math.round((wizardStep / WIZARD_STEPS.length) * 100)}%
-                </span>
-              </div>
-
               {/* Discrete Progress Bar */}
               <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
@@ -5028,8 +5105,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 />
               </div>
 
-              {/* STEPPER INDICATOR */}
-              <div className="grid grid-cols-6 gap-1 pt-0.5">
+              {/* STEPPER INDICATOR RAIL */}
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-1 pt-0.5">
                 {WIZARD_STEPS.map((step) => {
                   const isActive = wizardStep === step.id;
                   const isCompleted = wizardStep > step.id;
@@ -5039,20 +5116,20 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       key={step.id}
                       type="button"
                       onClick={() => setWizardStep(step.id)}
-                      className={`py-1 px-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      className={`py-1 px-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
                         isActive
                           ? 'bg-[#006837] text-white shadow-2xs'
                           : isCompleted
                           ? 'bg-emerald-100/80 text-[#006837] hover:bg-emerald-100'
-                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200/70'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200/70'
                       }`}
                     >
                       {isCompleted ? (
                         <Check className="w-3 h-3 shrink-0" />
                       ) : (
-                        <span className="text-[11px]">{step.id}</span>
+                        <span className="text-[11px] shrink-0">{step.id}</span>
                       )}
-                      <span className="hidden sm:inline truncate text-[10px]">{step.label}</span>
+                      <span className="truncate text-[10px] sm:text-[11px] font-medium">{step.label}</span>
                     </button>
                   );
                 })}
@@ -5455,438 +5532,266 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 5 — REVISÃO E FINALIZAÇÃO */}
+              {/* ETAPA 5 — REVISÃO DO FORMULÁRIO */}
               {wizardStep === 5 && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  {/* Cabeçalho da Etapa */}
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-[#006837]" />
-                      Revisão e Finalização
+                      <span>REVISÃO DO FORMULÁRIO</span>
                     </h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Confira o resumo completo do formulário antes de publicar.
+                      Confira o resumo das informações do formulário antes de prosseguir para o envio.
                     </p>
                   </div>
 
-                  {/* Card Ficha Resumo */}
-                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                    <div className="space-y-1">
-                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-[#006837] text-[10px] font-bold">
-                        {formCampus}
-                      </span>
-                      <h5 className="text-base font-bold text-slate-900">
-                        {formTitle.trim() ? formTitle : 'Novo Formulário sem título'}
-                      </h5>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {formDescription.trim() ? formDescription : 'Sem descrição cadastrada.'}
-                      </p>
+                  {/* RESUMO VISUAL NO TOPO (Item 3) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
+                      <span className="text-base font-black text-[#006837] block leading-none">{formQuestions.length}</span>
+                      <span className="text-[11px] font-bold text-slate-600 block">Perguntas</span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200/80 text-xs">
-                      <div>
-                        <span className="text-slate-400 font-medium block">Período Letivo:</span>
-                        <span className="font-bold text-slate-800">{formPeriodo}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 font-medium block">Categoria:</span>
-                        <span className="font-bold text-slate-800">{formCategory}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 font-medium block">Total de Questões:</span>
-                        <span className="font-bold text-[#006837]">{formQuestions.length} perguntas</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 font-medium block">Anonimato:</span>
-                        <span className="font-bold text-emerald-700">
-                          {formAnonymous ? 'Garantido (SINAES)' : 'Desativado'}
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
+                      <span className="text-base font-black text-[#006837] block leading-none">{formAudiences.length}</span>
+                      <span className="text-[11px] font-bold text-slate-600 block">Segmentos</span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5 truncate">
+                      <span className="text-xs font-black text-slate-800 block truncate leading-snug" title={formCampus}>
+                        {formCampus.replace('IFCE Campus ', '')}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-600 block">Campus</span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
+                      <span className="text-xs font-bold text-slate-800 block leading-snug">
+                        {formStartDate ? formStartDate.split('-').reverse().slice(0, 2).join('/') : '15/09'} → {formEndDate ? formEndDate.split('-').reverse().slice(0, 2).join('/') : '30/09'}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-600 block">Período</span>
+                    </div>
+                  </div>
+
+                  {/* BLOCOS COMPACTOS DA REVISÃO */}
+                  <div className="space-y-3">
+
+                    {/* BLOCO 1: Informações Gerais */}
+                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Info className="w-4 h-4 text-[#006837]" />
+                          Informações Gerais
                         </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Resumo Quantitativo de Perguntas por Segmento */}
-                  <div className="space-y-2">
-                    <h5 className="text-xs font-bold text-slate-800">
-                      Distribuição do Questionário por Público
-                    </h5>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {/* Gerais */}
-                      <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Perguntas Gerais</span>
-                        <p className="text-lg font-black text-slate-900">
-                          {formQuestions.filter((q) => q.audiences.includes('todos')).length}
-                        </p>
-                        <span className="text-[10px] text-slate-400">Todos os Públicos</span>
-                      </div>
-
-                      {/* Discentes */}
-                      <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-1">
-                        <span className="text-[10px] font-bold text-indigo-700 uppercase">Discentes</span>
-                        <p className="text-lg font-black text-indigo-950">
-                          {formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length}
-                        </p>
-                        <span className="text-[10px] text-indigo-600">Exclusivas Alunos</span>
-                      </div>
-
-                      {/* Docentes */}
-                      <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-1">
-                        <span className="text-[10px] font-bold text-[#006837] uppercase">Docentes</span>
-                        <p className="text-lg font-black text-emerald-950">
-                          {formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length}
-                        </p>
-                        <span className="text-[10px] text-[#006837]">Exclusivas Professores</span>
-                      </div>
-
-                      {/* TAEs */}
-                      <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-1">
-                        <span className="text-[10px] font-bold text-amber-800 uppercase">Técnicos (TAEs)</span>
-                        <p className="text-lg font-black text-amber-950">
-                          {formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length}
-                        </p>
-                        <span className="text-[10px] text-amber-700">Exclusivas Servidores</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SEÇÃO: PERÍODO DE RESPOSTAS */}
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-[#006837]" />
-                        <div>
-                          <h5 className="text-sm font-bold text-slate-900">Período de Respostas</h5>
-                          <p className="text-[11px] text-slate-500">
-                            Defina as datas e horários de abertura e encerramento da coleta de dados.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Status calculados & Badge de Contagem */}
-                      {(() => {
-                        const countdown = getCountdownBadgeInfo(
-                          formStartDate,
-                          formStartTime,
-                          formEndDate,
-                          formEndTime,
-                          publishStatus
-                        );
-                        return (
-                          <div className={`px-3 py-1 rounded-full text-xs border inline-flex items-center gap-1.5 self-start sm:self-center ${countdown.badgeClass}`}>
-                            <span>{countdown.text}</span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Inputs: Data e Horário de Início / Encerramento */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Data e Horário de Início */}
-                      <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
-                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                          <span>Início do Período</span>
-                          <span className="text-[10px] text-emerald-800 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-full">Obrigatório</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 block mb-1">📅 Data</span>
-                            <input
-                              type="date"
-                              required
-                              value={formStartDate}
-                              onChange={(e) => {
-                                setFormStartDate(e.target.value);
-                                setFormDurationPreset('custom');
-                              }}
-                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 block mb-1">🕒 Horário</span>
-                            <input
-                              type="time"
-                              value={formStartTime}
-                              onChange={(e) => setFormStartTime(e.target.value)}
-                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Data e Horário de Encerramento */}
-                      <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
-                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                          <span>Encerramento</span>
-                          <span className="text-[10px] text-emerald-800 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-full">Obrigatório</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 block mb-1">📅 Data</span>
-                            <input
-                              type="date"
-                              required
-                              value={formEndDate}
-                              onChange={(e) => {
-                                setFormEndDate(e.target.value);
-                                setFormDurationPreset('custom');
-                              }}
-                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 block mb-1">🕒 Horário</span>
-                            <input
-                              type="time"
-                              value={formEndTime}
-                              onChange={(e) => setFormEndTime(e.target.value)}
-                              className="w-full h-10 px-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Configuração Rápida de Duração */}
-                    <div className="space-y-2 pt-1 border-t border-slate-100">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                        Configuração Rápida de Duração
-                      </span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {[7, 15, 30, 45].map((days) => (
-                          <button
-                            key={days}
-                            type="button"
-                            onClick={() => handleSelectPresetDays(days)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                              formDurationPreset === days
-                                ? 'bg-[#006837] text-white shadow-2xs'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
-                            }`}
-                          >
-                            {days} dias
-                          </button>
-                        ))}
                         <button
                           type="button"
-                          onClick={() => setFormDurationPreset('custom')}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                            formDurationPreset === 'custom'
-                              ? 'bg-[#006837] text-white shadow-2xs'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
-                          }`}
+                          onClick={() => setWizardStep(1)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          Personalizado
+                          <Edit3 className="w-3 h-3" />
+                          <span>Editar</span>
                         </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-slate-400 font-medium block">Título:</span>
+                          <span className="font-bold text-slate-800">{formTitle.trim() ? formTitle : 'Novo Formulário'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Campus:</span>
+                          <span className="font-bold text-slate-800">{formCampus}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Período Letivo:</span>
+                          <span className="font-bold text-slate-800">{formPeriodo}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Descrição:</span>
+                          <span className="font-medium text-slate-600 line-clamp-1">{formDescription.trim() ? formDescription : 'Sem descrição.'}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Validation warning if end <= start */}
-                    {(() => {
-                      if (!formStartDate || !formEndDate) return null;
-                      const s = new Date(`${formStartDate}T${formStartTime || '00:00'}:00`);
-                      const e = new Date(`${formEndDate}T${formEndTime || '23:59'}:00`);
-                      if (e <= s) {
-                        return (
-                          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2 font-medium">
-                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                            <span>Atenção: A data de encerramento deve ser posterior à data de início.</span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-
-                  {/* Escolha do Status de Publicação */}
-                  <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
-                    <span className="text-xs font-bold text-slate-800 block">
-                      Status Inicial do Formulário
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <label
-                        onClick={() => setPublishStatus('Ativo')}
-                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
-                          publishStatus === 'Ativo'
-                            ? 'border-[#006837] bg-emerald-50/80 text-emerald-950 font-bold'
-                            : 'border-slate-200 bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="publishStatus"
-                          checked={publishStatus === 'Ativo'}
-                          onChange={() => setPublishStatus('Ativo')}
-                          className="accent-[#006837] w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p className="text-xs font-bold">🟢 Publicar como Ativo</p>
-                          <p className="text-[10px] text-slate-500 font-normal">
-                            Disponível para receber respostas da comunidade.
-                          </p>
-                        </div>
-                      </label>
-
-                      <label
-                        onClick={() => setPublishStatus('Rascunho')}
-                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
-                          publishStatus === 'Rascunho'
-                            ? 'border-amber-500 bg-amber-50/80 text-amber-950 font-bold'
-                            : 'border-slate-200 bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="publishStatus"
-                          checked={publishStatus === 'Rascunho'}
-                          onChange={() => setPublishStatus('Rascunho')}
-                          className="accent-amber-600 w-4 h-4 cursor-pointer"
-                        />
-                        <div>
-                          <p className="text-xs font-bold">🟡 Manter em Rascunho</p>
-                          <p className="text-[10px] text-slate-500 font-normal">
-                            Permanece salvo para edições posteriores.
-                          </p>
-                        </div>
-                      </label>
+                    {/* BLOCO 2: Participantes / Segmentos */}
+                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-[#006837]" />
+                          Participantes
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {formAudiences.includes('alunos') && (
+                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-900 border border-indigo-200 rounded-lg font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-indigo-600" /> Discentes
+                          </span>
+                        )}
+                        {formAudiences.includes('docentes') && (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-[#006837] border border-emerald-200 rounded-lg font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-[#006837]" /> Docentes
+                          </span>
+                        )}
+                        {formAudiences.includes('taes') && (
+                          <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-amber-600" /> TAEs
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* BLOCO 3: Perguntas */}
+                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <HelpCircle className="w-4 h-4 text-[#006837]" />
+                          Perguntas ({formQuestions.length} perguntas)
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setIsPreviewQuestionsModalOpen(true)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Ver perguntas</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWizardStep(2)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Editar</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="text-slate-500 font-medium block text-[10px]">Gerais</span>
+                          <span className="font-bold text-slate-800">{formQuestions.filter((q) => q.audiences.includes('todos')).length} perguntas</span>
+                        </div>
+                        <div className="p-2 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                          <span className="text-indigo-600 font-medium block text-[10px]">Discentes</span>
+                          <span className="font-bold text-indigo-950">{formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length} perguntas</span>
+                        </div>
+                        <div className="p-2 bg-emerald-50/50 rounded-lg border border-emerald-100">
+                          <span className="text-[#006837] font-medium block text-[10px]">Docentes</span>
+                          <span className="font-bold text-emerald-950">{formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length} perguntas</span>
+                        </div>
+                        <div className="p-2 bg-amber-50/50 rounded-lg border border-amber-100">
+                          <span className="text-amber-700 font-medium block text-[10px]">TAEs</span>
+                          <span className="font-bold text-amber-950">{formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length} perguntas</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* BLOCO 4: Configurações */}
+                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Settings className="w-4 h-4 text-[#006837]" />
+                          Configurações
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(1)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-slate-400 font-medium block">Período de Resposta:</span>
+                          <span className="font-bold text-slate-800">{formStartDate} até {formEndDate}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Identificação:</span>
+                          <span className="font-bold text-emerald-700">{formAnonymous ? 'Anonimato Garantido (SINAES)' : 'Desativado'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Status Inicial:</span>
+                          <span className="font-bold text-slate-800">{publishStatus}</span>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
 
               {/* ETAPA 6 — ENVIO DA CAMPANHA */}
               {wizardStep === 6 && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  {/* 1. RESUMO DA CAMPANHA (TOP CARD) */}
-                  <div className="p-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 via-white to-emerald-50/30 shadow-2xs space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006837] bg-emerald-100/90 px-2.5 py-0.5 rounded-full inline-block mb-1">
-                          Resumo do Instrumento
-                        </span>
-                        <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                          {wizardCampaignName || formTitle || 'Avaliação Institucional CPA 2026.2'}
-                        </h4>
-                        <p className="text-xs text-slate-600 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <Building2 className="w-3.5 h-3.5 text-[#006837]" />
-                          <span>{wizardCampaignCampus}</span>
-                          <span>•</span>
-                          <Calendar className="w-3.5 h-3.5 text-[#006837]" />
-                          <span>{wizardCampaignStartDate} até {wizardCampaignEndDate}</span>
-                        </p>
-                      </div>
-                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-[#006837] text-xs font-extrabold border border-emerald-300/80 shrink-0">
-                        Pronto para envio
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                      <Send className="w-5 h-5 text-[#006837]" />
+                      <span>ENVIO DA CAMPANHA</span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Configure os destinatários, os canais de distribuição e o período de vigência da campanha.
+                    </p>
+                  </div>
+
+                  {/* BLOCO 1: PÚBLICO */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-[#006837]" />
+                        1. PÚBLICO
+                      </span>
+                      <span className="text-xs font-extrabold text-[#006837] bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                        2.450 participantes selecionados
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-emerald-100/80 text-xs">
-                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] text-slate-400 font-bold block">Perguntas Totais</span>
-                        <span className="text-sm font-black text-slate-800">{formQuestions.length} questões</span>
-                      </div>
-                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] text-slate-400 font-bold block">Segmentos</span>
-                        <span className="text-sm font-black text-[#006837]">
-                          {formAudiences.map(a => a === 'alunos' ? 'Discentes' : a === 'docentes' ? 'Docentes' : 'TAEs').join(', ') || 'Todos'}
+                    <p className="text-xs font-semibold text-slate-600">Quem receberá a avaliação?</p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {formAudiences.includes('alunos') && (
+                        <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> Discentes
                         </span>
-                      </div>
-                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] text-slate-400 font-bold block">Tempo Estimado</span>
-                        <span className="text-sm font-black text-slate-800">{wizardCampaignEstimatedTime}</span>
-                      </div>
-                      <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] text-slate-400 font-bold block">Público Previsto</span>
-                        <span className="text-sm font-black text-slate-800">2.348 contatos</span>
-                      </div>
+                      )}
+                      {formAudiences.includes('docentes') && (
+                        <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-[#006837] text-xs font-bold rounded-lg flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#006837]" /> Docentes
+                        </span>
+                      )}
+                      {formAudiences.includes('taes') && (
+                        <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" /> TAEs
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* 2. CONFIGURAÇÃO DA CAMPANHA */}
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
-                    <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                      <Settings className="w-4 h-4 text-[#006837]" />
-                      Configurações da Campanha
-                    </h5>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Nome da Campanha */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-800">Nome da Campanha</label>
-                        <input
-                          type="text"
-                          value={wizardCampaignName}
-                          onChange={(e) => setWizardCampaignName(e.target.value)}
-                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                        />
-                      </div>
-
-                      {/* Campus */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-800">Campus IFCE</label>
-                        <select
-                          value={wizardCampaignCampus}
-                          onChange={(e) => setWizardCampaignCampus(e.target.value)}
-                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                        >
-                          {IFCE_CAMPUSES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Data Início */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-800">Data de Início</label>
-                        <input
-                          type="date"
-                          value={wizardCampaignStartDate}
-                          onChange={(e) => setWizardCampaignStartDate(e.target.value)}
-                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                        />
-                      </div>
-
-                      {/* Data Encerramento */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-800">Data de Encerramento</label>
-                        <input
-                          type="date"
-                          value={wizardCampaignEndDate}
-                          onChange={(e) => setWizardCampaignEndDate(e.target.value)}
-                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                        />
-                      </div>
-
-                      {/* Tempo Estimado */}
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                          <span>Tempo Estimado de Resposta</span>
-                          <span className="text-[10px] text-slate-400 font-normal">Calculado com base nas {formQuestions.length} perguntas</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={wizardCampaignEstimatedTime}
-                          onChange={(e) => setWizardCampaignEstimatedTime(e.target.value)}
-                          placeholder="Ex: 4 min"
-                          className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
-                        />
-                      </div>
+                  {/* BLOCO 2: CANAIS DE ENVIO */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                    <div className="border-b border-slate-100 pb-2">
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Send className="w-4 h-4 text-[#006837]" />
+                        2. CANAIS DE ENVIO
+                      </span>
                     </div>
-                  </div>
 
-                  {/* 3. FORMAS DE ENVIO */}
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-2xs">
-                    <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                      <Send className="w-4 h-4 text-[#006837]" />
-                      Métodos de Distribuição e Divulgação
-                    </h5>
+                    <p className="text-xs font-semibold text-slate-600">Como deseja disponibilizar a avaliação?</p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {/* Email option */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* E-mail Checkbox */}
                       <label
-                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
                           sendMethods.email
-                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
                         }`}
                       >
@@ -5897,21 +5802,17 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
                         />
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                            <Mail className="w-4 h-4 text-[#006837]" />
-                            <span>E-mail Institucional</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                            Disparo automático de convites para contatos cadastrados no SUAP.
-                          </p>
+                          <span className="text-xs font-extrabold flex items-center gap-1">
+                            <Mail className="w-3.5 h-3.5 text-[#006837]" /> E-mail institucional
+                          </span>
                         </div>
                       </label>
 
-                      {/* QR Code option */}
+                      {/* QR Code Checkbox */}
                       <label
-                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
                           sendMethods.qrcode
-                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
                         }`}
                       >
@@ -5922,21 +5823,17 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
                         />
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                            <QrCode className="w-4 h-4 text-[#006837]" />
-                            <span>QR Code para Impressão</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                            Geração de cartazes e informativos para afixar nos blocos do campus.
-                          </p>
+                          <span className="text-xs font-extrabold flex items-center gap-1">
+                            <QrCode className="w-3.5 h-3.5 text-[#006837]" /> QR Code
+                          </span>
                         </div>
                       </label>
 
-                      {/* Link option */}
+                      {/* Link Checkbox */}
                       <label
-                        className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
                           sendMethods.link
-                            ? 'border-[#006837] bg-emerald-50/70 text-emerald-950 font-bold'
+                            ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
                         }`}
                       >
@@ -5947,33 +5844,38 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
                         />
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                            <Link2 className="w-4 h-4 text-[#006837]" />
-                            <span>Link Público</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-normal leading-tight">
-                            URL direta para compartilhar via WhatsApp, redes e portal.
-                          </p>
+                          <span className="text-xs font-extrabold flex items-center gap-1">
+                            <Link2 className="w-3.5 h-3.5 text-[#006837]" /> Link direto
+                          </span>
                         </div>
                       </label>
                     </div>
 
-                    {/* DETALHES DO E-MAIL (SE SELECIONADO) */}
+                    {/* REVELA APENAS O QUE ESTIVER SELECIONADO */}
+
+                    {/* 1. SE E-MAIL ESTIVER SELECIONADO */}
                     {sendMethods.email && (
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
-                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <Mail className="w-4 h-4 text-[#006837]" />
-                            Configuração da Mensagem por E-mail
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            Será enviado para 2.348 e-mails
-                          </span>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                              <Mail className="w-3.5 h-3.5 text-[#006837]" /> E-mail institucional
+                            </span>
+                            <p className="text-[11px] text-slate-500">Será enviado para 2.450 participantes.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowEmailPreviewModal(true)}
+                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-[#006837]" />
+                            <span>Visualizar e-mail</span>
+                          </button>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           <div>
-                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Assunto do E-mail</label>
+                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Assunto</label>
                             <input
                               type="text"
                               value={emailSubject}
@@ -5981,97 +5883,46 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                               className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
                             />
                           </div>
-
                           <div>
-                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Mensagem Personalizada</label>
-                            <textarea
-                              rows={3}
+                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Mensagem</label>
+                            <input
+                              type="text"
                               value={emailBody}
                               onChange={(e) => setEmailBody(e.target.value)}
-                              className="w-full p-2.5 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
                             />
                           </div>
-
-                          {/* PRÉVIA COMPACTA DO E-MAIL */}
-                          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                              Prévia do E-mail do Participante
-                            </span>
-                            <div className="text-xs text-slate-700 space-y-1 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                              <p><strong className="text-slate-900">De:</strong> Comissão Própria de Avaliação - CPA IFCE &lt;cpa@ifce.edu.br&gt;</p>
-                              <p><strong className="text-slate-900">Assunto:</strong> {emailSubject}</p>
-                              <p className="pt-1 whitespace-pre-line text-slate-600">{emailBody}</p>
-                              <div className="pt-2">
-                                <span className="inline-block px-3 py-1.5 bg-[#006837] text-white rounded-md text-[11px] font-bold">
-                                  Responder Avaliação
-                                </span>
-                              </div>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* DETALHES DO QR CODE (SE SELECIONADO) */}
+                    {/* 2. SE QR CODE ESTIVER SELECIONADO */}
                     {sendMethods.qrcode && (
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
-                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <QrCode className="w-4 h-4 text-[#006837]" />
-                            Material de Divulgação (QR Code e Cartaz)
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => showNotification('success', 'Download do QR Code PNG iniciado!')}
-                              className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                            >
-                              Baixar PNG
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => showNotification('success', 'Download do PDF do Cartaz iniciado!')}
-                              className="px-2.5 py-1 text-[11px] font-bold text-[#006837] bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
-                            >
-                              Baixar PDF
-                            </button>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#006837] shrink-0">
+                            <QrCode className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-900 block">QR Code</span>
+                            <p className="text-[11px] text-slate-500">Disponível para impressão e afixação nos blocos.</p>
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {/* Poster Preview */}
-                          <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center gap-3">
-                            <div className="w-20 h-20 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
-                              <QrCode className="w-14 h-14 text-slate-800" />
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-extrabold uppercase text-[#006837]">Prévia do Cartaz</span>
-                              <h6 className="text-xs font-bold text-slate-900 leading-tight">
-                                {wizardCampaignName || formTitle}
-                              </h6>
-                              <p className="text-[10px] text-slate-500">
-                                Escaneie com a câmera do smartphone para acessar o formulário.
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-600 flex flex-col justify-center space-y-1">
-                            <span className="font-bold text-slate-900">Recomendação de Impressão</span>
-                            <p className="text-[11px] text-slate-500">
-                              Imprima em tamanho A4 e afixe em murais da biblioteca, refeitório, coordenações de curso e entradas dos blocos de aula.
-                            </p>
-                          </div>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowQrCodePreviewModal(true)}
+                          className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-[#006837]" />
+                          <span>Visualizar QR Code</span>
+                        </button>
                       </div>
                     )}
 
-                    {/* DETALHES DO LINK (SE SELECIONADO) */}
+                    {/* 3. SE LINK ESTIVER SELECIONADO */}
                     {sendMethods.link && (
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 animate-in fade-in duration-150">
-                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          <Link2 className="w-4 h-4 text-[#006837]" />
-                          Link Público de Acesso Direto
-                        </span>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 animate-in fade-in duration-150">
+                        <span className="text-xs font-bold text-slate-900 block">Link direto de acesso</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
@@ -6086,75 +5937,53 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                               setWizardCopiedLink(true);
                               setTimeout(() => setWizardCopiedLink(false), 3000);
                             }}
-                            className="px-3 py-2 bg-[#006837] text-white text-xs font-bold rounded-lg hover:bg-[#045C2D] transition-colors flex items-center gap-1.5 cursor-pointer"
+                            className="px-3 py-2 bg-[#006837] text-white text-xs font-bold rounded-lg hover:bg-[#045C2D] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
                           >
                             {wizardCopiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{wizardCopiedLink ? 'Copiado!' : 'Copiar Link'}</span>
+                            <span>{wizardCopiedLink ? 'Copiado!' : 'Copiar link'}</span>
                           </button>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* 4. AUDIÊNCIA E PÚBLICO */}
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-3 shadow-2xs">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <Users className="w-4 h-4 text-[#006837]" />
-                        Público Alvo Selecionado
-                      </h5>
-                      <span className="text-xs font-extrabold text-[#006837] bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        2.348 destinatários encontrados
+                  {/* BLOCO 3: PERÍODO */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                    <div className="border-b border-slate-100 pb-2">
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[#006837]" />
+                        3. PERÍODO
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {formAudiences.includes('alunos') && (
-                        <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold rounded-xl flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                          Discentes (1.850 alunos)
-                        </span>
-                      )}
-                      {formAudiences.includes('docentes') && (
-                        <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-[#006837] text-xs font-bold rounded-xl flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#006837]" />
-                          Docentes (280 professores)
-                        </span>
-                      )}
-                      {formAudiences.includes('taes') && (
-                        <span className="px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                          Técnicos Administrativos (218 TAEs)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 5. CHECKLIST DE VALIDAÇÃO */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                    <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider block">
-                      Status de Validação Pré-Envio
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
-                        <span>Perguntas cadastradas: {formQuestions.length} questões</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Início</label>
+                        <input
+                          type="date"
+                          value={wizardCampaignStartDate}
+                          onChange={(e) => setWizardCampaignStartDate(e.target.value)}
+                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
-                        <span>Período configurado: {campaignStartDate} a {campaignEndDate}</span>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Encerramento</label>
+                        <input
+                          type="date"
+                          value={wizardCampaignEndDate}
+                          onChange={(e) => setWizardCampaignEndDate(e.target.value)}
+                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-800 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-[#006837]" />
-                        <span>Público validado: {formAudiences.length} segmento(s)</span>
-                      </div>
-                      <div className={`flex items-center gap-2 font-semibold ${sendMethods.email || sendMethods.qrcode || sendMethods.link ? 'text-emerald-800' : 'text-rose-600'}`}>
-                        {sendMethods.email || sendMethods.qrcode || sendMethods.link ? (
-                          <CheckCircle2 className="w-4 h-4 text-[#006837]" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-rose-600" />
-                        )}
-                        <span>Método de envio selecionado</span>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Tempo estimado</label>
+                        <input
+                          type="text"
+                          value={wizardCampaignEstimatedTime}
+                          onChange={(e) => setWizardCampaignEstimatedTime(e.target.value)}
+                          placeholder="Ex: 3–5 minutos"
+                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                        />
                       </div>
                     </div>
                   </div>
@@ -6241,13 +6070,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
       {/* MODAL 2: Participant Responder Experience ("Visão do Participante") */}
       {respondingForm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Header Fixo */}
+            <div className="px-4 sm:px-6 py-3 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <Eye className="w-5 h-5 text-[#006837]" />
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#006837] flex items-center justify-center shrink-0">
+                  <Eye className="w-4 h-4" />
+                </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                     Preenchimento Inteligente do Formulário
                   </h3>
                   <p className="text-[11px] text-slate-500">
@@ -6256,355 +6088,419 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setRespondingForm(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Step 1: Select Segment */}
+            {/* Step 1: Form Presentation & Segment Selection */}
             {!participantSegment ? (
-              <div className="space-y-6 py-2">
-                <div className="text-center space-y-2">
-                  <h4 className="text-base font-bold text-slate-800">
-                    Selecione o seu segmento no IFCE
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                {/* Form Presentation Card */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-[#006837]/10 text-[#006837] text-[10px] font-extrabold rounded-md uppercase tracking-wider">
+                      Modo de Teste / Avaliação CPA
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      IFCE Campus Tauá
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-black text-slate-900 leading-snug">
+                    {respondingForm.title}
+                  </h3>
+
+                  {respondingForm.description && (
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                      {respondingForm.description}
+                    </p>
+                  )}
+
+                  <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 font-medium leading-relaxed italic border-l-3 border-l-[#006837]">
+                    "Esta avaliação tem como objetivo coletar a percepção da comunidade acadêmica sobre os aspectos avaliados."
+                  </div>
+                </div>
+
+                <div className="text-center space-y-1 pt-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+                    Selecione o seu segmento no IFCE para iniciar a avaliação
                   </h4>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  <p className="text-[11px] text-slate-500 max-w-md mx-auto">
                     O formulário apresentará instantaneamente apenas as perguntas vinculadas ao seu público.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Aluno Button */}
                   <button
+                    type="button"
                     onClick={() => setParticipantSegment('alunos')}
-                    className="p-5 rounded-2xl border-2 border-indigo-100 hover:border-indigo-500 bg-indigo-50/40 hover:bg-indigo-50 transition-all flex flex-col items-center justify-center space-y-3 cursor-pointer group text-center"
+                    className="p-3.5 sm:p-4 rounded-xl border-2 border-indigo-100 hover:border-indigo-500 bg-indigo-50/40 hover:bg-indigo-50 transition-all flex flex-col items-center justify-center space-y-2 cursor-pointer group text-center"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <GraduationCap className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <GraduationCap className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-indigo-900">Sou Aluno(a)</p>
-                      <p className="text-[11px] text-indigo-600 font-medium mt-0.5">Discente</p>
+                      <p className="text-xs sm:text-sm font-bold text-indigo-900">Sou Aluno(a)</p>
+                      <p className="text-[10px] text-indigo-600 font-medium">Discente</p>
                     </div>
                   </button>
 
                   {/* Docente Button */}
                   <button
+                    type="button"
                     onClick={() => setParticipantSegment('docentes')}
-                    className="p-5 rounded-2xl border-2 border-emerald-100 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 transition-all flex flex-col items-center justify-center space-y-3 cursor-pointer group text-center"
+                    className="p-3.5 sm:p-4 rounded-xl border-2 border-emerald-100 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 transition-all flex flex-col items-center justify-center space-y-2 cursor-pointer group text-center"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#006837] flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <UserCheck className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#006837] flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <UserCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-emerald-950">Sou Docente</p>
-                      <p className="text-[11px] text-[#006837] font-medium mt-0.5">Professor(a)</p>
+                      <p className="text-xs sm:text-sm font-bold text-emerald-950">Sou Docente</p>
+                      <p className="text-[10px] text-[#006837] font-medium">Professor(a)</p>
                     </div>
                   </button>
 
                   {/* TAE Button */}
                   <button
+                    type="button"
                     onClick={() => setParticipantSegment('taes')}
-                    className="p-5 rounded-2xl border-2 border-amber-100 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 transition-all flex flex-col items-center justify-center space-y-3 cursor-pointer group text-center"
+                    className="p-3.5 sm:p-4 rounded-xl border-2 border-amber-100 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 transition-all flex flex-col items-center justify-center space-y-2 cursor-pointer group text-center"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Briefcase className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Briefcase className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-amber-950">Sou TAE</p>
-                      <p className="text-[11px] text-amber-700 font-medium mt-0.5">Técnico Admin.</p>
+                      <p className="text-xs sm:text-sm font-bold text-amber-950">Sou TAE</p>
+                      <p className="text-[10px] text-amber-700 font-medium">Técnico Admin.</p>
                     </div>
                   </button>
                 </div>
               </div>
             ) : responseSubmitted ? (
               /* Success Confirmation */
-              <div className="py-8 text-center space-y-4 animate-in zoom-in-95">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-[#006837] mx-auto flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className="p-6 text-center space-y-4 my-auto animate-in zoom-in-95">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-[#006837] mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-lg font-bold text-slate-800">Obrigado pela sua participação!</h4>
+                  <h4 className="text-base font-bold text-slate-800">Obrigado pela sua participação!</h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
                     Sua resposta para o formulário "{respondingForm.title}" foi registrada com sucesso pela CPA do IFCE Campus Tauá.
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setRespondingForm(null)}
-                  className="px-5 py-2.5 bg-[#006837] text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer"
+                  className="px-5 py-2 bg-[#006837] text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer hover:bg-[#045C2D] transition-colors"
                 >
                   Fechar Janela
                 </button>
               </div>
             ) : (
               /* Step 2: Answer Filtered Questions */
-              <form onSubmit={handleSubmitParticipantResponse} className="space-y-6">
-                {/* Active Segment Banner */}
-                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 text-xs text-emerald-900 font-medium">
-                    <span className="font-bold">Segmento Ativo:</span>
-                    <span className="px-2 py-0.5 rounded-md bg-white text-[#006837] font-bold shadow-2xs uppercase">
-                      {participantSegment === 'alunos'
-                        ? 'Aluno (Discente)'
-                        : participantSegment === 'docentes'
-                        ? 'Docente (Professor)'
-                        : 'Técnico Administrativo (TAE)'}
-                    </span>
+              <form onSubmit={handleSubmitParticipantResponse} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                {/* Header / Info Bar Compacta e Unificada */}
+                <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 shrink-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-slate-500 text-[10px] uppercase tracking-wider">SEGMENTO:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-300 text-[#006837] font-black text-[11px] uppercase shadow-2xs">
+                          {participantSegment === 'alunos'
+                            ? 'Aluno (Discente)'
+                            : participantSegment === 'docentes'
+                            ? 'Docente (Professor)'
+                            : 'TAE (Técnico Admin.)'}
+                        </span>
+                      </div>
+
+                      {participantSegment === 'alunos' && (
+                        <div className="flex items-center gap-1.5 pl-2 border-l border-slate-300">
+                          <span className="font-extrabold text-slate-500 text-[10px] uppercase tracking-wider">NÍVEL:</span>
+                          <select
+                            value={participantStudentLevel}
+                            onChange={(e) => {
+                              setParticipantStudentLevel(e.target.value as StudentLevel);
+                              setUnansweredQuestionIds([]);
+                              setShowValidationErrorBanner(false);
+                            }}
+                            className="h-6 px-1.5 bg-white border border-indigo-300 rounded-md text-[11px] font-extrabold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                          >
+                            <option value="tecnico">Ensino Técnico</option>
+                            <option value="graduacao">Graduação (ENADE)</option>
+                            <option value="mestrado">Mestrado</option>
+                            <option value="pos_graduacao">Pós-graduação</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <span className="text-[11px] text-slate-500 pl-2 border-l border-slate-300 font-medium">
+                        💡 <strong>{getFilteredQuestionsForParticipant().length}</strong> perguntas aplicáveis
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setParticipantSegment(null);
+                        setUnansweredQuestionIds([]);
+                        setShowValidationErrorBanner(false);
+                      }}
+                      className="text-[11px] text-[#006837] hover:underline font-bold cursor-pointer"
+                    >
+                      Alterar segmento
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setParticipantSegment(null)}
-                    className="text-xs text-[#006837] underline font-semibold cursor-pointer"
-                  >
-                    Alterar
-                  </button>
                 </div>
 
-                {/* Subsegmentation Level Selector for Discentes */}
-                {participantSegment === 'alunos' && (
-                  <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
-                        <GraduationCap className="w-4 h-4 text-indigo-700 shrink-0" />
-                        <span>Nível de Ensino (Integrado ao SUAP):</span>
-                      </div>
-                      <select
-                        value={participantStudentLevel}
-                        onChange={(e) => setParticipantStudentLevel(e.target.value as StudentLevel)}
-                        className="h-8 px-3 bg-white border border-indigo-300 rounded-lg text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
-                      >
-                        <option value="tecnico">Ensino Técnico</option>
-                        <option value="graduacao">Graduação (ex: ENADE)</option>
-                        <option value="mestrado">Mestrado</option>
-                        <option value="pos_graduacao">Pós-graduação</option>
-                      </select>
+                {/* Validation Banner (if active) */}
+                {showValidationErrorBanner && (
+                  <div
+                    id="validation-error-banner"
+                    className="mx-4 mt-3 p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 shrink-0 animate-in fade-in duration-200"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-bold text-rose-900">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>Existem perguntas obrigatórias pendentes. Por favor, preencha todos os campos destacados.</span>
                     </div>
-                    <p className="text-[11px] text-indigo-700 leading-snug">
-                      O sistema identificou o aluno no nível <strong>
-                        {participantStudentLevel === 'tecnico' && 'Ensino Técnico'}
-                        {participantStudentLevel === 'graduacao' && 'Graduação'}
-                        {participantStudentLevel === 'mestrado' && 'Mestrado'}
-                        {participantStudentLevel === 'pos_graduacao' && 'Pós-graduação'}
-                      </strong>. Serão exibidas apenas questões marcadas como "Todos os Discentes" ou exclusivas deste nível.
-                    </p>
                   </div>
                 )}
 
-                {/* Info Note: How Filtering Helped */}
-                <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  💡 <strong>Filtro Inteligente Ativado:</strong> Exibindo apenas as{' '}
-                  {getFilteredQuestionsForParticipant().length} perguntas destinadas a "Todos" ou ao
-                  público {participantSegment.toUpperCase()}. As perguntas dos outros públicos não aparecem para você!
-                </p>
-
-                {/* Filtered Questions List */}
-                <div className="space-y-6 max-h-96 overflow-y-auto pr-1">
-                  {getFilteredQuestionsForParticipant().map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="font-bold text-[#006837] text-xs mt-0.5">#{idx + 1}</span>
-                        <div className="space-y-0.5 flex-1">
-                          <p className="text-xs font-bold text-slate-800 leading-relaxed">
-                            {q.title} {q.required && <span className="text-rose-500">*</span>}
-                          </p>
-                          {q.description && (
-                            <p className="text-[11px] text-slate-500 font-normal">
-                              {q.description}
+                {/* Central Scrollable Area for Questions */}
+                <div className="p-4 overflow-y-auto flex-1 space-y-3">
+                  {getFilteredQuestionsForParticipant().map((q, idx) => {
+                    const isMissingRequired = unansweredQuestionIds.includes(q.id);
+                    return (
+                      <div
+                        key={q.id}
+                        id={`participant-question-${q.id}`}
+                        className={`p-3 sm:p-3.5 rounded-xl space-y-2 transition-all ${
+                          isMissingRequired
+                            ? 'bg-rose-50/40 border-2 border-rose-400 shadow-2xs ring-2 ring-rose-200'
+                            : 'bg-slate-50/70 border border-slate-200/90 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold text-[#006837] text-xs mt-0.5 shrink-0">#{idx + 1}</span>
+                          <div className="space-y-0.5 flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-800 leading-snug">
+                              {q.title} {q.required && <span className="text-rose-500 font-extrabold">*</span>}
                             </p>
-                          )}
-                          {q.category && (
-                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 mt-0.5">
-                              {q.category}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Scale Question (1 to 5) */}
-                      {q.type === 'SCALE' && (
-                        <div className="space-y-1.5 pt-1">
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium px-1">
-                            <span>1 - Discordo Totalmente</span>
-                            <span>5 - Concordo Totalmente</span>
+                            {q.description && (
+                              <p className="text-[11px] text-slate-500 font-normal leading-tight">
+                                {q.description}
+                              </p>
+                            )}
+                            {q.category && (
+                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-200/70 text-slate-700 mt-0.5">
+                                {q.category}
+                              </span>
+                            )}
                           </div>
-                          <div className="grid grid-cols-5 gap-2">
-                            {[1, 2, 3, 4, 5].map((num) => (
+                        </div>
+
+                        {/* Scale Question (1 to 5) */}
+                        {q.type === 'SCALE' && (
+                          <div className="space-y-1 pt-0.5">
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium px-0.5">
+                              <span>1 - Discordo Totalmente</span>
+                              <span>5 - Concordo Totalmente</span>
+                            </div>
+                            <div className="grid grid-cols-5 gap-1.5">
+                              {[1, 2, 3, 4, 5].map((num) => (
+                                <button
+                                  type="button"
+                                  key={num}
+                                  onClick={() => handleParticipantAnswerChange(q.id, String(num))}
+                                  className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    participantAnswers[q.id] === String(num)
+                                      ? 'bg-[#006837] text-white shadow-xs'
+                                      : isMissingRequired
+                                      ? 'bg-white border-2 border-rose-200 text-slate-700 hover:bg-rose-50'
+                                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {num}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Yes/No Question */}
+                        {q.type === 'YES_NO' && (
+                          <div className="flex items-center gap-2 pt-0.5">
+                            {['Sim', 'Não'].map((opt) => (
                               <button
+                                key={opt}
                                 type="button"
-                                key={num}
-                                onClick={() =>
-                                  setParticipantAnswers({
-                                    ...participantAnswers,
-                                    [q.id]: String(num),
-                                  })
-                                }
-                                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                  participantAnswers[q.id] === String(num)
-                                    ? 'bg-[#006837] text-white shadow-xs'
-                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                onClick={() => handleParticipantAnswerChange(q.id, opt)}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                                  participantAnswers[q.id] === opt
+                                    ? 'bg-[#006837] text-white border-[#006837] shadow-xs'
+                                    : isMissingRequired
+                                    ? 'bg-white text-slate-700 border-2 border-rose-200 hover:bg-rose-50'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                                 }`}
                               >
-                                {num}
+                                {opt}
                               </button>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Yes/No Question */}
-                      {q.type === 'YES_NO' && (
-                        <div className="flex items-center gap-3 pt-1">
-                          {['Sim', 'Não'].map((opt) => (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() =>
-                                setParticipantAnswers({
-                                  ...participantAnswers,
-                                  [q.id]: opt,
-                                })
-                              }
-                              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                                participantAnswers[q.id] === opt
-                                  ? 'bg-[#006837] text-white border-[#006837] shadow-xs'
-                                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Radio Question (Multiple Choice Single) */}
-                      {q.type === 'RADIO' && (
-                        <div className="space-y-2 pt-1">
-                          {(q.options && q.options.length > 0
-                            ? q.options
-                            : ['Excelente', 'Bom', 'Regular', 'Ruim']
-                          ).map((opt, oIdx) => (
-                            <label
-                              key={oIdx}
-                              className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-medium cursor-pointer hover:border-[#006837]"
-                            >
-                              <input
-                                type="radio"
-                                name={q.id}
-                                value={opt}
-                                checked={participantAnswers[q.id] === opt}
-                                onChange={() =>
-                                  setParticipantAnswers({
-                                    ...participantAnswers,
-                                    [q.id]: opt,
-                                  })
-                                }
-                                className="accent-[#006837]"
-                              />
-                              <span>{opt}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Checkbox Question (Multiple Choice Multi) */}
-                      {q.type === 'CHECKBOX' && (
-                        <div className="space-y-2 pt-1">
-                          {(q.options && q.options.length > 0
-                            ? q.options
-                            : ['Opção 1', 'Opção 2', 'Opção 3']
-                          ).map((opt, oIdx) => {
-                            const currentList = Array.isArray(participantAnswers[q.id])
-                              ? (participantAnswers[q.id] as string[])
-                              : [];
-                            const isChecked = currentList.includes(opt);
-                            return (
+                        {/* Radio Question (Multiple Choice Single) */}
+                        {q.type === 'RADIO' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                            {(q.options && q.options.length > 0
+                              ? q.options
+                              : ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento']
+                            ).map((opt, oIdx) => (
                               <label
                                 key={oIdx}
-                                className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 text-xs font-medium cursor-pointer hover:border-[#006837]"
+                                className={`flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                                  participantAnswers[q.id] === opt
+                                    ? 'border-[#006837] bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-[#006837]'
+                                    : isMissingRequired
+                                    ? 'border-rose-200 hover:border-rose-400'
+                                    : 'border-slate-200 hover:border-[#006837]'
+                                }`}
                               >
                                 <input
-                                  type="checkbox"
+                                  type="radio"
+                                  name={q.id}
                                   value={opt}
-                                  checked={isChecked}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setParticipantAnswers({
-                                        ...participantAnswers,
-                                        [q.id]: [...currentList, opt],
-                                      });
-                                    } else {
-                                      setParticipantAnswers({
-                                        ...participantAnswers,
-                                        [q.id]: currentList.filter((item) => item !== opt),
-                                      });
-                                    }
-                                  }}
+                                  checked={participantAnswers[q.id] === opt}
+                                  onChange={() => handleParticipantAnswerChange(q.id, opt)}
                                   className="accent-[#006837]"
                                 />
-                                <span>{opt}</span>
+                                <span className="truncate">{opt}</span>
                               </label>
-                            );
-                          })}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
 
-                      {/* Dropdown Question */}
-                      {q.type === 'DROPDOWN' && (
-                        <select
-                          value={(participantAnswers[q.id] as string) || ''}
-                          onChange={(e) =>
-                            setParticipantAnswers({
-                              ...participantAnswers,
-                              [q.id]: e.target.value,
-                            })
-                          }
-                          className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                        >
-                          <option value="">-- Selecione uma opção --</option>
-                          {(q.options && q.options.length > 0
-                            ? q.options
-                            : ['Opção 1', 'Opção 2', 'Opção 3']
-                          ).map((opt, oIdx) => (
-                            <option key={oIdx} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  ))}
+                        {/* Checkbox Question (Multiple Choice Multi) */}
+                        {q.type === 'CHECKBOX' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                            {(q.options && q.options.length > 0
+                              ? q.options
+                              : ['Opção 1', 'Opção 2', 'Opção 3']
+                            ).map((opt, oIdx) => {
+                              const currentList = Array.isArray(participantAnswers[q.id])
+                                ? (participantAnswers[q.id] as string[])
+                                : [];
+                              const isChecked = currentList.includes(opt);
+                              return (
+                                <label
+                                  key={oIdx}
+                                  className={`flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                                    isChecked
+                                      ? 'border-[#006837] bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-[#006837]'
+                                      : isMissingRequired
+                                      ? 'border-rose-200 hover:border-rose-400'
+                                      : 'border-slate-200 hover:border-[#006837]'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    value={opt}
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        handleParticipantAnswerChange(q.id, [...currentList, opt]);
+                                      } else {
+                                        handleParticipantAnswerChange(q.id, currentList.filter((item) => item !== opt));
+                                      }
+                                    }}
+                                    className="accent-[#006837]"
+                                  />
+                                  <span className="truncate">{opt}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Dropdown Question */}
+                        {q.type === 'DROPDOWN' && (
+                          <select
+                            value={(participantAnswers[q.id] as string) || ''}
+                            onChange={(e) => handleParticipantAnswerChange(q.id, e.target.value)}
+                            className={`w-full h-8 px-2.5 bg-white border rounded-lg text-xs font-medium focus:outline-none ${
+                              isMissingRequired
+                                ? 'border-2 border-rose-300 focus:ring-2 focus:ring-rose-400'
+                                : 'border-slate-200 focus:ring-1 focus:ring-[#006837]'
+                            }`}
+                          >
+                            <option value="">-- Selecione uma opção --</option>
+                            {(q.options && q.options.length > 0
+                              ? q.options
+                              : ['Opção 1', 'Opção 2', 'Opção 3']
+                            ).map((opt, oIdx) => (
+                              <option key={oIdx} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+
+                        {/* Discrete error message below unanswered required question */}
+                        {isMissingRequired && (
+                          <div className="flex items-center gap-1 text-[11px] font-extrabold text-rose-600 pt-0.5 animate-in fade-in duration-150">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                            <span>Este campo é obrigatório.</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRespondingForm(null)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingResponse}
-                    className="px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs cursor-pointer"
-                  >
-                    {isSubmittingResponse ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Enviando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        <span>Enviar Resposta</span>
-                      </>
-                    )}
-                  </button>
+                {/* Fixed Footer */}
+                <div className="p-3 sm:px-4 sm:py-3 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-3 shrink-0">
+                  {showValidationErrorBanner ? (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span className="hidden sm:inline">Existem perguntas obrigatórias pendentes.</span>
+                      <span className="sm:hidden">Perguntas pendentes.</span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                      Preencha com atenção todas as questões antes de enviar.
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2.5 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => setRespondingForm(null)}
+                      className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/60 rounded-xl cursor-pointer transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingResponse}
+                      className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs cursor-pointer transition-all"
+                    >
+                      {isSubmittingResponse ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Enviando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Enviar respostas</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
@@ -6924,6 +6820,178 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           }}
           showNotification={showNotification}
         />
+      )}
+
+      {/* MODAL SECUNDÁRIO: Ver Perguntas do Formulário */}
+      {isPreviewQuestionsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-[#006837]" />
+                <div>
+                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Perguntas Cadastradas</h4>
+                  <p className="text-xs text-slate-500">Total de {formQuestions.length} questões no formulário</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreviewQuestionsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-3 divide-y divide-slate-100 flex-1">
+              {formQuestions.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-6">Nenhuma pergunta cadastrada.</p>
+              ) : (
+                formQuestions.map((q, idx) => (
+                  <div key={q.id} className="pt-3 first:pt-0 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-900">
+                        {idx + 1}. {q.text}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                        {q.type === 'likert_scale' ? 'Escala Likert' : q.type === 'multiple_choice' ? 'Múltipla Escolha' : 'Texto Livre'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                      <span>Público: {q.audiences.includes('todos') ? 'Todos' : q.audiences.join(', ')}</span>
+                      <span>•</span>
+                      <span>Eixo: {q.dimension || 'Geral'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsPreviewQuestionsModalOpen(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SECUNDÁRIO: Visualizar E-mail */}
+      {showEmailPreviewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-[#006837]" />
+                <div>
+                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Prévia do E-mail Institucional</h4>
+                  <p className="text-xs text-slate-500">Como o destinatário visualizará o convite</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEmailPreviewModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3 font-sans">
+                <div className="space-y-1 pb-3 border-b border-slate-200/80">
+                  <p><strong className="text-slate-900">De:</strong> CPA IFCE &lt;cpa@ifce.edu.br&gt;</p>
+                  <p><strong className="text-slate-900">Para:</strong> participante@ifce.edu.br</p>
+                  <p><strong className="text-slate-900">Assunto:</strong> {emailSubject}</p>
+                </div>
+                <div className="py-2 text-slate-700 whitespace-pre-line leading-relaxed">
+                  {emailBody}
+                </div>
+                <div className="pt-2 text-center">
+                  <span className="inline-block px-5 py-2.5 bg-[#006837] text-white text-xs font-extrabold rounded-xl shadow-xs">
+                    Responder Avaliação Institucional
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowEmailPreviewModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Fechar Prévia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SECUNDÁRIO: Visualizar QR Code */}
+      {showQrCodePreviewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-[#006837]" />
+                <div>
+                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">QR Code de Divulgação</h4>
+                  <p className="text-xs text-slate-500">Pronto para download ou impressão</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQrCodePreviewModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 text-center space-y-4">
+              <div className="w-44 h-44 mx-auto bg-slate-50 border-2 border-slate-200 rounded-2xl flex items-center justify-center p-3 shadow-inner">
+                <QrCode className="w-36 h-36 text-slate-900" />
+              </div>
+
+              <div>
+                <h5 className="text-sm font-bold text-slate-900">{formTitle || 'Avaliação Institucional CPA'}</h5>
+                <p className="text-xs text-slate-500 mt-0.5">Aponta para o link de formulário público do campus</p>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => showNotification('success', 'Download do QR Code PNG iniciado!')}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Baixar PNG
+                </button>
+                <button
+                  type="button"
+                  onClick={() => showNotification('success', 'Download do Cartaz PDF iniciado!')}
+                  className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Baixar Cartaz (PDF)
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowQrCodePreviewModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODAL CONFIRMAÇÃO DE ENVIO DA CAMPANHA */}
