@@ -36,7 +36,7 @@ interface DashboardViewProps {
 const METRIC_CARDS = [
   {
     id: 'active-forms',
-    title: 'Formulários Ativos',
+    title: 'Questionários Ativos',
     value: '6',
     description: 'Em fase de coleta de respostas',
     change: '+2 este mês',
@@ -46,7 +46,7 @@ const METRIC_CARDS = [
   },
   {
     id: 'closed-forms',
-    title: 'Formulários Encerrados',
+    title: 'Questionários Encerrados',
     value: '18',
     description: 'Ciclos avaliativos concluídos',
     change: 'Ciclo 2024.2 finalizado',
@@ -383,7 +383,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50/40">
           <div>
             <h3 className="text-sm font-bold text-slate-800">
-              Últimos Formulários Criados
+              Últimos Questionários Criados
             </h3>
             <p className="text-xs text-slate-500">
               Acompanhamento de status e taxa de preenchimento
@@ -425,7 +425,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50/80 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
               <tr>
-                <th className="px-5 py-3">Título do Formulário</th>
+                <th className="px-5 py-3">Título do Questionário</th>
                 <th className="px-4 py-3">Campus</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Criação</th>

@@ -4243,7 +4243,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Formulários</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Questionários</h1>
             <span className="bg-[#E8F5EE] text-[#006837] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#006837]/10">
               Módulo CPA • Campus Tauá
             </span>
@@ -4259,7 +4259,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
             className="px-4 py-2.5 bg-white hover:bg-emerald-50 text-[#006837] border border-[#006837]/30 font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#006837]" />
-            <span>Importar Formulário</span>
+            <span>Importar Questionário</span>
           </button>
 
           <button
@@ -4267,7 +4267,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
             className="px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span>Novo Formulário</span>
+            <span>Novo Questionário</span>
           </button>
         </div>
       </div>
@@ -4301,7 +4301,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         {/* Card 1: Formulários Ativos */}
         <div className="bg-white rounded-2xl border border-emerald-100 p-4.5 shadow-2xs space-y-1 bg-emerald-50/20">
           <div className="flex items-center justify-between text-emerald-800">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Formulários Ativos</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Questionários Ativos</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#006837] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>

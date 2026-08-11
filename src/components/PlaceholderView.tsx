@@ -46,12 +46,12 @@ const PAGE_CONFIG: Record<
     icon: ClipboardList,
   },
   formularios: {
-    title: 'Formulários de Avaliação',
+    title: 'Questionários de Avaliação',
     subtitle: 'Gerenciamento de questionários e instrumentos avaliativos',
     icon: ClipboardList,
   },
   'novo-formulario': {
-    title: 'Novo Formulário',
+    title: 'Novo Questionário',
     subtitle: 'Criação e edição de instrumentos de coleta por campus',
     icon: PlusCircle,
   },
@@ -137,7 +137,7 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white font-semibold text-xs rounded-xl shadow-md hover:shadow-lg focus:outline-hidden focus:ring-4 focus:ring-[#006837]/30 transition-all cursor-pointer active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Ir para Formulários</span>
+            <span>Ir para Questionários</span>
           </button>
         </div>
       </div>

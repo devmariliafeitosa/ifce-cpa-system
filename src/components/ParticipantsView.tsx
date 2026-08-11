@@ -1024,7 +1024,7 @@ export const ParticipantsView: React.FC = () => {
                         onChange={() => setFormData({ ...formData, status: 'Ativo' })}
                         className="text-[#006837] focus:ring-[#006837]"
                       />
-                      <span>Ativo (Pode responder aos formulários)</span>
+                      <span>Ativo (Pode responder aos questionários)</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input

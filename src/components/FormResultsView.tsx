@@ -423,7 +423,7 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
               onClick={onReturnToForms}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#006837] hover:underline mb-1 cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Voltar para lista de formulários
+              <ArrowLeft className="w-3.5 h-3.5" /> Voltar para lista de questionários
             </button>
           )}
           <div className="flex items-center gap-3">
@@ -443,7 +443,7 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
 
         {/* Form Switcher Dropdown */}
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="text-xs font-bold text-slate-500 shrink-0 hidden sm:inline">Formulário:</span>
+          <span className="text-xs font-bold text-slate-500 shrink-0 hidden sm:inline">Questionário:</span>
           <select
             value={selectedFormId}
             onChange={(e) => setSelectedFormId(e.target.value)}

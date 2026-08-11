@@ -25,12 +25,12 @@ const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
     subtitle: 'Integração oficial com Google Forms e Drive no Campus Tauá.',
   },
   formularios: {
-    title: 'Formulários de Avaliação',
+    title: 'Questionários de Avaliação',
     subtitle: 'Gerenciamento de questionários e instrumentos avaliativos.',
   },
   'novo-formulario': {
-    title: 'Novo Formulário',
-    subtitle: 'Criação de novos formulários de avaliação por ciclo.',
+    title: 'Novo Questionário',
+    subtitle: 'Criação de novos questionários de avaliação por ciclo.',
   },
   participantes: {
     title: 'Participantes do Sistema',

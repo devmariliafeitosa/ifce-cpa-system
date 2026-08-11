@@ -187,7 +187,7 @@ export function convertSmartFormToReportCampaign(form: SmartForm): ReportCampaig
     qs.forEach((q) => {
       if (q.classification === 'Potencialidade') potCount++;
       else if (q.classification === 'Mediana') medCount++;
-      else fragCount++;
+      else if (q.classification === 'Fragilidade') fragCount++;
     });
 
     const potPct = (totalResponses > 0 && totalQ > 0) ? Math.round((potCount / totalQ) * 100) : 0;

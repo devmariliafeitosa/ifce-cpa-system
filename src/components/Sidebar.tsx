@@ -48,7 +48,7 @@ const MENU_GROUPS: MenuGroup[] = [
     title: 'GERENCIAMENTO',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: Home },
-      { id: 'formularios', label: 'Formulários', icon: ClipboardList },
+      { id: 'formularios', label: 'Questionários', icon: ClipboardList },
       { id: 'relatorios', label: 'Relatórios', icon: FileText },
       { id: 'participantes', label: 'Participantes', icon: Users },
     ],
