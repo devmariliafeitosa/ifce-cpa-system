@@ -9,6 +9,8 @@ import { FormsManagerView } from './FormsManagerView';
 import { ReportsView } from './ReportsView';
 import { ParticipantsView } from './ParticipantsView';
 import { FormResultsView } from './FormResultsView';
+import { SettingsView } from './SettingsView';
+import { ProfileView } from './ProfileView';
 import { UserCoordinator } from '../types';
 
 interface DashboardLayoutProps {
@@ -137,6 +139,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full flex-1 flex flex-col"
               >
                 <ParticipantsView />
+              </motion.div>
+            ) : activeTab === 'configuracoes' ? (
+              <motion.div
+                key="configuracoes"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <SettingsView onReturnToDashboard={() => setActiveTab('dashboard')} />
+              </motion.div>
+            ) : activeTab === 'perfil' ? (
+              <motion.div
+                key="perfil"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <ProfileView user={user} onReturnToDashboard={() => setActiveTab('dashboard')} />
               </motion.div>
             ) : (
               <motion.div
