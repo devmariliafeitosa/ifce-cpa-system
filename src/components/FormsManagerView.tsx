@@ -4296,48 +4296,78 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         </div>
       )}
 
-      {/* Top Indicators Bar (Apenas 3 indicadores) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Formulários Ativos */}
-        <div className="bg-white rounded-2xl border border-emerald-100 p-4.5 shadow-2xs space-y-1 bg-emerald-50/20">
-          <div className="flex items-center justify-between text-emerald-800">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Questionários Ativos</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#006837] flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
+      {/* Top Indicators Bar (Padronizado em 4 cards horizontais compactos) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Total de Questionários */}
+        <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+              Total Cadastrados
+            </span>
+            <span className="text-2xl font-black text-slate-900 tracking-tight leading-none mt-1 block">
+              {forms.length}
+            </span>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Instrumentos no campus
+            </p>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900">
-            {forms.filter((f) => f.status === 'Ativo').length}
-          </p>
-          <p className="text-[11px] text-emerald-700 font-medium">Em andamento na CPA</p>
+          <div className="p-2.5 bg-slate-100 text-slate-600 rounded-xl shrink-0">
+            <FileText className="w-5 h-5" />
+          </div>
         </div>
 
-        {/* Card 2: Respostas Recebidas */}
-        <div className="bg-white rounded-2xl border border-indigo-100 p-4.5 shadow-2xs space-y-1 bg-indigo-50/20">
-          <div className="flex items-center justify-between text-indigo-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Respostas Recebidas</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-              <BarChart2 className="w-4 h-4" />
-            </div>
+        {/* Card 2: Questionários Ativos */}
+        <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+              Questionários Ativos
+            </span>
+            <span className="text-2xl font-black text-[#006837] tracking-tight leading-none mt-1 block">
+              {forms.filter((f) => f.status === 'Ativo').length}
+            </span>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Em andamento na CPA
+            </p>
           </div>
-          <p className="text-2xl font-extrabold text-indigo-950">
-            {forms.reduce((acc, f) => acc + (f.responsesCount?.total || 0), 0).toLocaleString('pt-BR')}
-          </p>
-          <p className="text-[11px] text-indigo-600 font-medium">Consolidadas para relatórios</p>
+          <div className="p-2.5 bg-emerald-50 text-[#006837] rounded-xl shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
         </div>
 
-        {/* Card 3: Última Sincronização */}
-        <div className="bg-white rounded-2xl border border-amber-100 p-4.5 shadow-2xs space-y-1 bg-amber-50/20">
-          <div className="flex items-center justify-between text-amber-800">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Última Sincronização</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-              <RefreshCw className="w-4 h-4" />
-            </div>
+        {/* Card 3: Respostas Recebidas */}
+        <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+              Respostas Recebidas
+            </span>
+            <span className="text-2xl font-black text-slate-900 tracking-tight leading-none mt-1 block">
+              {forms.reduce((acc, f) => acc + (f.responsesCount?.total || 0), 0).toLocaleString('pt-BR')}
+            </span>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Consolidadas no sistema
+            </p>
           </div>
-          <p className="text-base font-bold text-slate-900 truncate mt-1">
-            {forms.find((f) => f.lastSync)?.lastSync || 'Hoje, 11:45'}
-          </p>
-          <p className="text-[11px] text-amber-700 font-medium">Integração Google Forms ativa</p>
+          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0">
+            <BarChart2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Card 4: Sincronização */}
+        <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+              Sincronização
+            </span>
+            <span className="text-xl font-black text-slate-900 tracking-tight leading-none mt-1 block truncate max-w-[120px] sm:max-w-none">
+              {forms.find((f) => f.lastSync)?.lastSync || 'Hoje, 11:45'}
+            </span>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">
+              Google Forms ativo
+            </p>
+          </div>
+          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+            <RefreshCw className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
