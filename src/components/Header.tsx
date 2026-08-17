@@ -14,7 +14,7 @@ interface HeaderProps {
 const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
   dashboard: {
     title: 'Dashboard',
-    subtitle: 'Bem-vindo ao Sistema da Comissão Própria de Avaliação.',
+    subtitle: 'Visão geral da CPA • Campus Tauá',
   },
   relatorios: {
     title: 'Relatórios Institucionais',

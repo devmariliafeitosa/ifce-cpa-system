@@ -20,7 +20,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   user,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<NavTabId>('formularios');
+  const [activeTab, setActiveTab] = useState<NavTabId>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
@@ -80,7 +80,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Dynamic Page Content View */}
         <main className="flex-1 flex flex-col min-w-0 pb-12">
           <AnimatePresence mode="wait">
-            {activeTab === 'formularios' ? (
+            {activeTab === 'dashboard' ? (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex-1 flex flex-col"
+              >
+                <DashboardView onNavigateTab={setActiveTab} />
+              </motion.div>
+            ) : activeTab === 'formularios' ? (
               <motion.div
                 key="formularios"
                 initial={{ opacity: 0, y: 10 }}
@@ -90,7 +101,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full flex-1 flex flex-col"
               >
                 <FormsManagerView
-                  onReturnToDashboard={() => setActiveTab('formularios')}
+                  onReturnToDashboard={() => setActiveTab('dashboard')}
                   onSelectTab={setActiveTab}
                 />
               </motion.div>
@@ -103,7 +114,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 transition={{ duration: 0.2 }}
                 className="w-full flex-1 flex flex-col"
               >
-                <ReportsView onReturnToDashboard={() => setActiveTab('formularios')} />
+                <ReportsView onReturnToDashboard={() => setActiveTab('dashboard')} />
               </motion.div>
             ) : activeTab === 'google-forms' || activeTab === 'novo-formulario' ? (
               <motion.div
@@ -114,7 +125,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 transition={{ duration: 0.2 }}
                 className="w-full flex-1 flex flex-col"
               >
-                <GoogleFormsManager onReturnToDashboard={() => setActiveTab('formularios')} />
+                <GoogleFormsManager onReturnToDashboard={() => setActiveTab('dashboard')} />
               </motion.div>
             ) : activeTab === 'participantes' || activeTab === 'alunos' || activeTab === 'docentes' || activeTab === 'taes' ? (
               <motion.div
@@ -138,7 +149,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               >
                 <PlaceholderView
                   tabId={activeTab}
-                  onReturnToDashboard={() => setActiveTab('formularios')}
+                  onReturnToDashboard={() => setActiveTab('dashboard')}
                   onSelectTab={setActiveTab}
                 />
               </motion.div>
