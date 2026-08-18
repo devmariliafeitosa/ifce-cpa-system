@@ -2808,6 +2808,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       },
     ]);
     setExpandedQuestionIds({ [newId]: true });
+
+    // Exibe a nova pergunta centralizada na área visível
+    setTimeout(() => {
+      const el = document.getElementById(`wizard-question-card-${newId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = el.querySelector<HTMLInputElement>('input[type="text"]');
+        if (input) {
+          input.focus({ preventScroll: true });
+        }
+      }
+    }, 60);
   };
 
   const handleAddSegmentQuestion = (seg: 'alunos' | 'docentes' | 'taes') => {
@@ -2825,6 +2837,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       },
     ]);
     setExpandedQuestionIds({ [newId]: true });
+
+    // Exibe a nova pergunta centralizada na área visível
+    setTimeout(() => {
+      const el = document.getElementById(`wizard-question-card-${newId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = el.querySelector<HTMLInputElement>('input[type="text"]');
+        if (input) {
+          input.focus({ preventScroll: true });
+        }
+      }
+    }, 60);
   };
 
   const handleRemoveWizardQuestion = (id: string) => {
@@ -3141,16 +3165,27 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
   // Question manipulation helpers
   const handleAddQuestion = () => {
-    setFormQuestions([
-      ...formQuestions,
+    const newId = `q-${Date.now()}`;
+    setFormQuestions((prev) => [
+      ...prev,
       {
-        id: `q-${Date.now()}`,
+        id: newId,
         title: '',
         type: 'SCALE',
         required: true,
         audiences: ['todos'],
       },
     ]);
+    setTimeout(() => {
+      const el = document.getElementById(`wizard-question-card-${newId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = el.querySelector<HTMLInputElement>('input[type="text"]');
+        if (input) {
+          input.focus({ preventScroll: true });
+        }
+      }
+    }, 60);
   };
 
   const handleRemoveQuestion = (id: string) => {
@@ -3958,6 +3993,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       // COMPACT MINIMIZED CARD (~50px height)
       return (
         <div
+          id={`wizard-question-card-${q.id}`}
           key={q.id}
           className="min-h-[50px] py-2 px-3.5 sm:px-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-[#006837]/50 transition-all"
         >
@@ -4034,6 +4070,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     // EXPANDED QUESTION CARD
     return (
       <div
+        id={`wizard-question-card-${q.id}`}
         key={q.id}
         className="p-4 sm:p-5 rounded-2xl border-2 border-[#006837]/30 bg-white shadow-xs space-y-3.5 transition-all"
       >
@@ -5279,14 +5316,28 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                         className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Adicionar Pergunta</span>
+                        <span>Adicionar Pergunta Geral</span>
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                       {(() => {
                         const filtered = formQuestions.filter((q) => q.audiences.includes('todos'));
-                        return filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length));
+                        return (
+                          <>
+                            {filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length))}
+                            <div className="pt-2 pb-1">
+                              <button
+                                type="button"
+                                onClick={handleAddGeneralQuestion}
+                                className="w-full py-2.5 px-4 border-2 border-dashed border-emerald-300 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 text-[#006837] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group"
+                              >
+                                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                <span>Adicionar Nova Pergunta Geral</span>
+                              </button>
+                            </div>
+                          </>
+                        );
                       })()}
                     </div>
                   )}
@@ -5571,7 +5622,22 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
                       {(() => {
                         const filtered = formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'));
-                        return filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length));
+                        const segmentLabel = selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs';
+                        return (
+                          <>
+                            {filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length))}
+                            <div className="pt-2 pb-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAddSegmentQuestion(selectedSegment)}
+                                className="w-full py-2.5 px-4 border-2 border-dashed border-emerald-300 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 text-[#006837] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group"
+                              >
+                                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                <span>Adicionar Nova Pergunta para {segmentLabel}</span>
+                              </button>
+                            </div>
+                          </>
+                        );
                       })()}
                     </div>
                   )}
