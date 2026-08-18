@@ -26,9 +26,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] text-slate-800 flex flex-row overflow-x-hidden font-sans">
-      {/* Desktop Sidebar (Fixed Left) */}
-      <div className="hidden md:block h-screen sticky top-0 z-40">
+    <div className="min-h-screen bg-[#F7F8FA] text-slate-800 font-sans relative">
+      {/* Desktop Sidebar (Permanently Fixed to Viewport) */}
+      <div className="hidden md:block fixed top-0 left-0 w-[260px] h-screen z-40">
         <Sidebar
           activeTab={activeTab}
           onSelectTab={setActiveTab}
@@ -68,8 +68,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Main Container Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      {/* Main Container Area (Offset by Sidebar width on desktop) */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen md:ml-[260px]">
         {/* Header */}
         <Header
           activeTab={activeTab}

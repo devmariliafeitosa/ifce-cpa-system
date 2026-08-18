@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   return (
-    <aside className="w-[260px] h-screen sticky top-0 bg-white border-r border-slate-200/80 flex flex-col justify-between select-none shrink-0 shadow-xs">
+    <aside className="w-[260px] h-screen bg-white border-r border-slate-200/80 flex flex-col justify-between select-none shrink-0 shadow-xs">
       {/* Sidebar Header */}
       <div className="p-5 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
