@@ -2464,13 +2464,17 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   });
   const [emailSubject, setEmailSubject] = useState('[CPA IFCE] Convite para a Avaliação Institucional 2026.2');
   const [emailBody, setEmailBody] = useState(
-    'Prezado(a) participante,\n\nConvidamos você a participar da Avaliação Institucional do IFCE. Sua opinião é fundamental para a melhoria constante do nosso campus.'
+    'Prezado(a) participante,\n\nA Comissão Própria de Avaliação (CPA) do IFCE convida você a responder à Avaliação Institucional 2026.2 do Campus Tauá.\n\nSua opinião é fundamental para orientar as melhorias no ensino, na infraestrutura e na gestão da nossa instituição.\n\nPrazo de preenchimento: até 30/09/2026.\n\nAcesse o link abaixo para responder:'
+  );
+  const [emailSignature, setEmailSignature] = useState(
+    'Comissão Própria de Avaliação - CPA\nInstituto Federal do Ceará - Campus Tauá\nProcesso de Autoavaliação Institucional SINAES'
   );
   const [wizardCopiedLink, setWizardCopiedLink] = useState(false);
   const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
   const [isCampaignSentSuccess, setIsCampaignSentSuccess] = useState(false);
   const [isPreviewQuestionsModalOpen, setIsPreviewQuestionsModalOpen] = useState(false);
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
+  const [showEmailEditModal, setShowEmailEditModal] = useState(false);
   const [showQrCodePreviewModal, setShowQrCodePreviewModal] = useState(false);
 
   const toggleQuestionExpanded = (id: string) => {
@@ -5050,8 +5054,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
       {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl overflow-hidden my-4 sm:my-6 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full h-[680px] max-h-[92vh] border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
             
             {isCampaignSentSuccess ? (
               <div className="p-8 text-center space-y-6 my-auto animate-in fade-in duration-200">
@@ -5484,53 +5488,65 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
               {/* ETAPA 4 — PERGUNTAS DO SEGMENTO */}
               {wizardStep === 4 && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  {/* Destaque do Segmento em Configuração */}
-                  <div className="p-4 rounded-2xl bg-[#006837] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl shrink-0">
-                        {selectedSegment === 'alunos'
-                          ? '🎓'
-                          : selectedSegment === 'docentes'
-                          ? '👨‍🏫'
-                          : '👨‍💼'}
-                      </div>
-                      <div>
-                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-200">
-                          Segmento em Configuração
-                        </span>
-                        <h4 className="text-base font-bold">
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  {/* Cabeçalho Limpo e Seletor Compacto de Segmentos */}
+                  <div className="border-b border-slate-100 pb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <HelpCircle className="w-5 h-5 text-[#006837]" />
+                        <span>
+                          Perguntas para{' '}
                           {selectedSegment === 'alunos'
-                            ? 'Perguntas para Discentes'
+                            ? 'Discentes'
                             : selectedSegment === 'docentes'
-                            ? 'Perguntas para Docentes'
-                            : 'Perguntas para Técnicos Administrativos (TAEs)'}
-                        </h4>
-                      </div>
+                            ? 'Docentes'
+                            : 'Técnicos Administrativos (TAEs)'}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Cadastre as perguntas específicas direcionadas exclusivamente para este grupo.
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Mini seletor de segmento */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl shrink-0 self-start sm:self-auto border border-slate-200/60">
                       <button
                         type="button"
-                        onClick={() => handleAddSegmentQuestion(selectedSegment)}
-                        className="px-3.5 py-2 bg-white text-[#006837] hover:bg-emerald-50 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                        onClick={() => setSelectedSegment('alunos')}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          selectedSegment === 'alunos'
+                            ? 'bg-white text-indigo-900 shadow-2xs border border-indigo-200/60'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
                       >
-                        <Plus className="w-4 h-4" />
-                        <span>Adicionar Pergunta</span>
+                        🎓 Discentes ({formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length})
                       </button>
-
                       <button
                         type="button"
-                        onClick={handleChooseNextSegment}
-                        className="px-3.5 py-2 bg-emerald-900/60 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl border border-emerald-400/30 transition-all cursor-pointer"
-                        title="Salvar segmento e voltar para escolha de segmentos"
+                        onClick={() => setSelectedSegment('docentes')}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          selectedSegment === 'docentes'
+                            ? 'bg-white text-[#006837] shadow-2xs border border-emerald-200/60'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
                       >
-                        <span>Escolher próximo segmento</span>
+                        👨‍🏫 Docentes ({formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSegment('taes')}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          selectedSegment === 'taes'
+                            ? 'bg-white text-amber-900 shadow-2xs border border-amber-200/60'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        👨‍💼 TAEs ({formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length})
                       </button>
                     </div>
                   </div>
 
-                  {/* Filtered questions list for selectedSegment */}
+                  {/* Lista de perguntas do segmento selecionado */}
                   {formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos')).length === 0 ? (
                     <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-3 bg-slate-50/50">
                       <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
@@ -5545,38 +5561,90 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAddSegmentQuestion(selectedSegment)}
-                        className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Adicionar Primeira Pergunta</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                    <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
                       {(() => {
                         const filtered = formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'));
                         return filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length));
                       })()}
                     </div>
                   )}
+
+                  {/* Barra de Ações Compacta da Etapa 4 */}
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleAddSegmentQuestion(selectedSegment)}
+                      className="w-full sm:w-auto px-3.5 py-1.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Adicionar pergunta</span>
+                    </button>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      {selectedSegment === 'alunos' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!completedSegments.includes('alunos')) setCompletedSegments([...completedSegments, 'alunos']);
+                            setSelectedSegment('docentes');
+                          }}
+                          className="w-full sm:w-auto px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <span>Próximo segmento (Docentes)</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      ) : selectedSegment === 'docentes' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!completedSegments.includes('docentes')) setCompletedSegments([...completedSegments, 'docentes']);
+                            setSelectedSegment('taes');
+                          }}
+                          className="w-full sm:w-auto px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <span>Próximo segmento (TAEs)</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!completedSegments.includes('taes')) setCompletedSegments([...completedSegments, 'taes']);
+                            setWizardStep(5);
+                          }}
+                          className="w-full sm:w-auto px-3.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-[#006837] border border-emerald-300 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <span>Concluir e ir para Revisão</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* ETAPA 5 — REVISÃO DO FORMULÁRIO */}
               {wizardStep === 5 && (
-                <div className="space-y-5 animate-in fade-in duration-200">
+                <div className="space-y-4 animate-in fade-in duration-200">
                   {/* Cabeçalho da Etapa */}
-                  <div className="border-b border-slate-100 pb-2.5">
+                  <div className="border-b border-slate-100 pb-2">
                     <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-[#006837]" />
                       <span>REVISÃO DO FORMULÁRIO</span>
                     </h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Confira o resumo das informações do formulário antes de prosseguir para o envio.
+                      Confira o resumo da estrutura do formulário antes de avançar para a configuração de envio.
                     </p>
                   </div>
 
-                  {/* RESUMO VISUAL NO TOPO (Item 3) */}
+                  {/* RESUMO RÁPIDO NO TOPO */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
                       <span className="text-base font-black text-[#006837] block leading-none">{formQuestions.length}</span>
@@ -5596,19 +5664,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     </div>
 
                     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
-                      <span className="text-xs font-bold text-slate-800 block leading-snug">
-                        {formStartDate ? formStartDate.split('-').reverse().slice(0, 2).join('/') : '15/09'} → {formEndDate ? formEndDate.split('-').reverse().slice(0, 2).join('/') : '30/09'}
+                      <span className="text-xs font-black text-slate-800 block leading-snug">
+                        {formPeriodo || '2026.2'}
                       </span>
-                      <span className="text-[11px] font-bold text-slate-600 block">Período</span>
+                      <span className="text-[11px] font-bold text-slate-600 block">Semestre</span>
                     </div>
                   </div>
 
-                  {/* BLOCOS COMPACTOS DA REVISÃO */}
+                  {/* BLOCOS COMPACTOS DA REVISÃO (SEM CONFIGURAÇÃO DE TEMPO) */}
                   <div className="space-y-3">
-
                     {/* BLOCO 1: Informações Gerais */}
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                           <Info className="w-4 h-4 text-[#006837]" />
                           Informações Gerais
@@ -5624,30 +5691,30 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <div>
-                          <span className="text-slate-400 font-medium block">Título:</span>
+                          <span className="text-slate-400 font-medium block text-[11px]">Título:</span>
                           <span className="font-bold text-slate-800">{formTitle.trim() ? formTitle : 'Novo Formulário'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 font-medium block">Campus:</span>
+                          <span className="text-slate-400 font-medium block text-[11px]">Campus:</span>
                           <span className="font-bold text-slate-800">{formCampus}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 font-medium block">Período Letivo:</span>
+                          <span className="text-slate-400 font-medium block text-[11px]">Período Letivo:</span>
                           <span className="font-bold text-slate-800">{formPeriodo}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 font-medium block">Descrição:</span>
+                          <span className="text-slate-400 font-medium block text-[11px]">Descrição:</span>
                           <span className="font-medium text-slate-600 line-clamp-1">{formDescription.trim() ? formDescription : 'Sem descrição.'}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* BLOCO 2: Participantes / Segmentos */}
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                           <Users className="w-4 h-4 text-[#006837]" />
-                          Participantes
+                          Participantes Convocados
                         </span>
                         <button
                           type="button"
@@ -5678,11 +5745,11 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     </div>
 
                     {/* BLOCO 3: Perguntas */}
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                           <HelpCircle className="w-4 h-4 text-[#006837]" />
-                          Perguntas ({formQuestions.length} perguntas)
+                          Distribuição das Perguntas ({formQuestions.length} no total)
                         </span>
                         <div className="flex items-center gap-1">
                           <button
@@ -5705,7 +5772,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                          <span className="text-slate-500 font-medium block text-[10px]">Gerais</span>
+                          <span className="text-slate-500 font-medium block text-[10px]">Gerais (Todos)</span>
                           <span className="font-bold text-slate-800">{formQuestions.filter((q) => q.audiences.includes('todos')).length} perguntas</span>
                         </div>
                         <div className="p-2 bg-indigo-50/50 rounded-lg border border-indigo-100">
@@ -5723,46 +5790,29 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </div>
                     </div>
 
-                    {/* BLOCO 4: Configurações */}
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    {/* BLOCO 4: Identificação e Sigilo */}
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1.5">
+                      <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                          <Settings className="w-4 h-4 text-[#006837]" />
-                          Configurações
+                          <ShieldCheck className="w-4 h-4 text-[#006837]" />
+                          Anonimato e Sigilo SINAES
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(1)}
-                          className="px-2.5 py-1 text-[11px] font-bold text-[#006837] hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Editar</span>
-                        </button>
+                        <span className="px-2.5 py-0.5 bg-emerald-50 text-[#006837] border border-emerald-200 rounded-full font-bold text-[11px]">
+                          Anonimato Ativo
+                        </span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <span className="text-slate-400 font-medium block">Período de Resposta:</span>
-                          <span className="font-bold text-slate-800">{formStartDate} até {formEndDate}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 font-medium block">Identificação:</span>
-                          <span className="font-bold text-emerald-700">{formAnonymous ? 'Anonimato Garantido (SINAES)' : 'Desativado'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 font-medium block">Status Inicial:</span>
-                          <span className="font-bold text-slate-800">{publishStatus}</span>
-                        </div>
-                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Garantia de que as respostas individuais não serão associadas aos dados cadastrais dos participantes, em conformidade com as diretrizes do SINAES/MEC.
+                      </p>
                     </div>
-
                   </div>
                 </div>
               )}
 
               {/* ETAPA 6 — ENVIO DA CAMPANHA */}
               {wizardStep === 6 && (
-                <div className="space-y-5 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-100 pb-2.5">
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="border-b border-slate-100 pb-2">
                     <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                       <Send className="w-5 h-5 text-[#006837]" />
                       <span>ENVIO DA CAMPANHA</span>
@@ -5773,8 +5823,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   </div>
 
                   {/* BLOCO 1: PÚBLICO */}
-                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-[#006837]" />
                         1. PÚBLICO
@@ -5784,21 +5834,19 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs font-semibold text-slate-600">Quem receberá a avaliação?</p>
-
                     <div className="flex flex-wrap items-center gap-2">
                       {formAudiences.includes('alunos') && (
-                        <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> Discentes
+                        <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" /> Discentes
                         </span>
                       )}
                       {formAudiences.includes('docentes') && (
-                        <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-[#006837] text-xs font-bold rounded-lg flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-[#006837] text-xs font-bold rounded-lg flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#006837]" /> Docentes
                         </span>
                       )}
                       {formAudiences.includes('taes') && (
-                        <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold rounded-lg flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" /> TAEs
                         </span>
                       )}
@@ -5806,20 +5854,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   </div>
 
                   {/* BLOCO 2: CANAIS DE ENVIO */}
-                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                    <div className="border-b border-slate-100 pb-2">
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
+                    <div className="border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Send className="w-4 h-4 text-[#006837]" />
                         2. CANAIS DE ENVIO
                       </span>
                     </div>
 
-                    <p className="text-xs font-semibold text-slate-600">Como deseja disponibilizar a avaliação?</p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {/* E-mail Checkbox */}
                       <label
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.email
                             ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
@@ -5829,18 +5875,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           type="checkbox"
                           checked={sendMethods.email}
                           onChange={(e) => setSendMethods({ ...sendMethods, email: e.target.checked })}
-                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                          className="accent-[#006837] w-4 h-4 cursor-pointer"
                         />
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-extrabold flex items-center gap-1">
-                            <Mail className="w-3.5 h-3.5 text-[#006837]" /> E-mail institucional
-                          </span>
-                        </div>
+                        <span className="text-xs font-bold flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-[#006837]" /> E-mail institucional
+                        </span>
                       </label>
 
                       {/* QR Code Checkbox */}
                       <label
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.qrcode
                             ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
@@ -5850,18 +5894,16 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           type="checkbox"
                           checked={sendMethods.qrcode}
                           onChange={(e) => setSendMethods({ ...sendMethods, qrcode: e.target.checked })}
-                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                          className="accent-[#006837] w-4 h-4 cursor-pointer"
                         />
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-extrabold flex items-center gap-1">
-                            <QrCode className="w-3.5 h-3.5 text-[#006837]" /> QR Code
-                          </span>
-                        </div>
+                        <span className="text-xs font-bold flex items-center gap-1.5">
+                          <QrCode className="w-3.5 h-3.5 text-[#006837]" /> QR Code
+                        </span>
                       </label>
 
                       {/* Link Checkbox */}
                       <label
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.link
                             ? 'border-[#006837] bg-emerald-50/60 text-emerald-950 font-bold'
                             : 'border-slate-200 bg-slate-50/60 text-slate-600'
@@ -5871,77 +5913,76 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           type="checkbox"
                           checked={sendMethods.link}
                           onChange={(e) => setSendMethods({ ...sendMethods, link: e.target.checked })}
-                          className="accent-[#006837] w-4 h-4 cursor-pointer mt-0.5"
+                          className="accent-[#006837] w-4 h-4 cursor-pointer"
                         />
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-extrabold flex items-center gap-1">
-                            <Link2 className="w-3.5 h-3.5 text-[#006837]" /> Link direto
-                          </span>
-                        </div>
+                        <span className="text-xs font-bold flex items-center gap-1.5">
+                          <Link2 className="w-3.5 h-3.5 text-[#006837]" /> Link direto
+                        </span>
                       </label>
                     </div>
 
-                    {/* REVELA APENAS O QUE ESTIVER SELECIONADO */}
+                    {/* REVELA APENAS O QUE ESTIVER SELECIONADO COM FORMATO COMPACTO */}
 
-                    {/* 1. SE E-MAIL ESTIVER SELECIONADO */}
+                    {/* 1. SE E-MAIL ESTIVER SELECIONADO: CARD COMPACTO */}
                     {sendMethods.email && (
-                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5 text-[#006837]" /> E-mail institucional
-                            </span>
-                            <p className="text-[11px] text-slate-500">Será enviado para 2.450 participantes.</p>
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in duration-150">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100/80 text-[#006837] flex items-center justify-center shrink-0">
+                            <Mail className="w-4 h-4" />
                           </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900 truncate">
+                                {emailSubject}
+                              </span>
+                              <span className="px-1.5 py-0.2 text-[10px] font-bold bg-emerald-100 text-[#006837] rounded">
+                                SUAP
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              Disparo institucional para Discentes, Docentes e TAEs • 2.450 destinatários
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                           <button
                             type="button"
                             onClick={() => setShowEmailPreviewModal(true)}
-                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                           >
                             <Eye className="w-3.5 h-3.5 text-[#006837]" />
-                            <span>Visualizar e-mail</span>
+                            <span>Visualizar mensagem</span>
                           </button>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div>
-                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Assunto</label>
-                            <input
-                              type="text"
-                              value={emailSubject}
-                              onChange={(e) => setEmailSubject(e.target.value)}
-                              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-bold text-slate-700 block mb-1">Mensagem</label>
-                            <input
-                              type="text"
-                              value={emailBody}
-                              onChange={(e) => setEmailBody(e.target.value)}
-                              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                            />
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowEmailEditModal(true)}
+                            className="px-2.5 py-1.5 bg-[#006837] text-white hover:bg-[#045C2D] text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Editar mensagem</span>
+                          </button>
                         </div>
                       </div>
                     )}
 
                     {/* 2. SE QR CODE ESTIVER SELECIONADO */}
                     {sendMethods.qrcode && (
-                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#006837] shrink-0">
-                            <QrCode className="w-6 h-6" />
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100/80 text-[#006837] flex items-center justify-center shrink-0">
+                            <QrCode className="w-4 h-4" />
                           </div>
                           <div>
-                            <span className="text-xs font-bold text-slate-900 block">QR Code</span>
-                            <p className="text-[11px] text-slate-500">Disponível para impressão e afixação nos blocos.</p>
+                            <span className="text-xs font-bold text-slate-900 block">QR Code para Divulgação</span>
+                            <p className="text-[11px] text-slate-500">Pronto para impressão em cartazes e murais do campus.</p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowQrCodePreviewModal(true)}
-                          className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                          className="px-2.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
                         >
                           <Eye className="w-3.5 h-3.5 text-[#006837]" />
                           <span>Visualizar QR Code</span>
@@ -5951,14 +5992,14 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
                     {/* 3. SE LINK ESTIVER SELECIONADO */}
                     {sendMethods.link && (
-                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 animate-in fade-in duration-150">
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 animate-in fade-in duration-150">
                         <span className="text-xs font-bold text-slate-900 block">Link direto de acesso</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
                             readOnly
                             value={`https://cpa.ifce.edu.br/avaliar/${editingForm?.id || '2026-2'}`}
-                            className="flex-1 h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg font-mono text-slate-700"
+                            className="flex-1 h-8 px-3 text-xs bg-white border border-slate-200 rounded-lg font-mono text-slate-700"
                           />
                           <button
                             type="button"
@@ -5967,7 +6008,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                               setWizardCopiedLink(true);
                               setTimeout(() => setWizardCopiedLink(false), 3000);
                             }}
-                            className="px-3 py-2 bg-[#006837] text-white text-xs font-bold rounded-lg hover:bg-[#045C2D] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                            className="px-3 py-1.5 bg-[#006837] text-white text-xs font-bold rounded-lg hover:bg-[#045C2D] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 shadow-2xs"
                           >
                             {wizardCopiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                             <span>{wizardCopiedLink ? 'Copiado!' : 'Copiar link'}</span>
@@ -5977,42 +6018,80 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     )}
                   </div>
 
-                  {/* BLOCO 3: PERÍODO */}
-                  <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                    <div className="border-b border-slate-100 pb-2">
+                  {/* BLOCO 3: PERÍODO E AGENDAMENTO DE ENVIO */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Calendar className="w-4 h-4 text-[#006837]" />
-                        3. PERÍODO
+                        3. PERÍODO E AGENDAMENTO DE ENVIO
                       </span>
+                      {/* Presets rápidos */}
+                      <div className="flex items-center gap-1">
+                        {[7, 15, 30].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => {
+                              const base = wizardCampaignStartDate ? new Date(wizardCampaignStartDate + 'T00:00:00') : new Date();
+                              base.setDate(base.getDate() + days);
+                              const y = base.getFullYear();
+                              const m = String(base.getMonth() + 1).padStart(2, '0');
+                              const d = String(base.getDate()).padStart(2, '0');
+                              setWizardCampaignEndDate(`${y}-${m}-${d}`);
+                            }}
+                            className="px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md transition-colors cursor-pointer"
+                          >
+                            +{days} dias
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">Início</label>
-                        <input
-                          type="date"
-                          value={wizardCampaignStartDate}
-                          onChange={(e) => setWizardCampaignStartDate(e.target.value)}
-                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                        />
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            type="date"
+                            value={wizardCampaignStartDate}
+                            onChange={(e) => setWizardCampaignStartDate(e.target.value)}
+                            className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                          />
+                          <input
+                            type="time"
+                            value={formStartTime}
+                            onChange={(e) => setFormStartTime(e.target.value)}
+                            className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                          />
+                        </div>
                       </div>
+
                       <div>
                         <label className="text-[11px] font-bold text-slate-700 block mb-1">Encerramento</label>
-                        <input
-                          type="date"
-                          value={wizardCampaignEndDate}
-                          onChange={(e) => setWizardCampaignEndDate(e.target.value)}
-                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
-                        />
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <input
+                            type="date"
+                            value={wizardCampaignEndDate}
+                            onChange={(e) => setWizardCampaignEndDate(e.target.value)}
+                            className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                          />
+                          <input
+                            type="time"
+                            value={formEndTime}
+                            onChange={(e) => setFormEndTime(e.target.value)}
+                            className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                          />
+                        </div>
                       </div>
+
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Tempo estimado</label>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Tempo estimado de resposta</label>
                         <input
                           type="text"
                           value={wizardCampaignEstimatedTime}
                           onChange={(e) => setWizardCampaignEstimatedTime(e.target.value)}
                           placeholder="Ex: 3–5 minutos"
-                          className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                          className="w-full h-8 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-[#006837]"
                         />
                       </div>
                     </div>
@@ -6913,8 +6992,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       {/* MODAL SECUNDÁRIO: Visualizar E-mail */}
       {showEmailPreviewModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50 shrink-0">
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-[#006837]" />
                 <div>
@@ -6931,7 +7010,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3 font-sans">
                 <div className="space-y-1 pb-3 border-b border-slate-200/80">
                   <p><strong className="text-slate-900">De:</strong> CPA IFCE &lt;cpa@ifce.edu.br&gt;</p>
@@ -6946,16 +7025,125 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     Responder Avaliação Institucional
                   </span>
                 </div>
+                {emailSignature && (
+                  <div className="pt-3 border-t border-slate-200/70 text-[11px] text-slate-500 whitespace-pre-line leading-normal">
+                    {emailSignature}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
+            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailPreviewModal(false);
+                  setShowEmailEditModal(true);
+                }}
+                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Editar Mensagem</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowEmailPreviewModal(false)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Fechar Prévia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SECUNDÁRIO: Editar Mensagem de E-mail */}
+      {showEmailEditModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-[#006837]" />
+                <div>
+                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Editar Mensagem do E-mail</h4>
+                  <p className="text-xs text-slate-500">Personalize o texto do convite enviado aos participantes</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEmailEditModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                  <span>Assunto do E-mail</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                  <span>Corpo do Convite</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={6}
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full p-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium leading-relaxed"
+                />
+                <p className="text-[11px] text-slate-400">
+                  O botão e o link para preenchimento da autoavaliação serão inseridos automaticamente ao final do texto.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-800">
+                  Assinatura Institucional
+                </label>
+                <textarea
+                  rows={3}
+                  value={emailSignature}
+                  onChange={(e) => setEmailSignature(e.target.value)}
+                  className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailEditModal(false);
+                  setShowEmailPreviewModal(true);
+                }}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5 text-[#006837]" />
+                <span>Ver Prévia</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailEditModal(false);
+                  showNotification('success', 'Mensagem do e-mail atualizada com sucesso!');
+                }}
+                className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+              >
+                Salvar Mensagem
               </button>
             </div>
           </div>
