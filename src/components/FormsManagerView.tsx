@@ -5092,24 +5092,29 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full h-[680px] max-h-[92vh] border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
-            
+          <div
+            className={`bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col transition-all duration-200 ${
+              isCampaignSentSuccess
+                ? 'max-w-md w-full p-6 sm:p-7 space-y-4 my-auto animate-in zoom-in-95'
+                : 'max-w-4xl w-full h-[680px] max-h-[92vh]'
+            }`}
+          >
             {isCampaignSentSuccess ? (
-              <div className="p-8 text-center space-y-6 my-auto animate-in fade-in duration-200">
-                <div className="w-16 h-16 bg-emerald-100 text-[#006837] rounded-full flex items-center justify-center mx-auto shadow-md border border-emerald-200">
-                  <CheckCircle2 className="w-10 h-10" />
+              <div className="text-center space-y-4 animate-in fade-in duration-200">
+                <div className="w-14 h-14 bg-emerald-100 text-[#006837] rounded-full flex items-center justify-center mx-auto shadow-sm border border-emerald-200">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <div className="space-y-2 max-w-md mx-auto">
-                  <h3 className="text-xl font-black text-slate-900">Campanha enviada com sucesso!</h3>
+                <div className="space-y-1.5 max-w-sm mx-auto">
+                  <h3 className="text-lg font-black text-slate-900 leading-tight">Campanha enviada com sucesso!</h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
                     Os convites e informativos foram disponibilizados aos participantes. Você já pode acompanhar as respostas em tempo real pelo módulo de Relatórios.
                   </p>
                 </div>
 
-                <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl max-w-md mx-auto text-left space-y-1.5 text-xs shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[#006837]">{wizardCampaignName || formTitle}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#006837] font-bold text-[10px]">
+                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-left space-y-1 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-[#006837] truncate">{wizardCampaignName || formTitle}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#006837] font-bold text-[10px] shrink-0">
                       Ativa
                     </span>
                   </div>
@@ -5118,7 +5123,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   <p className="text-slate-600 text-[11px]">Público: {formAudiences.length} segmento(s)</p>
                 </div>
 
-                <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -5126,9 +5131,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       setIsCampaignSentSuccess(false);
                       onSelectTab?.('reports');
                     }}
-                    className="px-5 py-2.5 bg-[#006837] text-white font-extrabold text-xs rounded-xl hover:bg-[#045C2D] transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2 bg-[#006837] text-white font-extrabold text-xs rounded-xl hover:bg-[#045C2D] transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <BarChart2 className="w-4 h-4" />
+                    <BarChart2 className="w-3.5 h-3.5" />
                     <span>Ir para Relatórios</span>
                   </button>
 
@@ -5138,7 +5143,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       setIsCreateModalOpen(false);
                       setIsCampaignSentSuccess(false);
                     }}
-                    className="px-5 py-2.5 bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2 bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     Voltar para Formulários
                   </button>
@@ -5540,66 +5545,27 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               {/* ETAPA 4 — PERGUNTAS DO SEGMENTO */}
               {wizardStep === 4 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  {/* Cabeçalho Limpo e Seletor Compacto de Segmentos */}
-                  <div className="border-b border-slate-100 pb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
-                      <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                        <HelpCircle className="w-5 h-5 text-[#006837]" />
-                        <span>
-                          Perguntas para{' '}
-                          {selectedSegment === 'alunos'
-                            ? 'Discentes'
-                            : selectedSegment === 'docentes'
-                            ? 'Docentes'
-                            : 'Técnicos Administrativos (TAEs)'}
-                        </span>
-                      </h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Cadastre as perguntas específicas direcionadas exclusivamente para este grupo.
-                      </p>
-                    </div>
-
-                    {/* Mini seletor de segmento */}
-                    <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl shrink-0 self-start sm:self-auto border border-slate-200/60">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSegment('alunos')}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          selectedSegment === 'alunos'
-                            ? 'bg-white text-indigo-900 shadow-2xs border border-indigo-200/60'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        🎓 Discentes ({formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSegment('docentes')}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          selectedSegment === 'docentes'
-                            ? 'bg-white text-[#006837] shadow-2xs border border-emerald-200/60'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        👨‍🏫 Docentes ({formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSegment('taes')}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          selectedSegment === 'taes'
-                            ? 'bg-white text-amber-900 shadow-2xs border border-amber-200/60'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        👨‍💼 TAEs ({formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length})
-                      </button>
-                    </div>
+                  {/* Cabeçalho da Etapa 4 (Sem filtro/troca de segmento) */}
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                      <HelpCircle className="w-5 h-5 text-[#006837]" />
+                      <span>
+                        Perguntas para{' '}
+                        {selectedSegment === 'alunos'
+                          ? 'Discentes'
+                          : selectedSegment === 'docentes'
+                          ? 'Docentes'
+                          : 'Técnicos Administrativos (TAEs)'}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Cadastre as perguntas específicas direcionadas exclusivamente para este grupo.
+                    </p>
                   </div>
 
                   {/* Lista de perguntas do segmento selecionado */}
                   {formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos')).length === 0 ? (
-                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-3 bg-slate-50/50">
+                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-4 bg-slate-50/50">
                       <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
                       <div>
                         <p className="text-xs font-bold text-slate-700">
@@ -5609,90 +5575,116 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                           Estas perguntas serão exibidas somente no questionário deste segmento.
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAddSegmentQuestion(selectedSegment)}
-                        className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Adicionar Primeira Pergunta</span>
-                      </button>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAddSegmentQuestion(selectedSegment)}
+                          className="w-full sm:w-auto py-2.5 px-4 border-2 border-dashed border-emerald-300 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 text-[#006837] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group"
+                        >
+                          <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          <span>Adicionar Nova Pergunta para {selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs'}</span>
+                        </button>
+
+                        {selectedSegment === 'alunos' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!completedSegments.includes('alunos')) setCompletedSegments([...completedSegments, 'alunos']);
+                              setSelectedSegment('docentes');
+                            }}
+                            className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                          >
+                            <span>Próximo segmento (Docentes)</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        ) : selectedSegment === 'docentes' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!completedSegments.includes('docentes')) setCompletedSegments([...completedSegments, 'docentes']);
+                              setSelectedSegment('taes');
+                            }}
+                            className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                          >
+                            <span>Próximo segmento (TAEs)</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!completedSegments.includes('taes')) setCompletedSegments([...completedSegments, 'taes']);
+                              setWizardStep(5);
+                            }}
+                            className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                          >
+                            <span>Concluir e ir para Revisão</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                    <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
                       {(() => {
                         const filtered = formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos'));
                         const segmentLabel = selectedSegment === 'alunos' ? 'Discentes' : selectedSegment === 'docentes' ? 'Docentes' : 'TAEs';
                         return (
                           <>
                             {filtered.map((q, qIdx) => renderQuestionCard(q, qIdx, filtered.length))}
-                            <div className="pt-2 pb-1">
+                            <div className="pt-2 pb-1 flex flex-col sm:flex-row items-center gap-2.5">
                               <button
                                 type="button"
                                 onClick={() => handleAddSegmentQuestion(selectedSegment)}
-                                className="w-full py-2.5 px-4 border-2 border-dashed border-emerald-300 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 text-[#006837] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group"
+                                className="w-full sm:flex-1 py-2.5 px-4 border-2 border-dashed border-emerald-300 hover:border-[#006837] bg-emerald-50/40 hover:bg-emerald-50 text-[#006837] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group"
                               >
                                 <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                 <span>Adicionar Nova Pergunta para {segmentLabel}</span>
                               </button>
+
+                              {selectedSegment === 'alunos' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!completedSegments.includes('alunos')) setCompletedSegments([...completedSegments, 'alunos']);
+                                    setSelectedSegment('docentes');
+                                  }}
+                                  className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                                >
+                                  <span>Próximo segmento (Docentes)</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              ) : selectedSegment === 'docentes' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!completedSegments.includes('docentes')) setCompletedSegments([...completedSegments, 'docentes']);
+                                    setSelectedSegment('taes');
+                                  }}
+                                  className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                                >
+                                  <span>Próximo segmento (TAEs)</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!completedSegments.includes('taes')) setCompletedSegments([...completedSegments, 'taes']);
+                                    setWizardStep(5);
+                                  }}
+                                  className="w-full sm:w-auto py-2.5 px-4 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                                >
+                                  <span>Concluir e ir para Revisão</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </>
                         );
                       })()}
                     </div>
                   )}
-
-                  {/* Barra de Ações Compacta da Etapa 4 */}
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddSegmentQuestion(selectedSegment)}
-                      className="w-full sm:w-auto px-3.5 py-1.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Adicionar pergunta</span>
-                    </button>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      {selectedSegment === 'alunos' ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!completedSegments.includes('alunos')) setCompletedSegments([...completedSegments, 'alunos']);
-                            setSelectedSegment('docentes');
-                          }}
-                          className="w-full sm:w-auto px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                        >
-                          <span>Próximo segmento (Docentes)</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      ) : selectedSegment === 'docentes' ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!completedSegments.includes('docentes')) setCompletedSegments([...completedSegments, 'docentes']);
-                            setSelectedSegment('taes');
-                          }}
-                          className="w-full sm:w-auto px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                        >
-                          <span>Próximo segmento (TAEs)</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!completedSegments.includes('taes')) setCompletedSegments([...completedSegments, 'taes']);
-                            setWizardStep(5);
-                          }}
-                          className="w-full sm:w-auto px-3.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-[#006837] border border-emerald-300 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                        >
-                          <span>Concluir e ir para Revisão</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -6206,17 +6198,44 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   <span>Salvar progresso</span>
                 </button>
 
-                {/* Botão Seguinte / Avançar para Envio / Enviar Campanha */}
-                {wizardStep < 5 ? (
+                {/* Botão Dinâmico de Avanço por Etapa */}
+                {wizardStep === 1 && (
                   <button
                     type="button"
-                    onClick={() => setWizardStep((prev) => Math.min(6, prev + 1))}
+                    onClick={() => setWizardStep(2)}
                     className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Seguinte</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                ) : wizardStep === 5 ? (
+                )}
+
+                {wizardStep === 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(3)}
+                    className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Escolher segmento</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {wizardStep === 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(4)}
+                    className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Seguinte</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* Na Etapa 4, o botão ao lado de 'Adicionar Nova Pergunta' substitui o botão seguinte */}
+                {wizardStep === 4 && null}
+
+                {wizardStep === 5 && (
                   <button
                     type="button"
                     onClick={handleAdvanceToCampaignSend}
@@ -6225,7 +6244,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                     <span>Avançar para Envio</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                ) : (
+                )}
+
+                {wizardStep === 6 && (
                   <button
                     type="button"
                     onClick={() => setShowSendConfirmModal(true)}
