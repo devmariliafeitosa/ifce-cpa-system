@@ -351,36 +351,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
   return (
     <div className="w-full max-w-[96%] 2xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4 select-none">
       {/* =====================================================================
-          1. CABEÇALHO PRINCIPAL DO DASHBOARD
-         ===================================================================== */}
-      <div
-        id="dashboard-header"
-        className="bg-white border border-slate-200/90 rounded-xl px-4 py-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100/90 text-[#006837] rounded-lg shrink-0">
-            <BarChart3 className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              Dashboard
-            </h1>
-            <p className="text-xs font-medium text-slate-500">
-              Visão geral da CPA
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="bg-emerald-50 text-[#006837] text-xs font-extrabold px-3 py-1.5 rounded-lg border border-emerald-200/80 flex items-center gap-2 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#006837] animate-pulse" />
-            CPA • Campus Tauá
-          </span>
-        </div>
-      </div>
-
-      {/* =====================================================================
-          2. INDICADORES PRINCIPAIS SEMPRE VISÍVEIS (4 CARDS HORIZONTAIS)
+          1. INDICADORES PRINCIPAIS SEMPRE VISÍVEIS (4 CARDS HORIZONTAIS)
          ===================================================================== */}
       <section id="dashboard-indicadores-principais" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Indicador 1: Questionários Ativos */}
@@ -540,7 +511,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1">
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                  <button
+                    onClick={() => onNavigateTab('formularios')}
+                    className="h-8 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5 text-[#006837]" />
+                    <span>Criar Novo Questionário</span>
+                  </button>
                   <button
                     onClick={() => onNavigateTab('formularios')}
                     className="h-8 px-3.5 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
@@ -556,7 +534,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) =
                   Não há nenhuma campanha em andamento no momento.
                 </p>
                 <button
-                  onClick={() => onNavigateTab('novo-formulario')}
+                  onClick={() => onNavigateTab('formularios')}
                   className="px-3.5 py-1.5 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg inline-flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />

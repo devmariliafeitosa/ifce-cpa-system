@@ -4275,39 +4275,30 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-200">
-      {/* Top Banner & Header exact requirements:
-          Título: Formulários
-          Descrição: Gerencie todas as avaliações institucionais da CPA.
-          Botão: Novo Formulário
-      */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Questionários</h1>
-            <span className="bg-[#E8F5EE] text-[#006837] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#006837]/10">
-              Módulo CPA • Campus Tauá
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal">
-            Gerencie todas as avaliações institucionais da CPA.
-          </p>
+    <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 animate-in fade-in duration-200">
+      {/* Barra de Ações Superior */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-700">Instrumentos Avaliativos</span>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#006837] text-[10px] font-extrabold border border-emerald-200">
+            {forms.length} {forms.length === 1 ? 'formulário' : 'formulários'}
+          </span>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="px-4 py-2.5 bg-white hover:bg-emerald-50 text-[#006837] border border-[#006837]/30 font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="px-3.5 py-2 bg-white hover:bg-emerald-50 text-[#006837] border border-emerald-300 font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
           >
-            <FileSpreadsheet className="w-4 h-4 text-[#006837]" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#006837]" />
             <span>Importar Questionário</span>
           </button>
 
           <button
             onClick={handleOpenCreateModal}
-            className="px-5 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Novo Questionário</span>
           </button>
         </div>

@@ -463,31 +463,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   return (
     <div className="w-full max-w-[95%] xl:max-w-[1400px] mx-auto px-2 sm:px-4 py-3 space-y-3.5 relative">
       {/* =====================================================================
-          1. CABEÇALHO COMPACTO
-         ===================================================================== */}
-      <div className="bg-white border border-slate-200/90 rounded-xl px-4 py-2.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-1.5 bg-emerald-100/80 text-[#006837] rounded-lg flex-shrink-0">
-            <BarChart3 className="w-4 h-4" />
-          </div>
-          <div className="truncate">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
-                Relatórios Institucionais
-              </h1>
-              <span className="bg-emerald-50 text-[#006837] text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200/80 hidden sm:inline-block">
-                CPA • Campus Tauá
-              </span>
-            </div>
-            <p className="text-[11px] font-medium text-slate-500 truncate">
-              Consolidação e análise dos resultados da Comissão Própria de Avaliação
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* =====================================================================
-          2. BARRA DE FILTROS ÚNICA E COMPACTA
+          1. BARRA DE FILTROS ÚNICA E COMPACTA
          ===================================================================== */}
       <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">

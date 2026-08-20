@@ -11,50 +11,39 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
+const PAGE_TITLES: Record<NavTabId, { title: string }> = {
   dashboard: {
     title: 'Dashboard',
-    subtitle: 'Visão geral da CPA • Campus Tauá',
   },
   relatorios: {
-    title: 'Relatórios Institucionais',
-    subtitle: 'Consolidação e exportação dos relatórios da CPA.',
+    title: 'Relatórios',
   },
   'google-forms': {
-    title: 'Gerenciador Google Forms',
-    subtitle: 'Integração oficial com Google Forms e Drive no Campus Tauá.',
+    title: 'Google Forms',
   },
   formularios: {
-    title: 'Questionários de Avaliação',
-    subtitle: 'Gerenciamento de questionários e instrumentos avaliativos.',
+    title: 'Questionários',
   },
   'novo-formulario': {
     title: 'Novo Questionário',
-    subtitle: 'Criação de novos questionários de avaliação por ciclo.',
   },
   participantes: {
-    title: 'Participantes do Sistema',
-    subtitle: 'Gerenciamento e controle de usuários cadastrados (Alunos, Docentes e TAEs).',
+    title: 'Participantes',
   },
   alunos: {
-    title: 'Participação dos Alunos',
-    subtitle: 'Acompanhamento do engajamento do corpo discente.',
+    title: 'Alunos',
   },
   docentes: {
-    title: 'Participação dos Docentes',
-    subtitle: 'Painel de resposta e engajamento do corpo docente.',
+    title: 'Docentes',
   },
   taes: {
-    title: 'Técnicos Administrativos (TAEs)',
-    subtitle: 'Engajamento dos servidores técnico-administrativos.',
+    title: 'TAEs',
   },
   configuracoes: {
-    title: 'Configurações do Sistema',
-    subtitle: 'Preferências gerais, parâmetros de ciclo e permissões.',
+    title: 'Configurações',
   },
   perfil: {
-    title: 'Perfil do Coordenador',
-    subtitle: 'Informações da conta e dados institucionais.',
+    title: 'Perfil',
   },
 };
 
@@ -69,8 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageInfo = PAGE_TITLES[activeTab] || {
-    title: 'Painel CPA',
-    subtitle: 'Bem-vindo ao Sistema de Avaliação Institucional.',
+    title: 'Questionários',
   };
 
   // Close user dropdown on outside click
@@ -92,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
   const userEmail = user?.email || 'cpa.taua@ifce.edu.br';
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 py-3 flex items-center justify-between gap-4">
       {/* Left: Mobile Toggle & Page Title */}
       <div className="flex items-center gap-3 md:gap-4">
         <button
@@ -103,13 +91,14 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-tight">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none">
             {pageInfo.title}
           </h1>
-          <p className="text-xs text-slate-500 font-normal hidden sm:block mt-0.5">
-            {pageInfo.subtitle}
-          </p>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+            IFCE Campus Tauá
+          </span>
         </div>
       </div>
 
