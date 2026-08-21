@@ -74,6 +74,14 @@ import {
 import { DriveFormMock, MOCK_DRIVE_FORMS } from '../features/forms/data/mockDriveForms';
 import { FormRowActionButton } from '../features/forms/components/FormRowActionButton';
 import { SendCampaignWizardModal } from '../features/forms/components/SendCampaignWizardModal';
+import { SendConfirmDialog } from '../features/forms/components/modals/SendConfirmDialog';
+import { QrCodePreviewDialog } from '../features/forms/components/modals/QrCodePreviewDialog';
+import { EmailEditDialog } from '../features/forms/components/modals/EmailEditDialog';
+import { EmailPreviewDialog } from '../features/forms/components/modals/EmailPreviewDialog';
+import { QuestionsPreviewDialog } from '../features/forms/components/modals/QuestionsPreviewDialog';
+import { ImportFromDriveDialog } from '../features/forms/components/modals/ImportFromDriveDialog';
+import { DeleteFormDialog } from '../features/forms/components/modals/DeleteFormDialog';
+import { FormMetricsDialog } from '../features/forms/components/modals/FormMetricsDialog';
 
 export { getCampaignStatus, getCountdownBadgeInfo, formatCompactPeriod, getCompactStatusBadge };
 
@@ -5002,268 +5010,22 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       )}
 
       {/* MODAL 3: View Metrics by Target Audience Segment */}
-      {viewingMetricsForm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-[#006837]" />
-                <h3 className="text-base font-bold text-slate-900">
-                  Métricas por Público-Alvo • CPA Tauá
-                </h3>
-              </div>
-              <button
-                onClick={() => setViewingMetricsForm(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <FormMetricsDialog form={viewingMetricsForm} onClose={() => setViewingMetricsForm(null)} />
 
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold text-slate-800">{viewingMetricsForm.title}</h4>
-
-              {/* Stat summary cards */}
-              <div className="grid grid-cols-4 gap-3 text-center">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase">Total</p>
-                  <p className="text-base font-bold text-slate-900">
-                    {viewingMetricsForm.responsesCount.total}
-                  </p>
-                </div>
-                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                  <p className="text-[10px] text-indigo-600 font-semibold uppercase">Alunos</p>
-                  <p className="text-base font-bold text-indigo-900">
-                    {viewingMetricsForm.responsesCount.alunos}
-                  </p>
-                </div>
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <p className="text-[10px] text-emerald-700 font-semibold uppercase">Docentes</p>
-                  <p className="text-base font-bold text-emerald-900">
-                    {viewingMetricsForm.responsesCount.docentes}
-                  </p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <p className="text-[10px] text-amber-700 font-semibold uppercase">TAEs</p>
-                  <p className="text-base font-bold text-amber-900">
-                    {viewingMetricsForm.responsesCount.taes}
-                  </p>
-                </div>
-              </div>
-
-              {/* Detailed Breakdown */}
-              <div className="space-y-3 pt-2">
-                <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Distribuição de Perguntas por Público
-                </h5>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {viewingMetricsForm.questions.map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between gap-3"
-                    >
-                      <span className="font-semibold text-slate-800 line-clamp-1">
-                        #{idx + 1}. {q.title}
-                      </span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {q.audiences.includes('todos') ? (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                            Todos
-                          </span>
-                        ) : (
-                          q.audiences.map((aud) => (
-                            <span
-                              key={aud}
-                              className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                                aud === 'alunos'
-                                  ? 'bg-indigo-100 text-indigo-800'
-                                  : aud === 'docentes'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {aud === 'alunos' ? 'Alunos' : aud === 'docentes' ? 'Docentes' : 'TAEs'}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
-              <button
-                onClick={() => setViewingMetricsForm(null)}
-                className="px-5 py-2 bg-[#006837] text-white text-xs font-semibold rounded-xl cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 4: Delete Confirmation Dialog */}
-      {deletingForm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl shrink-0">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">Excluir Formulário</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Tem certeza de que deseja excluir o formulário{' '}
-                  <strong className="text-slate-800">"{deletingForm.title}"</strong>? Esta ação
-                  não poderá ser desfeita.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setDeletingForm(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteForm}
-                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-xs"
-              >
-                Excluir Definitivamente
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteFormDialog form={deletingForm} onCancel={() => setDeletingForm(null)} onConfirm={handleDeleteForm} />
 
       {/* MODAL 5: Importar Formulário do Google Drive */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 my-8">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-100 text-[#006837]">
-                  <FileSpreadsheet className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Importar Formulário do Google Drive</h3>
-                  <p className="text-xs text-slate-500">
-                    Selecione um formulário do Google Forms para importar título, descrição e todas as perguntas.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <ImportFromDriveDialog
+        isOpen={isImportModalOpen}
+        availableForms={MOCK_DRIVE_FORMS}
+        searchTerm={importSearchTerm}
+        isFetching={isFetchingDriveForms}
+        onChangeSearchTerm={setImportSearchTerm}
+        onRefresh={handleFetchDriveForms}
+        onImport={handleImportForm}
+        onClose={() => setIsImportModalOpen(false)}
+      />
 
-            {/* Sync Drive status & Refresh button */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                  Integração Google Drive Ativa
-                </span>
-                <p className="text-[11px] text-slate-500">
-                  Importação automática de Título, Descrição, Perguntas, Alternativas e Obrigatoriedade.
-                </p>
-              </div>
-
-              <button
-                onClick={handleFetchDriveForms}
-                disabled={isFetchingDriveForms}
-                className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#006837] ${isFetchingDriveForms ? 'animate-spin' : ''}`} />
-                <span>{isFetchingDriveForms ? 'Sincronizando...' : 'Sincronizar Google Drive'}</span>
-              </button>
-            </div>
-
-            {/* Search Input for Importable Forms */}
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Pesquisar por nome do formulário..."
-                value={importSearchTerm}
-                onChange={(e) => setImportSearchTerm(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#006837]"
-              />
-            </div>
-
-            {/* Available Forms List */}
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Formulários Disponíveis no Google Forms
-              </p>
-
-              {MOCK_DRIVE_FORMS.filter((f) =>
-                f.name.toLowerCase().includes(importSearchTerm.toLowerCase()) ||
-                f.description.toLowerCase().includes(importSearchTerm.toLowerCase())
-              ).map((item) => (
-                <div
-                  key={item.id}
-                  className="p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:shadow-xs transition-all bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
-                >
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#006837] transition-colors">
-                        {item.name}
-                      </h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#006837] border border-emerald-200">
-                        {item.questionsCount} Perguntas
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                      {item.description}
-                    </p>
-                    <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-1">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" /> Modificado em: {item.modifiedTime}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleImportForm(item)}
-                    className="px-4 py-2.5 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
-                  >
-                    <span>Importar & Classificar</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                Após importar, a tela <strong className="text-slate-800">Classificação das Perguntas</strong> será aberta automaticamente.
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 6: Criar e Configurar Campanha de Avaliação (Envio - Wizard de 5 Etapas) */}
       {campaignModalForm && (
         <SendCampaignWizardModal
           form={campaignModalForm}
@@ -5316,318 +5078,60 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       )}
 
       {/* MODAL SECUNDÁRIO: Ver Perguntas do Formulário */}
-      {isPreviewQuestionsModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-[#006837]" />
-                <div>
-                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Perguntas Cadastradas</h4>
-                  <p className="text-xs text-slate-500">Total de {formQuestions.length} questões no formulário</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsPreviewQuestionsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-5 overflow-y-auto space-y-3 divide-y divide-slate-100 flex-1">
-              {formQuestions.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">Nenhuma pergunta cadastrada.</p>
-              ) : (
-                formQuestions.map((q, idx) => (
-                  <div key={q.id} className="pt-3 first:pt-0 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        {idx + 1}. {q.text}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                        {q.type === 'likert_scale' ? 'Escala Likert' : q.type === 'multiple_choice' ? 'Múltipla Escolha' : 'Texto Livre'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                      <span>Público: {q.audiences.includes('todos') ? 'Todos' : q.audiences.join(', ')}</span>
-                      <span>•</span>
-                      <span>Eixo: {q.dimension || 'Geral'}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsPreviewQuestionsModalOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <QuestionsPreviewDialog
+        isOpen={isPreviewQuestionsModalOpen}
+        questions={formQuestions}
+        onClose={() => setIsPreviewQuestionsModalOpen(false)}
+      />
 
       {/* MODAL SECUNDÁRIO: Visualizar E-mail */}
-      {showEmailPreviewModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-[#006837]" />
-                <div>
-                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Prévia do E-mail Institucional</h4>
-                  <p className="text-xs text-slate-500">Como o destinatário visualizará o convite</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEmailPreviewModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 overflow-y-auto flex-1">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3 font-sans">
-                <div className="space-y-1 pb-3 border-b border-slate-200/80">
-                  <p><strong className="text-slate-900">De:</strong> CPA IFCE &lt;cpa@ifce.edu.br&gt;</p>
-                  <p><strong className="text-slate-900">Para:</strong> participante@ifce.edu.br</p>
-                  <p><strong className="text-slate-900">Assunto:</strong> {emailSubject}</p>
-                </div>
-                <div className="py-2 text-slate-700 whitespace-pre-line leading-relaxed">
-                  {emailBody}
-                </div>
-                <div className="pt-2 text-center">
-                  <span className="inline-block px-5 py-2.5 bg-[#006837] text-white text-xs font-extrabold rounded-xl shadow-xs">
-                    Responder Avaliação Institucional
-                  </span>
-                </div>
-                {emailSignature && (
-                  <div className="pt-3 border-t border-slate-200/70 text-[11px] text-slate-500 whitespace-pre-line leading-normal">
-                    {emailSignature}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmailPreviewModal(false);
-                  setShowEmailEditModal(true);
-                }}
-                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Editar Mensagem</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowEmailPreviewModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Fechar Prévia
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EmailPreviewDialog
+        isOpen={showEmailPreviewModal}
+        emailSubject={emailSubject}
+        emailBody={emailBody}
+        emailSignature={emailSignature}
+        onClose={() => setShowEmailPreviewModal(false)}
+        onEdit={() => {
+          setShowEmailPreviewModal(false);
+          setShowEmailEditModal(true);
+        }}
+      />
 
       {/* MODAL SECUNDÁRIO: Editar Mensagem de E-mail */}
-      {showEmailEditModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-[#006837]" />
-                <div>
-                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">Editar Mensagem do E-mail</h4>
-                  <p className="text-xs text-slate-500">Personalize o texto do convite enviado aos participantes</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEmailEditModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 overflow-y-auto flex-1">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                  <span>Assunto do E-mail</span>
-                  <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                  <span>Corpo do Convite</span>
-                  <span className="text-rose-500">*</span>
-                </label>
-                <textarea
-                  rows={6}
-                  value={emailBody}
-                  onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full p-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium leading-relaxed"
-                />
-                <p className="text-[11px] text-slate-400">
-                  O botão e o link para preenchimento da autoavaliação serão inseridos automaticamente ao final do texto.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">
-                  Assinatura Institucional
-                </label>
-                <textarea
-                  rows={3}
-                  value={emailSignature}
-                  onChange={(e) => setEmailSignature(e.target.value)}
-                  className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmailEditModal(false);
-                  setShowEmailPreviewModal(true);
-                }}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Eye className="w-3.5 h-3.5 text-[#006837]" />
-                <span>Ver Prévia</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmailEditModal(false);
-                  showNotification('success', 'Mensagem do e-mail atualizada com sucesso!');
-                }}
-                className="px-5 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
-              >
-                Salvar Mensagem
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EmailEditDialog
+        isOpen={showEmailEditModal}
+        emailSubject={emailSubject}
+        emailBody={emailBody}
+        emailSignature={emailSignature}
+        onChangeSubject={setEmailSubject}
+        onChangeBody={setEmailBody}
+        onChangeSignature={setEmailSignature}
+        onClose={() => setShowEmailEditModal(false)}
+        onPreview={() => {
+          setShowEmailEditModal(false);
+          setShowEmailPreviewModal(true);
+        }}
+        onSave={() => {
+          setShowEmailEditModal(false);
+          showNotification('success', 'Mensagem do e-mail atualizada com sucesso!');
+        }}
+      />
 
       {/* MODAL SECUNDÁRIO: Visualizar QR Code */}
-      {showQrCodePreviewModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-[#006837]" />
-                <div>
-                  <h4 className="text-sm sm:text-base font-extrabold text-slate-900">QR Code de Divulgação</h4>
-                  <p className="text-xs text-slate-500">Pronto para download ou impressão</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowQrCodePreviewModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 text-center space-y-4">
-              <div className="w-44 h-44 mx-auto bg-slate-50 border-2 border-slate-200 rounded-2xl flex items-center justify-center p-3 shadow-inner">
-                <QrCode className="w-36 h-36 text-slate-900" />
-              </div>
-
-              <div>
-                <h5 className="text-sm font-bold text-slate-900">{formTitle || 'Avaliação Institucional CPA'}</h5>
-                <p className="text-xs text-slate-500 mt-0.5">Aponta para o link de formulário público do campus</p>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => showNotification('success', 'Download do QR Code PNG iniciado!')}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Baixar PNG
-                </button>
-                <button
-                  type="button"
-                  onClick={() => showNotification('success', 'Download do Cartaz PDF iniciado!')}
-                  className="px-4 py-2 bg-[#006837] hover:bg-[#045C2D] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Baixar Cartaz (PDF)
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200/80 bg-slate-50 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowQrCodePreviewModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <QrCodePreviewDialog
+        isOpen={showQrCodePreviewModal}
+        formTitle={formTitle}
+        onClose={() => setShowQrCodePreviewModal(false)}
+        onDownloadPng={() => showNotification('success', 'Download do QR Code PNG iniciado!')}
+        onDownloadPdf={() => showNotification('success', 'Download do Cartaz PDF iniciado!')}
+      />
 
       {/* MODAL CONFIRMAÇÃO DE ENVIO DA CAMPANHA */}
-      {showSendConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#006837] flex items-center justify-center font-bold text-2xl mx-auto flex items-center justify-center">
-              🚀
-            </div>
-            <div className="text-center space-y-1">
-              <h4 className="text-base font-black text-slate-900">Deseja iniciar esta campanha agora?</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Após o envio, os participantes receberão automaticamente o acesso conforme os métodos selecionados.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowSendConfirmModal(false)}
-                className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSendCampaign}
-                className="flex-1 py-2.5 text-xs font-bold text-white bg-[#006837] hover:bg-[#045C2D] rounded-xl transition-colors shadow-xs cursor-pointer"
-              >
-                Enviar Agora
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SendConfirmDialog
+        isOpen={showSendConfirmModal}
+        onClose={() => setShowSendConfirmModal(false)}
+        onConfirm={handleConfirmSendCampaign}
+      />
     </div>
   );
 };
