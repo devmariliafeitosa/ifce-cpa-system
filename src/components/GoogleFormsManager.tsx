@@ -37,112 +37,13 @@ import {
   createGoogleForm,
   deleteGoogleForm,
 } from '../services/googleFormsService';
+import { CPA_PRESET_TEMPLATES } from '../features/googleforms/data/cpaPresetTemplates';
 
 interface GoogleFormsManagerProps {
   onReturnToDashboard?: () => void;
 }
 
 // Preset CPA Questionnaires for quick deployment in IFCE Campus Tauá
-const CPA_PRESET_TEMPLATES: {
-  id: string;
-  title: string;
-  description: string;
-  questions: FormQuestionInput[];
-}[] = [
-  {
-    id: 'docente-taua',
-    title: 'Avaliação Docente e Didático-Pedagógica 2025.1 - Campus Tauá',
-    description:
-      'Instrumento oficial da Comissão Própria de Avaliação (CPA) para avaliação do desempenho docente e metodologia pelas turmas do IFCE Campus Tauá.',
-    questions: [
-      {
-        title: 'O(A) docente demonstra domínio do conteúdo e clareza nas explicações?',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'O plano de ensino e critérios de avaliação foram apresentados no início do semestre?',
-        type: 'RADIO',
-        required: true,
-        options: ['Sim, integralmente', 'Parcialmente', 'Não foram apresentados'],
-      },
-      {
-        title: 'Pontualidade e assiduidade do(a) professor(a) ao longo das aulas:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Comentários, elogios ou sugestões de melhoria pedagógica para a disciplina:',
-        type: 'TEXT',
-        required: false,
-      },
-    ],
-  },
-  {
-    id: 'infra-taua',
-    title: 'Avaliação da Infraestrutura e Biblioteca - IFCE Campus Tauá',
-    description:
-      'Pesquisa institucional de satisfação quanto aos laboratórios, salas de aula, conectividade Wi-Fi, acervo da biblioteca e refeitório do Campus Tauá.',
-    questions: [
-      {
-        title: 'Qualidade do acervo e atendimento na Biblioteca do Campus Tauá:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Condições dos laboratórios de informática e específicos para as aulas práticas:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Quais setores necessitam de melhorias prioritárias no campus?',
-        type: 'CHECKBOX',
-        required: true,
-        options: [
-          'Wi-Fi / Conectividade',
-          'Ar condicionado das salas',
-          'Biblioteca e Espaço de Estudo',
-          'Quadra poliesportiva',
-          'Refeitório / Cantina',
-        ],
-      },
-      {
-        title: 'Sugestões de melhorias para a infraestrutura do campus:',
-        type: 'TEXT',
-        required: false,
-      },
-    ],
-  },
-  {
-    id: 'satisfacao-discente',
-    title: 'Pesquisa de Satisfação Discente e Atendimento TAE - Campus Tauá',
-    description:
-      'Avaliação dos serviços administrativos, secretaria acadêmica, assistência estudantil e apoio da equipe de TAEs aos alunos do IFCE Tauá.',
-    questions: [
-      {
-        title: 'Atendimento e agilidade na Secretaria de Controle Acadêmico:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Suporte prestado pela Assistência Estudantil e Serviço Social:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Avaliação geral da comunicação institucional do Campus Tauá:',
-        type: 'RADIO',
-        required: true,
-        options: ['Excelente', 'Boa', 'Regular', 'Insumiciente'],
-      },
-      {
-        title: 'Deixe aqui sua opinião ou sugestão de melhoria:',
-        type: 'TEXT',
-        required: false,
-      },
-    ],
-  },
-];
 
 export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
   const [googleUser, setGoogleUser] = useState<User | null>(null);
@@ -402,16 +303,19 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-200">
-      {/* Header Banner de Integração */}
-      <div className="bg-gradient-to-r from-[#006837] via-[#045C2D] to-[#0A4222] rounded-xl p-4 sm:p-5 text-white shadow-xs relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[11px] font-semibold">
-              <FileSpreadsheet className="w-3 h-3 text-emerald-300" />
-              <span>Integração com Google Forms & Drive</span>
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#006837] via-[#045C2D] to-[#0A4222] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-100 text-xs font-semibold">
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Integração Oficial Google Forms • CPA IFCE Tauá</span>
             </div>
-            <p className="text-xs text-emerald-100/90 leading-relaxed">
-              Sincronize questionários institucionais externos com o Campus Tauá.
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              Gerenciador de Formulários do Google
+            </h1>
+            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+              Crie, distribua e acompanhe questionários de autoavaliação institucional no Google Forms diretamente no sistema da CPA Tauá.
             </p>
           </div>
 
