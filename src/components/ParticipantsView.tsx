@@ -27,28 +27,10 @@ import {
 import { Participant, ParticipantSegment, StudentLevelType } from '../types';
 import { INITIAL_PARTICIPANTS } from '../data/participantsData';
 
-const IFCE_CAMPI = [
-  'Campus Tauá',
-  'Campus Acaraú',
-  'Campus Aracati',
-  'Campus Baturité',
-  'Campus Camocim',
-  'Campus Canindé',
-  'Campus Crateús',
-  'Campus Crato',
-  'Campus Fortaleza',
-  'Campus Iguatu',
-  'Campus Itapipoca',
-  'Campus Juazeiro do Norte',
-  'Campus Limoeiro do Norte',
-  'Campus Maracanaú',
-  'Campus Morada Nova',
-  'Campus Quixadá',
-  'Campus Sobral',
-  'Campus Tianguá',
-  'Campus Ubajara',
-  'Campus Umirim',
-];
+import { IFCE_CAMPI } from '../features/participants/data/ifceCampi';
+import { ParticipantFormModal } from '../features/participants/components/ParticipantFormModal';
+import { DeleteParticipantDialog } from '../features/participants/components/DeleteParticipantDialog';
+import { BulkImportModal } from '../features/participants/components/BulkImportModal';
 
 export const ParticipantsView: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>(INITIAL_PARTICIPANTS);
@@ -350,16 +332,28 @@ export const ParticipantsView: React.FC = () => {
 
   return (
     <div className="w-full max-w-[96%] 2xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4 select-none animate-in fade-in duration-200">
-      {/* Barra de Ações e Resumo de Participantes */}
+      {/* Page Header Compact Banner */}
       <div
         id="participants-header"
-        className="bg-white border border-slate-200/90 rounded-xl px-4 py-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        className="bg-white border border-slate-200/90 rounded-xl px-4 py-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700">Base Institucional</span>
-          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#006837] text-[10px] font-extrabold border border-emerald-200">
-            {participants.length} cadastrados
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-100/90 text-[#006837] rounded-lg shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                Participantes
+              </h1>
+              <span className="bg-emerald-50 text-[#006837] text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200/80">
+                Base CPA IFCE
+              </span>
+            </div>
+            <p className="text-xs font-medium text-slate-500">
+              Gerencie a base de usuários elegíveis para avaliação institucional (Discentes, Docentes e TAEs)
+            </p>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -786,382 +780,34 @@ export const ParticipantsView: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE / EDIT PARTICIPANT MODAL */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-xl max-w-lg w-full border border-slate-200 shadow-xl overflow-hidden"
-            >
-              {/* Modal Header */}
-              <div className="px-5 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-[#E8F5EE] text-[#006837] rounded-lg">
-                    <UserPlus className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-tight">
-                      {editingParticipant ? 'Editar Participante' : 'Cadastrar Novo Participante'}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-medium">
-                      Preencha os dados institucionais para validação de acesso.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      <ParticipantFormModal
+        isOpen={isModalOpen}
+        editingParticipant={editingParticipant}
+        formData={formData}
+        setFormData={setFormData}
+        matriculaError={matriculaError}
+        setMatriculaError={setMatriculaError}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitForm}
+      />
 
-              {/* Modal Form */}
-              <form onSubmit={handleSubmitForm} className="p-4 space-y-3">
-                {/* Nome Completo */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <span>Nome Completo</span>
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Carlos Eduardo de Oliveira"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full h-8 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] focus:border-[#006837] font-medium"
-                  />
-                </div>
+      <DeleteParticipantDialog
+        participantId={deleteConfirmId}
+        onCancel={() => setDeleteConfirmId(null)}
+        onConfirm={handleDeleteParticipant}
+      />
 
-                {/* E-mail Institucional */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <span>E-mail Institucional IFCE</span>
-                      <span className="text-rose-500">*</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      @ifce.edu.br ou @aluno.ifce.edu.br
-                    </span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="carlos.oliveira@aluno.ifce.edu.br"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] focus:border-[#006837] font-medium"
-                    />
-                  </div>
-                </div>
-
-                {/* Segmento */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <span>Segmento Institucional</span>
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(
-                      [
-                        { id: 'discente', label: 'Discente (Aluno)' },
-                        { id: 'docente', label: 'Docente' },
-                        { id: 'tae', label: 'TAE (Técnico)' },
-                      ] as const
-                    ).map((seg) => (
-                      <button
-                        key={seg.id}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, segment: seg.id })}
-                        className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all text-center cursor-pointer ${
-                          formData.segment === seg.id
-                            ? 'bg-[#E8F5EE] border-[#006837] text-[#006837] shadow-2xs'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        {seg.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Nível Discente */}
-                {formData.segment === 'discente' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-1 p-2.5 bg-indigo-50/50 border border-indigo-100 rounded-lg"
-                  >
-                    <label className="text-xs font-bold text-indigo-950 flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Nível do Discente</span>
-                        <span className="text-rose-500">*</span>
-                      </span>
-                      <span className="text-[10px] text-indigo-600 font-semibold">Exigido</span>
-                    </label>
-
-                    <select
-                      required
-                      value={formData.studentLevel}
-                      onChange={(e) =>
-                        setFormData({ ...formData, studentLevel: e.target.value as StudentLevelType })
-                      }
-                      className="w-full h-8 px-2.5 text-xs bg-white border border-indigo-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-600 font-bold text-indigo-950"
-                    >
-                      <option value="Técnico">Técnico (Integrado / Subsequente)</option>
-                      <option value="Graduação">Graduação (Bacharelado / Licenciatura / Tecnologia)</option>
-                      <option value="Especialização">Pós-Graduação (Especialização)</option>
-                      <option value="Mestrado">Mestrado</option>
-                      <option value="Doutorado">Doutorado</option>
-                    </select>
-                  </motion.div>
-                )}
-
-                {/* Matrícula & Campus */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        <span>{formData.segment === 'discente' ? 'Matrícula Acadêmica' : 'Número SIAPE'}</span>
-                        <span className="text-rose-500">*</span>
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder={formData.segment === 'discente' ? 'Ex: 20241045012' : 'Ex: 1982736'}
-                      value={formData.matricula}
-                      onChange={(e) => {
-                        setFormData({ ...formData, matricula: e.target.value });
-                        if (matriculaError) setMatriculaError(null);
-                      }}
-                      className={`w-full h-8 px-2.5 text-xs bg-slate-50 border rounded-lg focus:outline-none font-mono transition-colors ${
-                        matriculaError
-                          ? 'border-rose-400 bg-rose-50/30'
-                          : 'border-slate-200 focus:border-[#006837]'
-                      }`}
-                    />
-                    {matriculaError && (
-                      <p className="text-[10px] font-bold text-rose-600 flex items-start gap-1 mt-0.5 leading-tight">
-                        <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-                        <span>{matriculaError}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Campus</label>
-                    <select
-                      value={formData.campus}
-                      onChange={(e) => setFormData({ ...formData, campus: e.target.value })}
-                      className="w-full h-8 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006837] font-medium"
-                    >
-                      {IFCE_CAMPI.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Status Selection */}
-                <div className="space-y-1 pt-1">
-                  <label className="text-xs font-bold text-slate-700">Status no Sistema</label>
-                  <div className="flex items-center gap-4 text-xs font-semibold text-slate-700">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={formData.status === 'Ativo'}
-                        onChange={() => setFormData({ ...formData, status: 'Ativo' })}
-                        className="text-[#006837] focus:ring-[#006837]"
-                      />
-                      <span>Ativo</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={formData.status === 'Inativo'}
-                        onChange={() => setFormData({ ...formData, status: 'Inativo' })}
-                        className="text-rose-600 focus:ring-rose-500"
-                      />
-                      <span>Inativo</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Modal Actions Footer */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="h-8 px-3 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-8 px-3 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer"
-                  >
-                    {editingParticipant ? 'Salvar Alterações' : 'Cadastrar Participante'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {deleteConfirmId && (
-          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-xl max-w-sm w-full border border-slate-200 shadow-xl p-5 text-center space-y-3"
-            >
-              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Excluir Participante?
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Esta ação é irreversível e removerá o participante da base da CPA.
-                </p>
-              </div>
-              <div className="pt-2 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setDeleteConfirmId(null)}
-                  className="h-8 px-3 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleDeleteParticipant(deleteConfirmId)}
-                  className="h-8 px-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                >
-                  Sim, Excluir
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* BULK IMPORT MODAL */}
-      <AnimatePresence>
-        {isImportModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-xl max-w-lg w-full border border-slate-200 shadow-xl overflow-hidden"
-            >
-              <div className="px-5 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg">
-                    <Upload className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-tight">
-                      Importação em Massa
-                    </h3>
-                    <p className="text-[10px] text-slate-500">
-                      Cole uma lista de nomes e e-mails para cadastro simultâneo.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsImportModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleBulkImport} className="p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Segmento do Lote</label>
-                    <select
-                      value={importSegment}
-                      onChange={(e) => setImportSegment(e.target.value as ParticipantSegment)}
-                      className="w-full h-8 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium"
-                    >
-                      <option value="discente">Discentes (Alunos)</option>
-                      <option value="docente">Docentes</option>
-                      <option value="tae">TAEs</option>
-                    </select>
-                  </div>
-
-                  {importSegment === 'discente' && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Nível do Lote</label>
-                      <select
-                        value={importLevel}
-                        onChange={(e) => setImportLevel(e.target.value as StudentLevelType)}
-                        className="w-full h-8 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-bold text-indigo-950"
-                      >
-                        <option value="Técnico">Técnico</option>
-                        <option value="Graduação">Graduação</option>
-                        <option value="Especialização">Especialização</option>
-                        <option value="Mestrado">Mestrado</option>
-                        <option value="Doutorado">Doutorado</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex justify-between">
-                    <span>Nomes e E-mails (Um por linha)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Nome, email@ifce.edu.br</span>
-                  </label>
-                  <textarea
-                    rows={5}
-                    required
-                    placeholder={`Exemplo:\nJuliana Souza, juliana@aluno.ifce.edu.br\nFernando Costa, fernando@aluno.ifce.edu.br`}
-                    value={importText}
-                    onChange={(e) => setImportText(e.target.value)}
-                    className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837] focus:border-[#006837] font-mono leading-relaxed"
-                  />
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsImportModalOpen(false)}
-                    className="h-8 px-3 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-8 px-3 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                  >
-                    Processar Importação
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        importSegment={importSegment}
+        setImportSegment={setImportSegment}
+        importLevel={importLevel}
+        setImportLevel={setImportLevel}
+        importText={importText}
+        setImportText={setImportText}
+        onClose={() => setIsImportModalOpen(false)}
+        onSubmit={handleBulkImport}
+      />
     </div>
   );
 };
