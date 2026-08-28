@@ -1,5 +1,5 @@
 ﻿import React from "react";
-import { BarChart2, ShieldCheck, CheckCircle2, Building2 } from "lucide-react";
+import { BarChart2, ShieldCheck, Building2 } from "lucide-react";
 
 export const IllustrationCPA: React.FC = () => {
   return (
@@ -17,7 +17,7 @@ export const IllustrationCPA: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-semibold text-white">
-                Avalia├º├úo Institucional
+                Avaliação Institucional
               </p>
               <p className="text-[11px] text-white/70">Ciclo CPA 2026</p>
             </div>
@@ -32,7 +32,7 @@ export const IllustrationCPA: React.FC = () => {
         <div className="grid grid-cols-2 gap-2.5">
           <div className="bg-white/10 border border-white/15 rounded-xl p-3 text-center">
             <p className="text-[11px] text-white/70 font-medium">
-              Participa├º├úo Geral
+              Participação Geral
             </p>
             <p className="text-lg font-bold text-white mt-0.5">91,2%</p>
           </div>
@@ -49,7 +49,7 @@ export const IllustrationCPA: React.FC = () => {
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-medium text-white/90">
               <BarChart2 className="w-3.5 h-3.5 text-emerald-300" />
-              Consolida├º├úo de Respostas
+              Consolidação de Respostas
             </span>
             <span className="text-emerald-300 font-semibold text-[11px]">
               88%
@@ -63,7 +63,7 @@ export const IllustrationCPA: React.FC = () => {
         {/* Clean Footer note */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/70 pt-0.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-          <span>Painel exclusivo da Coordena├º├úo CPA</span>
+          <span>Painel exclusivo da Coordenação CPA</span>
         </div>
       </div>
     </div>

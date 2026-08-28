@@ -1,17 +1,17 @@
-﻿import React from 'react';
+﻿import React from "react";
 
 interface IFCELogoProps {
   className?: string;
-  variant?: 'full' | 'compact' | 'light';
+  variant?: "full" | "compact" | "light";
   showSubtitle?: boolean;
 }
 
 export const IFCELogo: React.FC<IFCELogoProps> = ({
-  className = '',
-  variant = 'full',
+  className = "",
+  variant = "full",
   showSubtitle = true,
 }) => {
-  const isLight = variant === 'light';
+  const isLight = variant === "light";
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
@@ -44,22 +44,27 @@ export const IFCELogo: React.FC<IFCELogoProps> = ({
 
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5">
-          <span className={`font-extrabold tracking-tight text-xl leading-none ${isLight ? 'text-white' : 'text-[#006837]'}`}>
+          <span
+            className={`font-extrabold tracking-tight text-xl leading-none ${isLight ? "text-white" : "text-[#006837]"}`}
+          >
             IFCE
           </span>
-          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
-            isLight ? 'bg-white/20 text-white' : 'bg-[#E8F5EE] text-[#006837]'
-          }`}>
+          <span
+            className={`text-[11px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+              isLight ? "bg-white/20 text-white" : "bg-[#E8F5EE] text-[#006837]"
+            }`}
+          >
             CPA
           </span>
         </div>
         {showSubtitle && (
-          <span className={`text-[11px] font-medium leading-tight mt-0.5 ${isLight ? 'text-white/80' : 'text-slate-500'}`}>
-            Comiss├úo Pr├│pria de Avalia├º├úo
+          <span
+            className={`text-[11px] font-medium leading-tight mt-0.5 ${isLight ? "text-white/80" : "text-slate-500"}`}
+          >
+            Comissão Propria de Avaliação
           </span>
         )}
       </div>
     </div>
   );
 };
-
