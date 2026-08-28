@@ -1,19 +1,24 @@
-import { Footer } from "../components/Footer";
+import { useNavigate } from "react-router-dom";
 
-import { LoginBrandPanel } from "../features/auth/components/LoginBrandPanel";
-import { LoginForm } from "../features/auth/components/LoginForm";
+import { Footer } from "../../components/Footer";
+import { LoginBrandPanel } from "../../features/auth/components/LoginBrandPanel";
+import { LoginForm } from "../../features/auth/components/LoginForm";
 
-import type { AuthView } from "../features/auth/types/auth.types";
+import type { AuthView } from "../../features/auth/types/auth.types";
 
-interface LoginPageProps {
-  onLoginSuccess: (userEmail: string) => void;
-}
+import { ROUTES } from "../../routes/routePaths";
 
-export function LoginPage({ onLoginSuccess }: LoginPageProps) {
+export function LoginPage() {
+  const navigate = useNavigate();
+
   const handleNavigate = (view: AuthView) => {
     if (view === "forgot-password") {
-      alert("A recuperação de senha será implementada depois.");
+      navigate(ROUTES.FORGOT_PASSWORD);
     }
+  };
+
+  const handleLoginSuccess = (userEmail: string) => {
+    console.log("Login realizado:", userEmail);
   };
 
   return (
@@ -23,7 +28,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[640px]">
             <LoginForm
               onNavigate={handleNavigate}
-              onLoginSuccess={onLoginSuccess}
+              onLoginSuccess={handleLoginSuccess}
             />
 
             <LoginBrandPanel />

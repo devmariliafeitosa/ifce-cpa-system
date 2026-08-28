@@ -1,11 +1,7 @@
-import { LoginPage } from "./pages/LoginPage";
+import { AppRoutes } from "./routes/AppRoutes";
 
 function App() {
-  const handleLoginSuccess = (userEmail: string) => {
-    console.log("Login realizado:", userEmail);
-  };
-
-  return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  return <AppRoutes />;
 }
 
 export default App;
