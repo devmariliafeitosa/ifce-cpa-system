@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
-import { Footer } from "../components/Footer";
+import { Footer } from "../components/auth/Footer";
 
 import { DashboardView } from "../components/DashboardView";
 import { FormsManagerView } from "../components/FormsManagerView";
@@ -22,53 +22,34 @@ interface DashboardPageProps {
   onLogout: () => void;
 }
 
-export function DashboardPage({
-  user,
-  onLogout,
-}: DashboardPageProps) {
-  const [activeTab, setActiveTab] =
-    useState<NavTabId>("dashboard");
+export function DashboardPage({ user, onLogout }: DashboardPageProps) {
+  const [activeTab, setActiveTab] = useState<NavTabId>("dashboard");
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] =
-    useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
-        return (
-          <DashboardView
-            onNavigateTab={setActiveTab}
-          />
-        );
+        return <DashboardView onNavigateTab={setActiveTab} />;
 
       case "formularios":
         return (
           <FormsManagerView
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
-            onSelectTab={(tab: string) =>
-              setActiveTab(tab as NavTabId)
-            }
+            onReturnToDashboard={() => setActiveTab("dashboard")}
+            onSelectTab={(tab: string) => setActiveTab(tab as NavTabId)}
           />
         );
 
       case "relatorios":
         return (
-          <ReportsView
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
-          />
+          <ReportsView onReturnToDashboard={() => setActiveTab("dashboard")} />
         );
 
       case "google-forms":
       case "novo-formulario":
         return (
           <GoogleFormsManager
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
+            onReturnToDashboard={() => setActiveTab("dashboard")}
           />
         );
 
@@ -80,20 +61,14 @@ export function DashboardPage({
 
       case "configuracoes":
         return (
-          <SettingsView
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
-          />
+          <SettingsView onReturnToDashboard={() => setActiveTab("dashboard")} />
         );
 
       case "perfil":
         return (
           <ProfileView
             user={user}
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
+            onReturnToDashboard={() => setActiveTab("dashboard")}
           />
         );
 
@@ -101,9 +76,7 @@ export function DashboardPage({
         return (
           <PlaceholderView
             tabId={activeTab}
-            onReturnToDashboard={() =>
-              setActiveTab("dashboard")
-            }
+            onReturnToDashboard={() => setActiveTab("dashboard")}
             onSelectTab={setActiveTab}
           />
         );
@@ -112,9 +85,7 @@ export function DashboardPage({
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-slate-800 antialiased font-sans relative flex flex-col">
-
       <div className="flex flex-1 min-w-0">
-
         {/* Sidebar Desktop */}
         <aside className="hidden md:block fixed top-0 left-0 w-[260px] h-screen z-40">
           <Sidebar
@@ -126,14 +97,11 @@ export function DashboardPage({
 
         {/* Área principal */}
         <div className="flex-1 flex flex-col min-w-0 md:ml-[260px]">
-
           {/* Header */}
           <Header
             activeTab={activeTab}
             user={user}
-            onOpenMobileSidebar={() =>
-              setIsMobileSidebarOpen(true)
-            }
+            onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onSelectTab={setActiveTab}
             onLogout={onLogout}
           />
@@ -176,9 +144,7 @@ export function DashboardPage({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() =>
-                setIsMobileSidebarOpen(false)
-              }
+              onClick={() => setIsMobileSidebarOpen(false)}
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 md:hidden"
             />
 
@@ -198,9 +164,7 @@ export function DashboardPage({
                 activeTab={activeTab}
                 onSelectTab={setActiveTab}
                 onLogout={onLogout}
-                onCloseMobile={() =>
-                  setIsMobileSidebarOpen(false)
-                }
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
               />
             </motion.div>
           </>

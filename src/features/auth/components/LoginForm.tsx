@@ -13,7 +13,7 @@ import {
   Mail,
 } from "lucide-react";
 
-import { IFCELogo } from "../../../components/IFCELogo";
+import { IFCELogo } from "../../../components/auth/IFCELogo";
 
 import { loginSchema, type LoginFormData } from "../schemas/login.schema";
 

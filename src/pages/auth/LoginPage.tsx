@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-import { Footer } from "../../components/Footer";
+import { Footer } from "../../components/auth/Footer";
 import { LoginBrandPanel } from "../../features/auth/components/LoginBrandPanel";
 import { LoginForm } from "../../features/auth/components/LoginForm";
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Home,
   FileText,
@@ -9,21 +9,21 @@ import {
   User,
   LogOut,
   X,
-} from 'lucide-react';
-import { IFCELogo } from './IFCELogo';
+} from "lucide-react";
+import { IFCELogo } from "./auth/IFCELogo";
 
 export type NavTabId =
-  | 'dashboard'
-  | 'formularios'
-  | 'relatorios'
-  | 'google-forms'
-  | 'novo-formulario'
-  | 'participantes'
-  | 'alunos'
-  | 'docentes'
-  | 'taes'
-  | 'configuracoes'
-  | 'perfil';
+  | "dashboard"
+  | "formularios"
+  | "relatorios"
+  | "google-forms"
+  | "novo-formulario"
+  | "participantes"
+  | "alunos"
+  | "docentes"
+  | "taes"
+  | "configuracoes"
+  | "perfil";
 
 interface SidebarProps {
   activeTab: NavTabId;
@@ -45,19 +45,19 @@ interface MenuGroup {
 
 const MENU_GROUPS: MenuGroup[] = [
   {
-    title: 'GERENCIAMENTO',
+    title: "GERENCIAMENTO",
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: Home },
-      { id: 'formularios', label: 'Questionários', icon: ClipboardList },
-      { id: 'relatorios', label: 'Relatórios', icon: FileText },
-      { id: 'participantes', label: 'Participantes', icon: Users },
+      { id: "dashboard", label: "Dashboard", icon: Home },
+      { id: "formularios", label: "Questionários", icon: ClipboardList },
+      { id: "relatorios", label: "Relatórios", icon: FileText },
+      { id: "participantes", label: "Participantes", icon: Users },
     ],
   },
   {
-    title: 'SISTEMA',
+    title: "SISTEMA",
     items: [
-      { id: 'configuracoes', label: 'Configurações', icon: Settings },
-      { id: 'perfil', label: 'Perfil', icon: User },
+      { id: "configuracoes", label: "Configurações", icon: Settings },
+      { id: "perfil", label: "Perfil", icon: User },
     ],
   },
 ];
@@ -111,14 +111,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer group ${
                       isActive
-                        ? 'bg-[#E8F5EE] text-[#006837] font-semibold shadow-2xs'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? "bg-[#E8F5EE] text-[#006837] font-semibold shadow-2xs"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon
                         className={`w-4 h-4 transition-transform duration-200 group-hover:scale-105 ${
-                          isActive ? 'text-[#006837]' : 'text-slate-400 group-hover:text-slate-600'
+                          isActive
+                            ? "text-[#006837]"
+                            : "text-slate-400 group-hover:text-slate-600"
                         }`}
                       />
                       <span>{item.label}</span>
@@ -148,7 +150,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-slate-100 text-center bg-slate-50/50">
-        <p className="text-xs font-semibold text-slate-700">CPA IFCE • Campus Tauá</p>
+        <p className="text-xs font-semibold text-slate-700">
+          CPA IFCE • Campus Tauá
+        </p>
         <p className="text-[10px] text-slate-400 font-normal mt-0.5">
           Versão 1.0 • © Instituto Federal do Ceará
         </p>
