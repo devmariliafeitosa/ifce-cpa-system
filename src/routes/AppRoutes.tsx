@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { ForgotPasswordPage } from "../pages/auth/ForgotPasswordPage";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { ResetPasswordPage } from "../pages/auth/ResetPasswordPage";
-import { DashboardPage } from "../pages/DahsboardPage";
+import { DashboardPage } from "../pages/DashboardPage/DashboardPage";
 import { ProfilePage } from "../pages/profile/ProfilePage";
 
 import { ROUTES } from "./routePaths";
