@@ -51,7 +51,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     try {
       const saved = localStorage.getItem("cpa_smart_forms");
 
-      return saved ? JSON.parse(saved) : INITIAL_SMART_FORMS;
+      if (!saved) {
+        return INITIAL_SMART_FORMS;
+      }
+
+      const parsed = JSON.parse(saved) as SmartForm[];
+
+      return Array.isArray(parsed)
+        ? parsed
+        : INITIAL_SMART_FORMS;
     } catch {
       return INITIAL_SMART_FORMS;
     }
@@ -61,7 +69,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     try {
       const saved = localStorage.getItem("cpa_participants");
 
-      return saved ? JSON.parse(saved) : INITIAL_PARTICIPANTS;
+      if (!saved) {
+        return INITIAL_PARTICIPANTS;
+      }
+
+      const parsed = JSON.parse(saved) as Participant[];
+
+      return Array.isArray(parsed)
+        ? parsed
+        : INITIAL_PARTICIPANTS;
     } catch {
       return INITIAL_PARTICIPANTS;
     }
@@ -375,8 +391,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const reportCampaigns = buildReportsFromSmartForms(smartForms);
 
     const activeReport =
-      reportCampaigns.find((report) => report.id === activeCampaign?.id) ||
-      reportCampaigns[0];
+      reportCampaigns.find(
+        (report: { id: string }) => report.id === activeCampaign?.id,
+      ) || reportCampaigns[0];
 
     return baseAreas.map((area) => {
       const dimension = activeReport?.dimensions?.find(
@@ -385,7 +402,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           item.dimension.toLowerCase().includes(area.categoryKey.toLowerCase()),
       );
 
-      if (!dimension || activeReport.totalResponses === 0) {
+      if (!dimension || !activeReport || activeReport.totalResponses === 0) {
         return {
           name: area.name,
           shortName: area.shortName,
@@ -893,15 +910,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       <div className="shrink-0 flex items-center gap-2">
                         <span
-                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md text-center ${
-                            area.status === "POTENCIALIDADE"
+                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md text-center ${area.status === "POTENCIALIDADE"
                               ? "bg-emerald-100 text-[#006837] border border-emerald-200/80"
                               : area.status === "AVALIAÇÃO MEDIANA"
                                 ? "bg-amber-100 text-amber-800 border border-amber-200/80"
                                 : area.status === "FRAGILIDADE"
                                   ? "bg-rose-100 text-rose-700 border border-rose-200/80"
                                   : "bg-slate-200/70 text-slate-600 border border-slate-200"
-                          }`}
+                            }`}
                         >
                           {area.status}
                         </span>
