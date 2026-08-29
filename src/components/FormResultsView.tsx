@@ -1,31 +1,20 @@
-import React, { useState, useMemo } from 'react';
 import {
-  FileSpreadsheet,
-  Table,
-  Layers,
+  ArrowLeft,
   Award,
+  Building2,
   Download,
+  FileSpreadsheet,
+  Layers,
   Printer,
   Search,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
-  HelpCircle,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  ArrowLeft,
-  Info,
-  ChevronDown,
-  Building2,
-  Users,
-  Calendar,
   Sparkles,
-  FileText,
+  Table,
+  Users,
 } from 'lucide-react';
-import { SmartForm, SmartQuestion, TargetAudience } from '../types';
+import React, { useMemo, useState } from 'react';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
-import { MOCK_PARTICIPANT_RESPONSES, ParticipantResponseRow } from '../data/mockResponsesData';
+import { MOCK_PARTICIPANT_RESPONSES } from '../data/mockResponsesData';
+import type { TargetAudience } from '../types';
 
 interface FormResultsViewProps {
   initialFormId?: string;
@@ -203,7 +192,7 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
 
   // Calculated Segment Statistics for Aba 2 (Consolidação por Segmento)
   const consolidatedBySegment = useMemo(() => {
-    const questions = selectedForm.questions.filter((q) => q.type !== 'TEXT' && q.type !== 'LONG_TEXT');
+    const questions = selectedForm.questions;
     const segments: Array<{ key: 'alunos' | 'docentes' | 'taes'; label: string }> = [
       { key: 'alunos', label: 'Alunos' },
       { key: 'docentes', label: 'Docentes' },
@@ -278,7 +267,7 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
 
   // Calculated Final Results for Aba 3 (Resultado Final - Metodologia CPA)
   const consolidatedFinalRows = useMemo(() => {
-    const questions = selectedForm.questions.filter((q) => q.type !== 'TEXT' && q.type !== 'LONG_TEXT');
+    const questions = selectedForm.questions;
 
     return questions
       .map((q) => {

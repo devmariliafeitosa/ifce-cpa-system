@@ -29,21 +29,15 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   RefreshCw,
   Layers,
-  Sparkle,
   MoreVertical,
-  MoreHorizontal,
   Table,
   Grid,
   Calendar,
-  BookOpen,
   Building2,
-  FlaskConical,
-  PlusCircle,
   ArrowLeft,
   ArrowUp,
   ArrowDown,
@@ -52,7 +46,6 @@ import {
   Link2,
   ShieldCheck,
   Info,
-  Settings,
   Save,
   FileText,
   Globe,
@@ -60,9 +53,10 @@ import {
   PlayCircle,
   QrCode,
 } from 'lucide-react';
-import { SmartForm, SmartQuestion, TargetAudience, StudentLevel, FormSubmission, QuestionCategory, Campaign } from '../types';
+import type { Campaign, QuestionCategory, SmartForm, SmartQuestion, StudentLevel, TargetAudience } from '../types';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
-import { createGoogleForm, listGoogleForms, getGoogleFormDetails, GoogleFormFile } from '../services/googleFormsService';
+import { createGoogleForm, listGoogleForms } from '../services/googleFormsService';
+import type { GoogleFormFile } from '../services/googleFormsService';
 import { getAccessToken, googleSignIn } from '../lib/googleAuth';
 import { CampaignQRCodeModal } from './CampaignQRCodeModal';
 
@@ -260,7 +254,6 @@ export const formatCompactPeriod = (
   }
 
   let durationText = '';
-  let hasDates = Boolean(sD || eD);
 
   if (sD && eD) {
     const d1 = new Date(parseInt(sD.year, 10), parseInt(sD.month, 10) - 1, parseInt(sD.day, 10));
@@ -2150,7 +2143,6 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
 };
 
 export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
-  onReturnToDashboard,
   onSelectTab,
 }) => {
   // Main Forms State
@@ -2246,7 +2238,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importSearchTerm, setImportSearchTerm] = useState('');
   const [isFetchingDriveForms, setIsFetchingDriveForms] = useState(false);
-  const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleFormFile[]>([]);
+  const [, setGoogleDriveFiles] = useState<GoogleFormFile[]>([]);
 
   // Classificação das Perguntas Screen State
   const [classifyingForm, setClassifyingForm] = useState<SmartForm | null>(null);
@@ -2435,15 +2427,15 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [formDescription, setFormDescription] = useState('');
   const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
   const [formPeriodo, setFormPeriodo] = useState('2026.2');
-  const [formCategory, setFormCategory] = useState<string>('Autoavaliação Institucional');
+  const [, setFormCategory] = useState<string>('Autoavaliação Institucional');
   const [formStartDate, setFormStartDate] = useState('2026-09-15');
   const [formStartTime, setFormStartTime] = useState('08:00');
   const [formEndDate, setFormEndDate] = useState('2026-09-30');
   const [formEndTime, setFormEndTime] = useState('23:59');
-  const [formDurationPreset, setFormDurationPreset] = useState<number | 'custom'>(15);
-  const [formAnonymous, setFormAnonymous] = useState(true);
+  const [, setFormDurationPreset] = useState<number | 'custom'>(15);
+  const [, setFormAnonymous] = useState(true);
   const [formAudiences, setFormAudiences] = useState<TargetAudience[]>(['alunos', 'docentes', 'taes']);
-  const [formEixos, setFormEixos] = useState<string[]>([
+  const [, setFormEixos] = useState<string[]>([
     'Eixo 1: Planejamento e Avaliação',
     'Eixo 3: Políticas Acadêmicas',
     'Eixo 5: Infraestrutura Física',
@@ -2563,7 +2555,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Save Progress as Draft (Botão "Salvar progresso")
   const handleSaveProgressDraft = () => {
     const titleToSave = formTitle.trim() || 'Novo Formulário';
-    const questionsToSave =
+    const questionsToSave: SmartQuestion[] =
       formQuestions.length > 0
         ? formQuestions
         : [
@@ -2623,7 +2615,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Finalize / Publicar Form
   const handleFinalizeForm = () => {
     const titleToSave = formTitle.trim() || 'Avaliação Institucional CPA';
-    const questionsToSave =
+    const questionsToSave: SmartQuestion[] =
       formQuestions.length > 0
         ? formQuestions
         : [
@@ -2734,7 +2726,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Step 6 Confirm & Launch Campaign
   const handleConfirmSendCampaign = () => {
     const titleToSave = wizardCampaignName.trim() || formTitle.trim() || 'Avaliação Institucional CPA';
-    const questionsToSave =
+    const questionsToSave: SmartQuestion[] =
       formQuestions.length > 0
         ? formQuestions
         : [
@@ -2933,8 +2925,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [deletingForm, setDeletingForm] = useState<SmartForm | null>(null);
 
   // Publishing to Google Forms State
-  const [publishingFormId, setPublishingFormId] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [, setPublishingFormId] = useState<string | null>(null);
 
   // View Mode: 'table' (default requested) or 'grid'
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -3479,6 +3470,20 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setDeletingForm(null);
   };
 
+  // Handlers mantidos para as próximas etapas do módulo.
+  // As referências abaixo evitam que o TypeScript trate essas funções como código morto
+  // enquanto as telas correspondentes ainda não estão conectadas nesta refatoração.
+  void handleSelectPresetDays;
+  void handleFinalizeForm;
+  void handleChooseNextSegment;
+  void handleLoadCPATemplate;
+  void handleLaunchCampaign;
+  void handleSaveForm;
+  void handleAddQuestion;
+  void handleRemoveQuestion;
+  void handleUpdateQuestion;
+  void handleToggleAudience;
+
   // Filtered forms list for table and grid
   const filteredForms = forms.filter((f) => {
     const matchesSearch =
@@ -3800,9 +3805,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                         ? 'Caixa de Seleção'
                         : q.type === 'DROPDOWN'
                         ? 'Lista Suspensa'
-                        : q.type === 'SHORT_TEXT'
-                        ? 'Texto Curto'
-                        : 'Texto Longo'}
+                        : 'Sim / Não'}
                     </span>
                     {q.required ? (
                       <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
@@ -3940,24 +3943,30 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                       </div>
                     )}
 
-                    {/* Short Text */}
-                    {q.type === 'SHORT_TEXT' && (
-                      <input
+                    {/* Dropdown */}
+                    {q.type === 'DROPDOWN' && (
+                      <select
                         disabled
-                        type="text"
-                        placeholder="Resposta do participante..."
                         className="w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl"
-                      />
+                      >
+                        {(q.options || ['Opção 1', 'Opção 2']).map((option) => (
+                          <option key={option}>{option}</option>
+                        ))}
+                      </select>
                     )}
 
-                    {/* Long Text */}
-                    {(q.type === 'LONG_TEXT' || q.type === 'TEXT') && (
-                      <textarea
-                        disabled
-                        rows={2}
-                        placeholder="Resposta detalhada do participante..."
-                        className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl"
-                      />
+                    {/* Sim / Não */}
+                    {q.type === 'YES_NO' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {(q.options || ['Sim', 'Não']).map((option) => (
+                          <div
+                            key={option}
+                            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 font-medium"
+                          >
+                            {option}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
@@ -4551,7 +4560,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredForms.map((form, rowIndex) => {
+                {filteredForms.map((form) => {
                   const compactPeriod = formatCompactPeriod(
                     form.startDate,
                     form.startTime,
@@ -7038,16 +7047,24 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
                   <div key={q.id} className="pt-3 first:pt-0 space-y-1">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-xs font-bold text-slate-900">
-                        {idx + 1}. {q.text}
+                        {idx + 1}. {q.title}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                        {q.type === 'likert_scale' ? 'Escala Likert' : q.type === 'multiple_choice' ? 'Múltipla Escolha' : 'Texto Livre'}
+                        {q.type === 'SCALE'
+                          ? 'Escala Likert'
+                          : q.type === 'RADIO'
+                            ? 'Múltipla Escolha'
+                            : q.type === 'CHECKBOX'
+                              ? 'Caixa de Seleção'
+                              : q.type === 'DROPDOWN'
+                                ? 'Lista Suspensa'
+                                : 'Sim / Não'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-slate-500">
                       <span>Público: {q.audiences.includes('todos') ? 'Todos' : q.audiences.join(', ')}</span>
                       <span>•</span>
-                      <span>Eixo: {q.dimension || 'Geral'}</span>
+                      <span>Categoria: {q.category || 'Geral'}</span>
                     </div>
                   </div>
                 ))
