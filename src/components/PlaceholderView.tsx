@@ -6,11 +6,8 @@ import {
   Bell,
   Sliders,
   CheckCircle2,
-  Mail,
-  Building,
   Save,
-  ArrowLeft,
-  Lock,
+  ArrowLeft
 } from "lucide-react";
 import type { NavTabId } from "./navigation/navigationTypes";
 interface PlaceholderViewProps {
@@ -22,7 +19,6 @@ interface PlaceholderViewProps {
 export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
   tabId,
   onReturnToDashboard,
-  onSelectTab,
 }) => {
   const isProfile = tabId === "perfil";
 
