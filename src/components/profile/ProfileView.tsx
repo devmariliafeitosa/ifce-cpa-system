@@ -1,27 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  User,
-  Mail,
-  Phone,
-  Building2,
-  BadgeCheck,
-  Shield,
-  KeyRound,
   Bell,
-  Save,
+  Building2,
   CheckCircle2,
   Info,
-  Calendar,
-  Lock,
-  Clock,
-  Sparkles,
-  Smartphone,
-  Sliders,
-  Check,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ChangePasswordModal } from './ChangePasswordModal';
-import { UserCoordinator } from '../types';
+  KeyRound,
+  Mail,
+  Save,
+  User,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ChangePasswordModal } from "./ChangePasswordModal";
+import type { UserCoordinator } from "../../types";
 
 interface ProfileViewProps {
   user?: UserCoordinator | null;
@@ -30,12 +20,14 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
   // Dados Pessoais
-  const [fullName, setFullName] = useState(user?.name || 'Coordenador CPA Tauá');
-  const [email] = useState(user?.email || 'cpa.taua@ifce.edu.br');
-  const [phone, setPhone] = useState('(88) 3437-1234');
-  const [siape] = useState(user?.siape || '1982736');
-  const [campus] = useState(user?.campus || 'IFCE Campus Tauá');
-  const [department] = useState('Comissão Própria de Avaliação • CPA');
+  const [fullName, setFullName] = useState(
+    user?.name || "Coordenador CPA Tauá",
+  );
+  const [email] = useState(user?.email || "cpa.taua@ifce.edu.br");
+  const [phone, setPhone] = useState("(88) 3437-1234");
+  const [siape] = useState(user?.siape || "1982736");
+  const [campus] = useState(user?.campus || "IFCE Campus Tauá");
+  const [department] = useState("Comissão Própria de Avaliação • CPA");
 
   // Preferências
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -44,19 +36,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
 
   // States
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'info' } | null>(
-    null
-  );
+  const [showToast, setShowToast] = useState<{
+    message: string;
+    type: "success" | "info";
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Initials for avatar
-  const initials = fullName
-    .split(' ')
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'CT';
+  const initials =
+    fullName
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "CT";
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +59,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
     setTimeout(() => {
       setIsSaving(false);
       setShowToast({
-        message: 'Dados do perfil do coordenador salvos com sucesso!',
-        type: 'success',
+        message: "Dados do perfil do coordenador salvos com sucesso!",
+        type: "success",
       });
       setTimeout(() => setShowToast(null), 3500);
     }, 400);
@@ -74,8 +68,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
 
   const handlePasswordChangeSuccess = () => {
     setShowToast({
-      message: 'Senha do coordenador alterada com sucesso!',
-      type: 'success',
+      message: "Senha do coordenador alterada com sucesso!",
+      type: "success",
     });
     setTimeout(() => setShowToast(null), 4000);
   };
@@ -88,7 +82,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
         className="bg-white border border-slate-200/90 rounded-xl px-4 py-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700">Coordenação de Avaliação Institucional</span>
+          <span className="text-xs font-bold text-slate-700">
+            Coordenação de Avaliação Institucional
+          </span>
           <span className="bg-emerald-50 text-[#006837] text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200/80">
             Coordenador Titular
           </span>
@@ -111,9 +107,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${
-              showToast.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-[#006837]'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
+              showToast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-[#006837]"
+                : "bg-blue-50 border-blue-200 text-blue-800"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -215,7 +211,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
                     <span>E-mail Institucional</span>
-                    <span className="text-[9px] text-slate-400 font-normal">Oficial</span>
+                    <span className="text-[9px] text-slate-400 font-normal">
+                      Oficial
+                    </span>
                   </label>
                   <input
                     type="email"
@@ -299,28 +297,36 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
               {/* Informações em Lista de Chave-Valor */}
               <div className="space-y-2 text-xs">
                 <div className="p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-lg flex items-center justify-between">
-                  <span className="text-slate-500 font-bold text-[11px]">E-mail de Login:</span>
+                  <span className="text-slate-500 font-bold text-[11px]">
+                    E-mail de Login:
+                  </span>
                   <span className="font-semibold text-slate-800 text-[11px] truncate max-w-[200px]">
                     {email}
                   </span>
                 </div>
 
                 <div className="p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-lg flex items-center justify-between">
-                  <span className="text-slate-500 font-bold text-[11px]">Perfil de Acesso:</span>
+                  <span className="text-slate-500 font-bold text-[11px]">
+                    Perfil de Acesso:
+                  </span>
                   <span className="font-bold text-[#006837] text-[11px]">
                     Administrador / Coordenador Geral
                   </span>
                 </div>
 
                 <div className="p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-lg flex items-center justify-between">
-                  <span className="text-slate-500 font-bold text-[11px]">Último Acesso:</span>
+                  <span className="text-slate-500 font-bold text-[11px]">
+                    Último Acesso:
+                  </span>
                   <span className="font-medium text-slate-700 text-[11px]">
                     Hoje às 17:15 (IFCE Campus Tauá)
                   </span>
                 </div>
 
                 <div className="p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-lg flex items-center justify-between">
-                  <span className="text-slate-500 font-bold text-[11px]">Endereço IP:</span>
+                  <span className="text-slate-500 font-bold text-[11px]">
+                    Endereço IP:
+                  </span>
                   <span className="font-mono text-slate-600 text-[10px]">
                     200.17.42.10 (Rede Segura)
                   </span>
@@ -360,7 +366,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 Preferências de Comunicação e Notificações do Coordenador
               </h3>
               <p className="text-[10px] text-slate-400 font-medium">
-                Personalize os alertas enviados diretamente para o seu e-mail e painel
+                Personalize os alertas enviados diretamente para o seu e-mail e
+                painel
               </p>
             </div>
           </div>
@@ -380,12 +387,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 type="button"
                 onClick={() => setEmailNotifications(!emailNotifications)}
                 className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                  emailNotifications ? 'bg-[#006837]' : 'bg-slate-300'
+                  emailNotifications ? "bg-[#006837]" : "bg-slate-300"
                 }`}
               >
                 <div
                   className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                    emailNotifications ? 'left-4.5' : 'left-0.5'
+                    emailNotifications ? "left-4.5" : "left-0.5"
                   }`}
                 />
               </button>
@@ -405,12 +412,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                 type="button"
                 onClick={() => setSystemNotifications(!systemNotifications)}
                 className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                  systemNotifications ? 'bg-[#006837]' : 'bg-slate-300'
+                  systemNotifications ? "bg-[#006837]" : "bg-slate-300"
                 }`}
               >
                 <div
                   className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                    systemNotifications ? 'left-4.5' : 'left-0.5'
+                    systemNotifications ? "left-4.5" : "left-0.5"
                   }`}
                 />
               </button>
@@ -428,14 +435,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
               </div>
               <button
                 type="button"
-                onClick={() => setReportCopyNotification(!reportCopyNotification)}
+                onClick={() =>
+                  setReportCopyNotification(!reportCopyNotification)
+                }
                 className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                  reportCopyNotification ? 'bg-[#006837]' : 'bg-slate-300'
+                  reportCopyNotification ? "bg-[#006837]" : "bg-slate-300"
                 }`}
               >
                 <div
                   className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                    reportCopyNotification ? 'left-4.5' : 'left-0.5'
+                    reportCopyNotification ? "left-4.5" : "left-0.5"
                   }`}
                 />
               </button>
@@ -448,7 +457,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
             <Info className="w-4 h-4 text-[#006837] shrink-0" />
             <span>
-              As informações pessoais e institucionais são vinculadas à comissão avaliadora do Campus Tauá.
+              As informações pessoais e institucionais são vinculadas à comissão
+              avaliadora do Campus Tauá.
             </span>
           </div>
 
@@ -459,7 +469,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
               className="h-8 px-4 bg-[#006837] hover:bg-[#00522b] text-white font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Salvando...' : 'Salvar Alterações'}</span>
+              <span>{isSaving ? "Salvando..." : "Salvar Alterações"}</span>
             </button>
           </div>
         </div>

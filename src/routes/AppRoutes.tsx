@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../pages/auth/ForgotPasswordPage";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { ResetPasswordPage } from "../pages/auth/ResetPasswordPage";
+import { ProfilePage } from "../pages/profile/ProfilePage";
 
 import { ROUTES } from "./routePaths";
 
@@ -16,6 +17,8 @@ export function AppRoutes() {
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
 
       <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+
+      <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
 
       <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
     </Routes>

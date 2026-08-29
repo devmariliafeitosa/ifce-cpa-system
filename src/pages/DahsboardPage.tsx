@@ -9,7 +9,7 @@ import { GoogleFormsManager } from "../components/GoogleFormsManager";
 import { Header } from "../components/Header";
 import { ParticipantsView } from "../components/ParticipantsView";
 import { PlaceholderView } from "../components/PlaceholderView";
-import { ProfileView } from "../components/ProfileView";
+import { ProfileView } from "../components/profile/ProfileView";
 import { ReportsView } from "../components/ReportsView";
 import { SettingsView } from "../components/SettingsView";
 import { Sidebar } from "../components/Sidebar";

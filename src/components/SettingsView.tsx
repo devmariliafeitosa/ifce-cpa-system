@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Settings,
   Building2,
@@ -17,10 +17,9 @@ import {
   Mail,
   UserCheck,
   Check,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ChangePasswordModal } from './ChangePasswordModal';
-
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ChangePasswordModal } from "./profile/ChangePasswordModal";
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
 }
@@ -28,13 +27,13 @@ interface SettingsViewProps {
 export const SettingsView: React.FC<SettingsViewProps> = () => {
   // Preferências do Sistema
   const [systemName, setSystemName] = useState(
-    'Sistema de Autoavaliação Institucional • CPA IFCE'
+    "Sistema de Autoavaliação Institucional • CPA IFCE",
   );
-  const [defaultCampus, setDefaultCampus] = useState('Campus Tauá');
-  const [currentAcademicPeriod, setCurrentAcademicPeriod] = useState('2025.1');
+  const [defaultCampus, setDefaultCampus] = useState("Campus Tauá");
+  const [currentAcademicPeriod, setCurrentAcademicPeriod] = useState("2025.1");
 
   // Configurações das Avaliações
-  const [defaultDuration, setDefaultDuration] = useState('30');
+  const [defaultDuration, setDefaultDuration] = useState("30");
   const [allowAnonymous, setAllowAnonymous] = useState(true);
   const [requireIdentification, setRequireIdentification] = useState(true);
   const [singleResponsePerUser, setSingleResponsePerUser] = useState(true);
@@ -43,17 +42,18 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   const [notifyNewResponses, setNotifyNewResponses] = useState(true);
   const [notifyCampaignEnding, setNotifyCampaignEnding] = useState(true);
   const [notifyCampaignFinished, setNotifyCampaignFinished] = useState(true);
-  const [alertEmail, setAlertEmail] = useState('cpa.taua@ifce.edu.br');
+  const [alertEmail, setAlertEmail] = useState("cpa.taua@ifce.edu.br");
 
   // Segurança
-  const [sessionTimeout, setSessionTimeout] = useState('60');
+  const [sessionTimeout, setSessionTimeout] = useState("60");
   const [require2FA, setRequire2FA] = useState(false);
 
   // Modal & Toast States
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'info' } | null>(
-    null
-  );
+  const [showToast, setShowToast] = useState<{
+    message: string;
+    type: "success" | "info";
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -63,8 +63,8 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
     setTimeout(() => {
       setIsSaving(false);
       setShowToast({
-        message: 'Configurações do sistema salvas e aplicadas com sucesso!',
-        type: 'success',
+        message: "Configurações do sistema salvas e aplicadas com sucesso!",
+        type: "success",
       });
       setTimeout(() => setShowToast(null), 3500);
     }, 400);
@@ -72,30 +72,31 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
 
   const handlePasswordChangeSuccess = () => {
     setShowToast({
-      message: 'Senha do coordenador atualizada com sucesso!',
-      type: 'success',
+      message: "Senha do coordenador atualizada com sucesso!",
+      type: "success",
     });
     setTimeout(() => setShowToast(null), 4000);
   };
 
   const handleResetDefaults = () => {
-    setSystemName('Sistema de Autoavaliação Institucional • CPA IFCE');
-    setDefaultCampus('Campus Tauá');
-    setCurrentAcademicPeriod('2025.1');
-    setDefaultDuration('30');
+    setSystemName("Sistema de Autoavaliação Institucional • CPA IFCE");
+    setDefaultCampus("Campus Tauá");
+    setCurrentAcademicPeriod("2025.1");
+    setDefaultDuration("30");
     setAllowAnonymous(true);
     setRequireIdentification(true);
     setSingleResponsePerUser(true);
     setNotifyNewResponses(true);
     setNotifyCampaignEnding(true);
     setNotifyCampaignFinished(true);
-    setAlertEmail('cpa.taua@ifce.edu.br');
-    setSessionTimeout('60');
+    setAlertEmail("cpa.taua@ifce.edu.br");
+    setSessionTimeout("60");
     setRequire2FA(false);
 
     setShowToast({
-      message: 'Configurações restauradas para os padrões institucionais da CPA.',
-      type: 'info',
+      message:
+        "Configurações restauradas para os padrões institucionais da CPA.",
+      type: "info",
     });
     setTimeout(() => setShowToast(null), 3500);
   };
@@ -108,7 +109,9 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
         className="bg-white border border-slate-200/90 rounded-xl px-4 py-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700">Parâmetros & Preferências</span>
+          <span className="text-xs font-bold text-slate-700">
+            Parâmetros & Preferências
+          </span>
           <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#006837] text-[10px] font-extrabold border border-emerald-200">
             Painel Geral
           </span>
@@ -133,9 +136,9 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${
-              showToast.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-[#006837]'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
+              showToast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-[#006837]"
+                : "bg-blue-50 border-blue-200 text-blue-800"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -205,8 +208,12 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
                   >
                     <option value="Campus Tauá">IFCE • Campus Tauá</option>
-                    <option value="Campus Crateús">IFCE • Campus Crateús</option>
-                    <option value="Campus Canindé">IFCE • Campus Canindé</option>
+                    <option value="Campus Crateús">
+                      IFCE • Campus Crateús
+                    </option>
+                    <option value="Campus Canindé">
+                      IFCE • Campus Canindé
+                    </option>
                     <option value="Campus Iguatu">IFCE • Campus Iguatu</option>
                     <option value="Campus Cedro">IFCE • Campus Cedro</option>
                     <option value="Reitoria">IFCE • Reitoria Geral</option>
@@ -261,7 +268,9 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
                   <span>Duração Padrão das Campanhas</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Prazo de preenchimento</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    Prazo de preenchimento
+                  </span>
                 </label>
                 <select
                   value={defaultDuration}
@@ -269,7 +278,9 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
                 >
                   <option value="15">15 dias corridos</option>
-                  <option value="30">30 dias corridos (Recomendado pela CPA)</option>
+                  <option value="30">
+                    30 dias corridos (Recomendado pela CPA)
+                  </option>
                   <option value="45">45 dias corridos</option>
                   <option value="60">60 dias corridos (Ciclo estendido)</option>
                 </select>
@@ -291,12 +302,12 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     type="button"
                     onClick={() => setAllowAnonymous(!allowAnonymous)}
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      allowAnonymous ? 'bg-[#006837]' : 'bg-slate-300'
+                      allowAnonymous ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        allowAnonymous ? 'left-4.5' : 'left-0.5'
+                        allowAnonymous ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -314,14 +325,16 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setRequireIdentification(!requireIdentification)}
+                    onClick={() =>
+                      setRequireIdentification(!requireIdentification)
+                    }
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      requireIdentification ? 'bg-[#006837]' : 'bg-slate-300'
+                      requireIdentification ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        requireIdentification ? 'left-4.5' : 'left-0.5'
+                        requireIdentification ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -339,14 +352,16 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSingleResponsePerUser(!singleResponsePerUser)}
+                    onClick={() =>
+                      setSingleResponsePerUser(!singleResponsePerUser)
+                    }
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      singleResponsePerUser ? 'bg-[#006837]' : 'bg-slate-300'
+                      singleResponsePerUser ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        singleResponsePerUser ? 'left-4.5' : 'left-0.5'
+                        singleResponsePerUser ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -413,12 +428,12 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     type="button"
                     onClick={() => setNotifyNewResponses(!notifyNewResponses)}
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      notifyNewResponses ? 'bg-[#006837]' : 'bg-slate-300'
+                      notifyNewResponses ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        notifyNewResponses ? 'left-4.5' : 'left-0.5'
+                        notifyNewResponses ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -436,14 +451,16 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setNotifyCampaignEnding(!notifyCampaignEnding)}
+                    onClick={() =>
+                      setNotifyCampaignEnding(!notifyCampaignEnding)
+                    }
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      notifyCampaignEnding ? 'bg-[#006837]' : 'bg-slate-300'
+                      notifyCampaignEnding ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        notifyCampaignEnding ? 'left-4.5' : 'left-0.5'
+                        notifyCampaignEnding ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -461,14 +478,16 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setNotifyCampaignFinished(!notifyCampaignFinished)}
+                    onClick={() =>
+                      setNotifyCampaignFinished(!notifyCampaignFinished)
+                    }
                     className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      notifyCampaignFinished ? 'bg-[#006837]' : 'bg-slate-300'
+                      notifyCampaignFinished ? "bg-[#006837]" : "bg-slate-300"
                     }`}
                   >
                     <div
                       className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                        notifyCampaignFinished ? 'left-4.5' : 'left-0.5'
+                        notifyCampaignFinished ? "left-4.5" : "left-0.5"
                       }`}
                     />
                   </button>
@@ -505,7 +524,9 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
                   <span>Tempo Limite de Sessão por Inatividade</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Desconexão automática</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    Desconexão automática
+                  </span>
                 </label>
                 <select
                   value={sessionTimeout}
@@ -554,12 +575,12 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   type="button"
                   onClick={() => setRequire2FA(!require2FA)}
                   className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                    require2FA ? 'bg-[#006837]' : 'bg-slate-300'
+                    require2FA ? "bg-[#006837]" : "bg-slate-300"
                   }`}
                 >
                   <div
                     className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                      require2FA ? 'left-4.5' : 'left-0.5'
+                      require2FA ? "left-4.5" : "left-0.5"
                     }`}
                   />
                 </button>
@@ -578,7 +599,8 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
             <Info className="w-4 h-4 text-[#006837] shrink-0" />
             <span>
-              As alterações efetuadas serão aplicadas imediatamente a todas as sessões da CPA do Campus Tauá.
+              As alterações efetuadas serão aplicadas imediatamente a todas as
+              sessões da CPA do Campus Tauá.
             </span>
           </div>
 
@@ -589,7 +611,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
               className="h-8 px-4 bg-[#006837] hover:bg-[#00522b] text-white font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Salvando...' : 'Salvar Alterações'}</span>
+              <span>{isSaving ? "Salvando..." : "Salvar Alterações"}</span>
             </button>
           </div>
         </div>
