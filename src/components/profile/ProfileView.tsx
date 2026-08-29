@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Info, Save } from "lucide-react";
 
 import type { UserCoordinator } from "../../types";
@@ -16,8 +16,8 @@ interface ProfileViewProps {
   onReturnToDashboard?: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
-  // Dados Pessoais
+export function ProfileView({ user }: ProfileViewProps) {
+  // Dados pessoais
   const [fullName, setFullName] = useState(
     user?.name || "Coordenador CPA Tauá",
   );
@@ -27,54 +27,68 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
   const [campus] = useState(user?.campus || "IFCE Campus Tauá");
   const [department] = useState("Comissão Própria de Avaliação • CPA");
 
-  // Preferências
+  // Preferências de notificação
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [systemNotifications, setSystemNotifications] = useState(true);
   const [reportCopyNotification, setReportCopyNotification] = useState(true);
 
-  // States
+  // Interface
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [showToast, setShowToast] = useState<ProfileToastData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
+  const showSuccessToast = (message: string, duration: number) => {
+    setShowToast({
+      message,
+      type: "success",
+    });
+
+    setTimeout(() => setShowToast(null), duration);
+  };
+
+  const handleSaveProfile = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsSaving(true);
 
     setTimeout(() => {
       setIsSaving(false);
-      setShowToast({
-        message: "Dados do perfil do coordenador salvos com sucesso!",
-        type: "success",
-      });
-      setTimeout(() => setShowToast(null), 3500);
+
+      showSuccessToast(
+        "Dados do perfil do coordenador salvos com sucesso!",
+        3500,
+      );
     }, 400);
   };
 
   const handlePasswordChangeSuccess = () => {
-    setShowToast({
-      message: "Senha do coordenador alterada com sucesso!",
-      type: "success",
-    });
-    setTimeout(() => setShowToast(null), 4000);
+    showSuccessToast("Senha do coordenador alterada com sucesso!", 4000);
+  };
+
+  const handleOpenPasswordModal = () => {
+    setIsPasswordModalOpen(true);
+  };
+
+  const handleClosePasswordModal = () => {
+    setIsPasswordModalOpen(false);
+  };
+
+  const handleCloseToast = () => {
+    setShowToast(null);
   };
 
   return (
     <div className="w-full max-w-[96%] 2xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4 select-none animate-in fade-in duration-200">
-      {/* Barra de Status e Cargo */}
       <ProfileHeader />
 
-      <ProfileToast toast={showToast} onClose={() => setShowToast(null)} />
+      <ProfileToast toast={showToast} onClose={handleCloseToast} />
 
-      {/* Profile Overview Card */}
       <ProfileOverview
         fullName={fullName}
         campus={campus}
         email={email}
-        onChangePassword={() => setIsPasswordModalOpen(true)}
+        onChangePassword={handleOpenPasswordModal}
       />
 
-      {/* Main Form Formats in 2 Columns */}
       <form onSubmit={handleSaveProfile} className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           <PersonalDataCard
@@ -89,7 +103,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
 
           <SecurityCard
             email={email}
-            onChangePassword={() => setIsPasswordModalOpen(true)}
+            onChangePassword={handleOpenPasswordModal}
           />
         </div>
 
@@ -102,10 +116,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
           onReportCopyNotificationChange={setReportCopyNotification}
         />
 
-        {/* Footer Actions */}
         <div className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
             <Info className="w-4 h-4 text-[#006837] shrink-0" />
+
             <span>
               As informações pessoais e institucionais são vinculadas à comissão
               avaliadora do Campus Tauá.
@@ -119,18 +133,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
               className="h-8 px-4 bg-[#006837] hover:bg-[#00522b] text-white font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
             >
               <Save className="w-3.5 h-3.5" />
+
               <span>{isSaving ? "Salvando..." : "Salvar Alterações"}</span>
             </button>
           </div>
         </div>
       </form>
 
-      {/* Password Change Modal */}
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
+        onClose={handleClosePasswordModal}
         onSuccess={handlePasswordChangeSuccess}
       />
     </div>
   );
-};
+}
