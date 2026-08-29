@@ -1,42 +1,41 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
-  FileText,
-  FileDown,
-  CheckCircle2,
-  Users,
-  Clock,
-  Filter,
-  BarChart3,
-  TrendingUp,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  Info,
-  X,
-  PieChart,
-  Layers,
-  HelpCircle,
-  Search,
-  Building2,
-  BookOpen,
-  GraduationCap,
   Award,
+  BookOpen,
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Clock,
   Eye,
-  FileSpreadsheet,
   FileCode,
-  Printer,
+  FileDown,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  GraduationCap,
+  HelpCircle,
+  Info,
+  Layers,
   Maximize2,
+  PieChart,
+  Printer,
+  Search,
+  TrendingUp,
+  Users,
+  X,
 } from 'lucide-react';
-import {
-  ReportCampaignData,
-  ReportQuestion,
-  ReportDimensionResult,
-} from '../data/reportsData';
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { INITIAL_SMART_FORMS } from '../data/formsData';
+import type {
+  ReportCampaignData,
+  ReportDimensionResult,
+  ReportQuestion,
+} from '../data/reportsData';
+import type { SmartForm } from "../types";
 import { buildReportsFromSmartForms } from '../utils/reportConverter';
-import { exportReportToExcel, exportReportToCsv } from '../utils/reportExporter';
-import { SmartForm } from '../types';
+import { exportReportToCsv, exportReportToExcel } from '../utils/reportExporter.ts';
 import { CpaPdfReportModal } from './CpaPdfReportModal';
 
 interface ReportsViewProps {
