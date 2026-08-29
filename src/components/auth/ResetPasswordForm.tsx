@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { resetPassword } from "../../services/auth.service";
+
 import {
   AlertTriangle,
   ArrowRight,
@@ -109,10 +111,9 @@ export function ResetPasswordForm({
   }, [password, requirementsCount, requirements.minLength]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    // Depois isso será substituído pela chamada ao backend.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    console.log("Nova senha definida:", data.password);
+    await resetPassword({
+      password: data.password,
+    });
 
     setSuccess(true);
   };

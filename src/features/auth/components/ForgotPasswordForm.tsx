@@ -6,6 +6,8 @@ import { ArrowLeft, CheckCircle, Loader2, Mail } from "lucide-react";
 
 import { IFCELogo } from "../../../components/auth/IFCELogo";
 
+import { requestPasswordReset } from "../../../services/auth.service";
+
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormData,
@@ -30,10 +32,9 @@ export function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
   });
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
-    // Simulação temporária até existir backend.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    console.log("Solicitação de recuperação:", data.email);
+    await requestPasswordReset({
+      email: data.email,
+    });
 
     setEmailSent(true);
   };

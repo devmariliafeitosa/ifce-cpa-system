@@ -1,9 +1,19 @@
 import coordinatorsData from "../data/coordinators.json";
 
+const SIMULATED_REQUEST_DELAY = 800;
+
 interface AuthenticateCoordinatorParams {
   email: string;
   password: string;
   prefilledEmail?: string;
+}
+
+interface RequestPasswordResetParams {
+  email: string;
+}
+
+interface ResetPasswordParams {
+  password: string;
 }
 
 export type AuthenticationResult =
@@ -16,13 +26,16 @@ export type AuthenticationResult =
       message: string;
     };
 
+async function simulateRequestDelay(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, SIMULATED_REQUEST_DELAY));
+}
+
 export async function authenticateCoordinator({
   email,
   password,
   prefilledEmail = "",
 }: AuthenticateCoordinatorParams): Promise<AuthenticationResult> {
-  // Simulação temporária da chamada ao backend.
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  await simulateRequestDelay();
 
   const enteredEmail = email.trim().toLowerCase();
 
@@ -57,4 +70,22 @@ export async function authenticateCoordinator({
     success: true,
     email: enteredEmail,
   };
+}
+
+export async function requestPasswordReset({
+  email,
+}: RequestPasswordResetParams): Promise<void> {
+  await simulateRequestDelay();
+
+  // Futuramente será feita a chamada ao backend.
+  void email;
+}
+
+export async function resetPassword({
+  password,
+}: ResetPasswordParams): Promise<void> {
+  await simulateRequestDelay();
+
+  // Futuramente será feita a chamada ao backend.
+  void password;
 }
