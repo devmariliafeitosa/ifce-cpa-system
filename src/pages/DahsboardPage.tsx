@@ -2,19 +2,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
 import { Footer } from "../components/auth/Footer";
-
-import { DashboardView } from "../components/DashboardView";
-import { FormsManagerView } from "../components/FormsManagerView";
-import { GoogleFormsManager } from "../components/GoogleFormsManager";
+import { DashboardPlaceholder } from "../components/dashboard/DashboardPlaceholder";
 import { Header } from "../components/Header";
-import { ParticipantsView } from "../components/ParticipantsView";
 import { PlaceholderView } from "../components/PlaceholderView";
 import { ProfileView } from "../components/profile/ProfileView";
-import { ReportsView } from "../components/ReportsView";
 import { SettingsView } from "../components/SettingsView";
 import { Sidebar } from "../components/Sidebar";
 
-import type { NavTabId } from "../components/Sidebar";
+import type { NavTabId } from "../components/navigation/navigationTypes";
 import type { UserCoordinator } from "../types";
 
 interface DashboardPageProps {
@@ -24,40 +19,12 @@ interface DashboardPageProps {
 
 export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<NavTabId>("dashboard");
-
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardView onNavigateTab={setActiveTab} />;
-
-      case "formularios":
-        return (
-          <FormsManagerView
-            onReturnToDashboard={() => setActiveTab("dashboard")}
-            onSelectTab={(tab: string) => setActiveTab(tab as NavTabId)}
-          />
-        );
-
-      case "relatorios":
-        return (
-          <ReportsView onReturnToDashboard={() => setActiveTab("dashboard")} />
-        );
-
-      case "google-forms":
-      case "novo-formulario":
-        return (
-          <GoogleFormsManager
-            onReturnToDashboard={() => setActiveTab("dashboard")}
-          />
-        );
-
-      case "participantes":
-      case "alunos":
-      case "docentes":
-      case "taes":
-        return <ParticipantsView />;
+        return <DashboardPlaceholder />;
 
       case "configuracoes":
         return (
@@ -132,6 +99,9 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
               </motion.div>
             </AnimatePresence>
           </main>
+
+          {/* Footer */}
+          <Footer />
         </div>
       </div>
 
@@ -170,9 +140,6 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
           </>
         )}
       </AnimatePresence>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

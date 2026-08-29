@@ -1,7 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, User, Settings, LogOut, ChevronDown, Building2, Bell } from 'lucide-react';
-import { NavTabId } from './Sidebar';
-import { UserCoordinator } from '../types';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Menu,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Building2,
+  Bell,
+} from "lucide-react";
+import type { NavTabId } from "./navigation/navigationTypes";
+import type { UserCoordinator } from "../types";
 
 interface HeaderProps {
   activeTab: NavTabId;
@@ -13,37 +21,37 @@ interface HeaderProps {
 
 const PAGE_TITLES: Record<NavTabId, { title: string }> = {
   dashboard: {
-    title: 'Dashboard',
+    title: "Dashboard",
   },
   relatorios: {
-    title: 'Relatórios',
+    title: "Relatórios",
   },
-  'google-forms': {
-    title: 'Google Forms',
+  "google-forms": {
+    title: "Google Forms",
   },
   formularios: {
-    title: 'Questionários',
+    title: "Questionários",
   },
-  'novo-formulario': {
-    title: 'Novo Questionário',
+  "novo-formulario": {
+    title: "Novo Questionário",
   },
   participantes: {
-    title: 'Participantes',
+    title: "Participantes",
   },
   alunos: {
-    title: 'Alunos',
+    title: "Alunos",
   },
   docentes: {
-    title: 'Docentes',
+    title: "Docentes",
   },
   taes: {
-    title: 'TAEs',
+    title: "TAEs",
   },
   configuracoes: {
-    title: 'Configurações',
+    title: "Configurações",
   },
   perfil: {
-    title: 'Perfil',
+    title: "Perfil",
   },
 };
 
@@ -58,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageInfo = PAGE_TITLES[activeTab] || {
-    title: 'Questionários',
+    title: "Questionários",
   };
 
   // Close user dropdown on outside click
@@ -71,13 +79,13 @@ export const Header: React.FC<HeaderProps> = ({
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const userName = user?.name || 'Coordenador CPA Tauá';
-  const userCampus = user?.campus || 'Campus Tauá';
-  const userEmail = user?.email || 'cpa.taua@ifce.edu.br';
+  const userName = user?.name || "Coordenador CPA Tauá";
+  const userCampus = user?.campus || "Campus Tauá";
+  const userEmail = user?.email || "cpa.taua@ifce.edu.br";
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 py-3 flex items-center justify-between gap-4">
@@ -136,15 +144,21 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-slate-600' : ''}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180 text-slate-600" : ""}`}
+            />
           </button>
 
           {/* User Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200/90 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3.5 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-semibold text-slate-800">{userName}</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{userEmail}</p>
+                <p className="text-xs font-semibold text-slate-800">
+                  {userName}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                  {userEmail}
+                </p>
                 <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-[#006837] bg-[#E8F5EE] px-2 py-0.5 rounded-md">
                   <Building2 className="w-3 h-3" />
                   <span>{userCampus}</span>
@@ -154,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="py-1">
                 <button
                   onClick={() => {
-                    onSelectTab('perfil');
+                    onSelectTab("perfil");
                     setIsDropdownOpen(false);
                   }}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#006837] transition-colors text-left"
@@ -165,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 <button
                   onClick={() => {
-                    onSelectTab('configuracoes');
+                    onSelectTab("configuracoes");
                     setIsDropdownOpen(false);
                   }}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#006837] transition-colors text-left"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Settings,
   User,
@@ -11,9 +11,8 @@ import {
   Save,
   ArrowLeft,
   Lock,
-} from 'lucide-react';
-import { NavTabId } from './Sidebar';
-
+} from "lucide-react";
+import type { NavTabId } from "./navigation/navigationTypes";
 interface PlaceholderViewProps {
   tabId: NavTabId;
   onReturnToDashboard?: () => void;
@@ -25,7 +24,7 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
   onReturnToDashboard,
   onSelectTab,
 }) => {
-  const isProfile = tabId === 'perfil';
+  const isProfile = tabId === "perfil";
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState(true);
@@ -43,16 +42,20 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-emerald-100 text-[#006837] rounded-xl shrink-0">
-            {isProfile ? <User className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
+            {isProfile ? (
+              <User className="w-5 h-5" />
+            ) : (
+              <Settings className="w-5 h-5" />
+            )}
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-900 tracking-tight">
-              {isProfile ? 'Perfil da Coordenação' : 'Configurações do Sistema'}
+              {isProfile ? "Perfil da Coordenação" : "Configurações do Sistema"}
             </h1>
             <p className="text-xs text-slate-500 font-medium">
               {isProfile
-                ? 'Informações institucionais do Coordenador da CPA • Campus Tauá'
-                : 'Parâmetros operacionais e preferências da CPA'}
+                ? "Informações institucionais do Coordenador da CPA • Campus Tauá"
+                : "Parâmetros operacionais e preferências da CPA"}
             </p>
           </div>
         </div>
@@ -82,7 +85,9 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
             <div className="space-y-1">
-              <label className="text-slate-500 font-bold">Nome do Coordenador</label>
+              <label className="text-slate-500 font-bold">
+                Nome do Coordenador
+              </label>
               <input
                 type="text"
                 readOnly
@@ -92,7 +97,9 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-slate-500 font-bold">Campus de Atuação</label>
+              <label className="text-slate-500 font-bold">
+                Campus de Atuação
+              </label>
               <input
                 type="text"
                 readOnly
@@ -102,7 +109,9 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-slate-500 font-bold">E-mail Institucional</label>
+              <label className="text-slate-500 font-bold">
+                E-mail Institucional
+              </label>
               <input
                 type="text"
                 readOnly
@@ -112,7 +121,9 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-slate-500 font-bold">Matrícula SIAPE</label>
+              <label className="text-slate-500 font-bold">
+                Matrícula SIAPE
+              </label>
               <input
                 type="text"
                 readOnly
@@ -147,8 +158,12 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
               <div className="flex items-center gap-3">
                 <Bell className="w-4 h-4 text-[#006837]" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Notificações de Novas Respostas</span>
-                  <span className="text-[11px] text-slate-500">Enviar resumo diário para o e-mail da coordenação</span>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    Notificações de Novas Respostas
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Enviar resumo diário para o e-mail da coordenação
+                  </span>
                 </div>
               </div>
               <input
@@ -163,8 +178,12 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
               <div className="flex items-center gap-3">
                 <Sliders className="w-4 h-4 text-[#006837]" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Sincronização com Google Forms</span>
-                  <span className="text-[11px] text-slate-500">Atualizar dados automaticamente a cada abertura de tela</span>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    Sincronização com Google Forms
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Atualizar dados automaticamente a cada abertura de tela
+                  </span>
                 </div>
               </div>
               <input
@@ -179,8 +198,12 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
               <div className="flex items-center gap-3">
                 <Shield className="w-4 h-4 text-[#006837]" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Anonimização Estrita LGPD</span>
-                  <span className="text-[11px] text-slate-500">Garantir sigilo das respostas e desvincular identificadores</span>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    Anonimização Estrita LGPD
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Garantir sigilo das respostas e desvincular identificadores
+                  </span>
                 </div>
               </div>
               <input

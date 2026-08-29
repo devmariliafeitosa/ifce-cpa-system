@@ -29,7 +29,7 @@ import {
   SlidersHorizontal,
   FolderOpen,
 } from "lucide-react";
-import { NavTabId } from "./Sidebar";
+import type { NavTabId } from "./navigation/navigationTypes";
 import { SmartForm, Participant } from "../types";
 import { INITIAL_SMART_FORMS } from "../data/formsData";
 import { INITIAL_PARTICIPANTS } from "../data/participantsData";
