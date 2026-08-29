@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Mail, ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { IFCELogo } from './IFCELogo';
 import { AuthView } from '../types';
-import coordinatorsData from '../data/coordinators.json';
+import { sendResetPasswordEmail } from '../lib/googleAuth';
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -46,18 +46,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     setSuccessMessage(null);
     setErrorMessage(null);
 
-    // Simulate sending recovery email
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const enteredEmail = data.email.trim().toLowerCase();
-    const exists = coordinatorsData.coordinators.some(
-      (c) => c.email.toLowerCase() === enteredEmail
-    ) || (prefilledEmail && prefilledEmail.trim().toLowerCase() === enteredEmail);
-
-    if (exists) {
+    try {
+      const redirectUrl = `${window.location.origin}${window.location.pathname}#redefinir-senha`;
+      await sendResetPasswordEmail(data.email.trim().toLowerCase(), {
+        url: redirectUrl,
+      });
       setSuccessMessage('Um link de recuperação foi enviado para seu e-mail.');
-    } else {
-      setErrorMessage('E-mail inválido.');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Nao foi possivel enviar o link de recuperacao.');
     }
   };
 
@@ -90,16 +86,9 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
                 </p>
               </div>
             </div>
-            <div className="pt-2 border-t border-emerald-200/60 flex justify-end">
-              <button
-                type="button"
-                onClick={() => onNavigate('reset-password')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0B7A3E] hover:bg-[#045C2D] text-white font-semibold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer"
-              >
-                <span>Simular clique no link recebido por e-mail</span>
-                <Send className="w-3 h-3" />
-              </button>
-            </div>
+            <p className="pt-2 border-t border-emerald-200/60 text-[11px] text-emerald-800/90">
+              O link abrirá esta página para você cadastrar uma nova senha com segurança.
+            </p>
           </div>
         )}
 

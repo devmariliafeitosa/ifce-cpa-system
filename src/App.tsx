@@ -25,7 +25,36 @@ const VIEW_HASH_MAP: Record<AuthView, string> = {
   register: '#login',
 };
 
+const getURLSearchParams = (): URLSearchParams => {
+  const searchParams = new URLSearchParams(window.location.search);
+  const hash = window.location.hash;
+  const hashQueryIndex = hash.indexOf('?');
+
+  if (hashQueryIndex >= 0) {
+    const hashParams = new URLSearchParams(hash.slice(hashQueryIndex + 1));
+    hashParams.forEach((value, key) => {
+      if (!searchParams.has(key)) {
+        searchParams.set(key, value);
+      }
+    });
+  }
+
+  return searchParams;
+};
+
+const getResetCodeFromURL = (): string | null => {
+  const params = getURLSearchParams();
+  return params.get('oobCode');
+};
+
 const getInitialViewFromURL = (): AuthView => {
+  const params = getURLSearchParams();
+  const mode = params.get('mode');
+  const oobCode = params.get('oobCode');
+  if (mode === 'resetPassword' || Boolean(oobCode)) {
+    return 'reset-password';
+  }
+
   const hash = window.location.hash.toLowerCase();
   if (ROUTE_MAP[hash]) {
     return ROUTE_MAP[hash];
@@ -37,6 +66,7 @@ const getInitialViewFromURL = (): AuthView => {
 };
 
 export default function App() {
+  const [resetCode, setResetCode] = useState<string | null>(getResetCodeFromURL());
   const [authState, setAuthState] = useState<AuthState>({
     currentView: getInitialViewFromURL(),
     rememberMe: false,
@@ -50,6 +80,7 @@ export default function App() {
   useEffect(() => {
     const handleURLChange = () => {
       const targetView = getInitialViewFromURL();
+      setResetCode(getResetCodeFromURL());
       setAuthState((prev) => {
         if (prev.currentView !== targetView) {
           return { ...prev, currentView: targetView };
@@ -68,9 +99,11 @@ export default function App() {
 
   const handleNavigate = (view: AuthView) => {
     const targetHash = VIEW_HASH_MAP[view];
-    if (window.location.hash !== targetHash) {
-      window.history.pushState(null, '', targetHash);
+    const targetURL = `${window.location.pathname}${targetHash}`;
+    if (`${window.location.pathname}${window.location.hash}` !== targetURL || window.location.search) {
+      window.history.pushState(null, '', targetURL);
     }
+    setResetCode(null);
 
     setAuthState((prev) => ({
       ...prev,
@@ -170,7 +203,10 @@ export default function App() {
               exit={{ opacity: 0, y: -12, scale: 0.99 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
-              <ResetPasswordScreen onNavigate={handleNavigate} />
+              <ResetPasswordScreen
+                onNavigate={handleNavigate}
+                resetCode={resetCode ?? undefined}
+              />
             </motion.div>
           )}
         </AnimatePresence>

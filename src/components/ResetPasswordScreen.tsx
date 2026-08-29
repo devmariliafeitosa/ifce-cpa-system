@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Lock,
   Eye,
@@ -15,15 +15,16 @@ import {
 } from 'lucide-react';
 import { IFCELogo } from './IFCELogo';
 import { AuthView } from '../types';
+import { applyPasswordReset, validatePasswordResetCode } from '../lib/googleAuth';
 
 interface ResetPasswordScreenProps {
   onNavigate: (view: AuthView) => void;
-  isExpiredInitial?: boolean;
+  resetCode?: string;
 }
 
 export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   onNavigate,
-  isExpiredInitial = false,
+  resetCode,
 }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,8 +33,50 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isLinkExpired, setIsLinkExpired] = useState(isExpiredInitial);
+  const [isLinkExpired, setIsLinkExpired] = useState(false);
+  const [isValidatingCode, setIsValidatingCode] = useState(true);
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const validateCode = async () => {
+      if (!resetCode) {
+        if (isMounted) {
+          setIsLinkExpired(true);
+          setGeneralError('Link de redefinição ausente ou inválido. Solicite um novo link.');
+          setIsValidatingCode(false);
+        }
+        return;
+      }
+
+      try {
+        await validatePasswordResetCode(resetCode);
+        if (isMounted) {
+          setIsLinkExpired(false);
+          setGeneralError(null);
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          setIsLinkExpired(true);
+          setGeneralError(error?.message || 'O link de redefinição não é válido.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsValidatingCode(false);
+        }
+      }
+    };
+
+    setIsSuccess(false);
+    setIsSubmitting(false);
+    setIsValidatingCode(true);
+    validateCode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [resetCode]);
 
   // Requirements check
   const hasMinLength = password.length >= 8;
@@ -74,6 +117,12 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
     e.preventDefault();
     setGeneralError(null);
 
+    if (!resetCode) {
+      setIsLinkExpired(true);
+      setGeneralError('Link de redefinição ausente ou inválido. Solicite um novo link.');
+      return;
+    }
+
     if (!hasMinLength) {
       setGeneralError('A senha deve possuir no mínimo 8 caracteres.');
       return;
@@ -90,44 +139,24 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
     }
 
     setIsSubmitting(true);
-    // Simulate backend password update and token validation
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-    setIsSuccess(true);
+    try {
+      await applyPasswordReset(resetCode, password);
+      setIsSuccess(true);
+      setGeneralError(null);
+    } catch (error: any) {
+      const message = error?.message || 'Não foi possível redefinir a senha com este link.';
+      setGeneralError(message);
+      if (message.toLowerCase().includes('expir') || message.toLowerCase().includes('inválido')) {
+        setIsLinkExpired(true);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-4 font-sans my-auto py-8">
       
-      {/* Simulation Banner to easily test "Link Expirado" state vs "Link Válido" */}
-      <div className="mb-4 flex items-center gap-2 bg-slate-100 p-1.5 px-3 rounded-full text-xs text-slate-600 border border-slate-200/80 shadow-2xs">
-        <span className="font-semibold text-slate-500">Modo de Teste:</span>
-        <button
-          type="button"
-          onClick={() => {
-            setIsLinkExpired(false);
-            setIsSuccess(false);
-          }}
-          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold cursor-pointer transition-colors ${
-            !isLinkExpired && !isSuccess ? 'bg-[#006837] text-white' : 'hover:bg-slate-200 text-slate-700'
-          }`}
-        >
-          Link Válido
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setIsLinkExpired(true);
-            setIsSuccess(false);
-          }}
-          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold cursor-pointer transition-colors ${
-            isLinkExpired ? 'bg-amber-600 text-white' : 'hover:bg-slate-200 text-slate-700'
-          }`}
-        >
-          Link Expirado
-        </button>
-      </div>
-
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
         
         {/* Logo Header */}
@@ -135,8 +164,24 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
           <IFCELogo variant="full" />
         </div>
 
-        {/* ----------------- STATE 1: LINK EXPIRADO ----------------- */}
-        {isLinkExpired ? (
+        {isValidatingCode ? (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="flex flex-col items-center text-center space-y-3 pt-2">
+              <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 shadow-2xs">
+                <Loader2 className="w-7 h-7 animate-spin" />
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                  Validando link
+                </h1>
+                <p className="text-xs text-slate-600 leading-relaxed font-normal max-w-xs mx-auto pt-1">
+                  Aguarde enquanto conferimos seu link de redefinição...
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : isLinkExpired ? (
+          /* ----------------- STATE 1: LINK EXPIRADO ----------------- */
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="flex flex-col items-center text-center space-y-3 pt-2">
               <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
@@ -149,9 +194,7 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                 <p className="text-xs text-slate-600 leading-relaxed font-normal max-w-xs mx-auto pt-1">
                   Este link de redefinição de senha expirou ou já foi utilizado.
                 </p>
-                <p className="text-xs text-slate-500 font-normal">
-                  Solicite um novo link para continuar.
-                </p>
+                {generalError && <p className="text-xs text-red-600 font-medium">{generalError}</p>}
               </div>
             </div>
 
