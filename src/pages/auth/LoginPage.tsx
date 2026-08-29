@@ -17,8 +17,8 @@ export function LoginPage() {
     }
   };
 
-  const handleLoginSuccess = (userEmail: string) => {
-    console.log("Login realizado:", userEmail);
+  const handleLoginSuccess = () => {
+    navigate(ROUTES.DASHBOARD);
   };
 
   return (
