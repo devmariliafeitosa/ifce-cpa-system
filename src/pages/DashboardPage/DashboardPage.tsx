@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
 import { Footer } from "../../components/auth/Footer";
-import { DashboardPlaceholder } from "../../components/dashboard/DashboardPlaceholder";
+import { DashboardView } from "../../components/DashboardView";
 import { Header } from "../../components/Header";
 import { PlaceholderView } from "../../components/PlaceholderView";
 import { ProfileView } from "../../components/profile/ProfileView";
@@ -19,12 +19,13 @@ interface DashboardPageProps {
 
 export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<NavTabId>("dashboard");
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const renderPage = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardPlaceholder />;
+        return <DashboardView onNavigateTab={setActiveTab} />;
 
       case "configuracoes":
         return (
@@ -53,7 +54,6 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-slate-800 antialiased font-sans relative flex flex-col">
       <div className="flex flex-1 min-w-0">
-        {/* Sidebar Desktop */}
         <aside className="hidden md:block fixed top-0 left-0 w-[260px] h-screen z-40">
           <Sidebar
             activeTab={activeTab}
@@ -62,9 +62,7 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
           />
         </aside>
 
-        {/* Área principal */}
         <div className="flex-1 flex flex-col min-w-0 md:ml-[260px]">
-          {/* Header */}
           <Header
             activeTab={activeTab}
             user={user}
@@ -73,7 +71,6 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
             onLogout={onLogout}
           />
 
-          {/* Conteúdo */}
           <main className="flex-1 flex flex-col min-w-0 pb-12">
             <AnimatePresence mode="wait">
               <motion.div
@@ -100,29 +97,37 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
             </AnimatePresence>
           </main>
 
-          {/* Footer */}
           <Footer />
         </div>
       </div>
 
-      {/* Sidebar Mobile */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
           <>
-            {/* Fundo escuro */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{
+                opacity: 0,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0,
+              }}
               onClick={() => setIsMobileSidebarOpen(false)}
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 md:hidden"
             />
 
-            {/* Menu lateral */}
             <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              initial={{
+                x: "-100%",
+              }}
+              animate={{
+                x: 0,
+              }}
+              exit={{
+                x: "-100%",
+              }}
               transition={{
                 type: "spring",
                 damping: 25,
