@@ -1,42 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { User } from 'firebase/auth';
+import type { User } from "firebase/auth";
 import {
-  FileSpreadsheet,
-  Plus,
-  RefreshCw,
-  ExternalLink,
-  Trash2,
-  Eye,
+  AlertCircle,
   BarChart2,
   CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Layers,
-  Sparkles,
-  Send,
-  X,
-  FileText,
   Clock,
+  ExternalLink,
+  FileSpreadsheet,
+  FileText,
   Loader2,
   Lock,
-} from 'lucide-react';
+  Plus,
+  RefreshCw,
+  Send,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
 import {
-  googleSignIn,
-  googleLogout,
-  initAuth,
   getAccessToken,
-} from '../lib/googleAuth';
+  googleLogout,
+  googleSignIn,
+  initAuth,
+} from "../lib/googleAuth.ts";
 import {
-  GoogleFormFile,
-  GoogleFormDetails,
-  GoogleFormResponsesData,
-  FormQuestionInput,
-  listGoogleForms,
-  getGoogleFormDetails,
-  getGoogleFormResponses,
   createGoogleForm,
   deleteGoogleForm,
-} from '../services/googleFormsService';
+  getGoogleFormDetails,
+  getGoogleFormResponses,
+  listGoogleForms,
+} from "../services/googleFormsService";
+
+import type {
+  FormQuestionInput,
+  GoogleFormDetails,
+  GoogleFormFile,
+  GoogleFormResponsesData,
+} from "../services/googleFormsService";
 
 interface GoogleFormsManagerProps {
   onReturnToDashboard?: () => void;
@@ -50,94 +50,104 @@ const CPA_PRESET_TEMPLATES: {
   questions: FormQuestionInput[];
 }[] = [
   {
-    id: 'docente-taua',
-    title: 'Avaliação Docente e Didático-Pedagógica 2025.1 - Campus Tauá',
+    id: "docente-taua",
+    title: "Avaliação Docente e Didático-Pedagógica 2025.1 - Campus Tauá",
     description:
-      'Instrumento oficial da Comissão Própria de Avaliação (CPA) para avaliação do desempenho docente e metodologia pelas turmas do IFCE Campus Tauá.',
+      "Instrumento oficial da Comissão Própria de Avaliação (CPA) para avaliação do desempenho docente e metodologia pelas turmas do IFCE Campus Tauá.",
     questions: [
       {
-        title: 'O(A) docente demonstra domínio do conteúdo e clareza nas explicações?',
-        type: 'SCALE',
+        title:
+          "O(A) docente demonstra domínio do conteúdo e clareza nas explicações?",
+        type: "SCALE",
         required: true,
       },
       {
-        title: 'O plano de ensino e critérios de avaliação foram apresentados no início do semestre?',
-        type: 'RADIO',
-        required: true,
-        options: ['Sim, integralmente', 'Parcialmente', 'Não foram apresentados'],
-      },
-      {
-        title: 'Pontualidade e assiduidade do(a) professor(a) ao longo das aulas:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Comentários, elogios ou sugestões de melhoria pedagógica para a disciplina:',
-        type: 'TEXT',
-        required: false,
-      },
-    ],
-  },
-  {
-    id: 'infra-taua',
-    title: 'Avaliação da Infraestrutura e Biblioteca - IFCE Campus Tauá',
-    description:
-      'Pesquisa institucional de satisfação quanto aos laboratórios, salas de aula, conectividade Wi-Fi, acervo da biblioteca e refeitório do Campus Tauá.',
-    questions: [
-      {
-        title: 'Qualidade do acervo e atendimento na Biblioteca do Campus Tauá:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Condições dos laboratórios de informática e específicos para as aulas práticas:',
-        type: 'SCALE',
-        required: true,
-      },
-      {
-        title: 'Quais setores necessitam de melhorias prioritárias no campus?',
-        type: 'CHECKBOX',
+        title:
+          "O plano de ensino e critérios de avaliação foram apresentados no início do semestre?",
+        type: "RADIO",
         required: true,
         options: [
-          'Wi-Fi / Conectividade',
-          'Ar condicionado das salas',
-          'Biblioteca e Espaço de Estudo',
-          'Quadra poliesportiva',
-          'Refeitório / Cantina',
+          "Sim, integralmente",
+          "Parcialmente",
+          "Não foram apresentados",
         ],
       },
       {
-        title: 'Sugestões de melhorias para a infraestrutura do campus:',
-        type: 'TEXT',
+        title:
+          "Pontualidade e assiduidade do(a) professor(a) ao longo das aulas:",
+        type: "SCALE",
+        required: true,
+      },
+      {
+        title:
+          "Comentários, elogios ou sugestões de melhoria pedagógica para a disciplina:",
+        type: "TEXT",
         required: false,
       },
     ],
   },
   {
-    id: 'satisfacao-discente',
-    title: 'Pesquisa de Satisfação Discente e Atendimento TAE - Campus Tauá',
+    id: "infra-taua",
+    title: "Avaliação da Infraestrutura e Biblioteca - IFCE Campus Tauá",
     description:
-      'Avaliação dos serviços administrativos, secretaria acadêmica, assistência estudantil e apoio da equipe de TAEs aos alunos do IFCE Tauá.',
+      "Pesquisa institucional de satisfação quanto aos laboratórios, salas de aula, conectividade Wi-Fi, acervo da biblioteca e refeitório do Campus Tauá.",
     questions: [
       {
-        title: 'Atendimento e agilidade na Secretaria de Controle Acadêmico:',
-        type: 'SCALE',
+        title:
+          "Qualidade do acervo e atendimento na Biblioteca do Campus Tauá:",
+        type: "SCALE",
         required: true,
       },
       {
-        title: 'Suporte prestado pela Assistência Estudantil e Serviço Social:',
-        type: 'SCALE',
+        title:
+          "Condições dos laboratórios de informática e específicos para as aulas práticas:",
+        type: "SCALE",
         required: true,
       },
       {
-        title: 'Avaliação geral da comunicação institucional do Campus Tauá:',
-        type: 'RADIO',
+        title: "Quais setores necessitam de melhorias prioritárias no campus?",
+        type: "CHECKBOX",
         required: true,
-        options: ['Excelente', 'Boa', 'Regular', 'Insumiciente'],
+        options: [
+          "Wi-Fi / Conectividade",
+          "Ar condicionado das salas",
+          "Biblioteca e Espaço de Estudo",
+          "Quadra poliesportiva",
+          "Refeitório / Cantina",
+        ],
       },
       {
-        title: 'Deixe aqui sua opinião ou sugestão de melhoria:',
-        type: 'TEXT',
+        title: "Sugestões de melhorias para a infraestrutura do campus:",
+        type: "TEXT",
+        required: false,
+      },
+    ],
+  },
+  {
+    id: "satisfacao-discente",
+    title: "Pesquisa de Satisfação Discente e Atendimento TAE - Campus Tauá",
+    description:
+      "Avaliação dos serviços administrativos, secretaria acadêmica, assistência estudantil e apoio da equipe de TAEs aos alunos do IFCE Tauá.",
+    questions: [
+      {
+        title: "Atendimento e agilidade na Secretaria de Controle Acadêmico:",
+        type: "SCALE",
+        required: true,
+      },
+      {
+        title: "Suporte prestado pela Assistência Estudantil e Serviço Social:",
+        type: "SCALE",
+        required: true,
+      },
+      {
+        title: "Avaliação geral da comunicação institucional do Campus Tauá:",
+        type: "RADIO",
+        required: true,
+        options: ["Excelente", "Boa", "Regular", "Insumiciente"],
+      },
+      {
+        title: "Deixe aqui sua opinião ou sugestão de melhoria:",
+        type: "TEXT",
         required: false,
       },
     ],
@@ -161,20 +171,22 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
   // Custom Form Builder state
-  const [customTitle, setCustomTitle] = useState('');
-  const [customDescription, setCustomDescription] = useState('');
+  const [customTitle, setCustomTitle] = useState("");
+  const [customDescription, setCustomDescription] = useState("");
   const [customQuestions, setCustomQuestions] = useState<FormQuestionInput[]>([
     {
-      title: 'Como você avalia a organização do curso?',
-      type: 'SCALE',
+      title: "Como você avalia a organização do curso?",
+      type: "SCALE",
       required: true,
     },
   ]);
 
   // Selected Form Details & Inspector Modal
   const [inspectFormId, setInspectFormId] = useState<string | null>(null);
-  const [inspectDetails, setInspectDetails] = useState<GoogleFormDetails | null>(null);
-  const [inspectResponses, setInspectResponses] = useState<GoogleFormResponsesData | null>(null);
+  const [inspectDetails, setInspectDetails] =
+    useState<GoogleFormDetails | null>(null);
+  const [inspectResponses, setInspectResponses] =
+    useState<GoogleFormResponsesData | null>(null);
   const [isLoadingInspect, setIsLoadingInspect] = useState(false);
 
   // Delete Confirmation Dialog state
@@ -194,7 +206,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
         setGoogleUser(null);
         setToken(null);
         setIsLoadingAuth(false);
-      }
+      },
     );
     return () => unsubscribe();
   }, []);
@@ -207,12 +219,14 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
       if (res) {
         setGoogleUser(res.user);
         setToken(res.accessToken);
-        setSuccessMsg('Conectado com sucesso ao Google Forms!');
+        setSuccessMsg("Conectado com sucesso ao Google Forms!");
         fetchForms(res.accessToken);
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Falha ao conectar com o Google. Tente novamente.');
+      setErrorMsg(
+        err.message || "Falha ao conectar com o Google. Tente novamente.",
+      );
     } finally {
       setIsLoggingIn(false);
     }
@@ -223,7 +237,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
     setGoogleUser(null);
     setToken(null);
     setFormsList([]);
-    setSuccessMsg('Conta desconectada do Google.');
+    setSuccessMsg("Conta desconectada do Google.");
   };
 
   const fetchForms = async (currentToken?: string) => {
@@ -239,7 +253,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
       console.error(err);
       setErrorMsg(
         err.message ||
-          'Erro ao buscar formulários no Google Drive. Verifique se o login está ativo.'
+          "Erro ao buscar formulários no Google Drive. Verifique se o login está ativo.",
       );
     } finally {
       setIsLoadingForms(false);
@@ -250,7 +264,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
   const handleDeployPreset = async (presetId: string) => {
     const authToken = token || getAccessToken();
     if (!authToken) {
-      setErrorMsg('Por favor, conecte sua conta Google primeiro.');
+      setErrorMsg("Por favor, conecte sua conta Google primeiro.");
       return;
     }
 
@@ -264,16 +278,20 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
         authToken,
         template.title,
         template.description,
-        template.questions
+        template.questions,
       );
-      setSuccessMsg(`Formulário "${template.title}" criado com sucesso no Google Forms!`);
+      setSuccessMsg(
+        `Formulário "${template.title}" criado com sucesso no Google Forms!`,
+      );
       fetchForms(authToken);
       if (created?.formId) {
         handleInspectForm(created.formId);
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Erro ao publicar formulário no Google Forms.');
+      setErrorMsg(
+        err.message || "Erro ao publicar formulário no Google Forms.",
+      );
     } finally {
       setIsSubmittingForm(false);
     }
@@ -284,12 +302,12 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
     e.preventDefault();
     const authToken = token || getAccessToken();
     if (!authToken) {
-      setErrorMsg('Conecte ao Google Forms antes de criar.');
+      setErrorMsg("Conecte ao Google Forms antes de criar.");
       return;
     }
 
     if (!customTitle.trim()) {
-      setErrorMsg('Por favor, digite o título do formulário.');
+      setErrorMsg("Por favor, digite o título do formulário.");
       return;
     }
 
@@ -300,16 +318,18 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
         authToken,
         customTitle,
         customDescription,
-        customQuestions
+        customQuestions,
       );
-      setSuccessMsg(`Formulário "${customTitle}" criado com sucesso no Google Forms!`);
+      setSuccessMsg(
+        `Formulário "${customTitle}" criado com sucesso no Google Forms!`,
+      );
       setIsCreateModalOpen(false);
-      setCustomTitle('');
-      setCustomDescription('');
+      setCustomTitle("");
+      setCustomDescription("");
       setCustomQuestions([
         {
-          title: 'Como você avalia a organização do curso?',
-          type: 'SCALE',
+          title: "Como você avalia a organização do curso?",
+          type: "SCALE",
           required: true,
         },
       ]);
@@ -319,7 +339,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Erro ao criar o formulário.');
+      setErrorMsg(err.message || "Erro ao criar o formulário.");
     } finally {
       setIsSubmittingForm(false);
     }
@@ -347,7 +367,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
       setInspectResponses(responses);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Erro ao buscar detalhes e respostas do formulário.');
+      setErrorMsg(
+        err.message || "Erro ao buscar detalhes e respostas do formulário.",
+      );
     } finally {
       setIsLoadingInspect(false);
     }
@@ -362,7 +384,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
     setIsDeleting(true);
     try {
       await deleteGoogleForm(authToken, deleteTarget.id);
-      setSuccessMsg(`Formulário "${deleteTarget.name}" movido para a lixeira do Google Drive.`);
+      setSuccessMsg(
+        `Formulário "${deleteTarget.name}" movido para a lixeira do Google Drive.`,
+      );
       setDeleteTarget(null);
       fetchForms(authToken);
       if (inspectFormId === deleteTarget.id) {
@@ -371,7 +395,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Erro ao excluir o formulário.');
+      setErrorMsg(err.message || "Erro ao excluir o formulário.");
     } finally {
       setIsDeleting(false);
     }
@@ -382,8 +406,8 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
     setCustomQuestions([
       ...customQuestions,
       {
-        title: '',
-        type: 'SCALE',
+        title: "",
+        type: "SCALE",
         required: true,
       },
     ]);
@@ -394,7 +418,11 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
     setCustomQuestions(customQuestions.filter((_, i) => i !== index));
   };
 
-  const updateQuestion = (index: number, field: keyof FormQuestionInput, value: any) => {
+  const updateQuestion = (
+    index: number,
+    field: keyof FormQuestionInput,
+    value: any,
+  ) => {
     const updated = [...customQuestions];
     updated[index] = { ...updated[index], [field]: value };
     setCustomQuestions(updated);
@@ -411,7 +439,8 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
               <span>Integração com Google Forms & Drive</span>
             </div>
             <p className="text-xs text-emerald-100/90 leading-relaxed">
-              Sincronize questionários institucionais externos com o Campus Tauá.
+              Sincronize questionários institucionais externos com o Campus
+              Tauá.
             </p>
           </div>
 
@@ -420,7 +449,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
             {googleUser && token ? (
               <div className="bg-white/10 backdrop-blur-md border border-white/20 p-3.5 rounded-xl flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#006837] font-bold flex items-center justify-center text-sm shadow-xs">
-                  {googleUser.displayName?.[0] || 'G'}
+                  {googleUser.displayName?.[0] || "G"}
                 </div>
                 <div className="text-left">
                   <p className="text-xs font-semibold text-white truncate max-w-[180px]">
@@ -452,7 +481,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                       version="1.1"
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 48 48"
-                      style={{ display: 'block' }}
+                      style={{ display: "block" }}
                     >
                       <path
                         fill="#EA4335"
@@ -474,7 +503,7 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                     </svg>
                   </div>
                   <span className="gsi-material-button-contents">
-                    {isLoggingIn ? 'Conectando...' : 'Conectar Google Forms'}
+                    {isLoggingIn ? "Conectando..." : "Conectar Google Forms"}
                   </span>
                 </div>
               </button>
@@ -523,9 +552,13 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
             <Lock className="w-8 h-8" />
           </div>
           <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-base font-bold text-slate-800">Conexão Google Necessária</h3>
+            <h3 className="text-base font-bold text-slate-800">
+              Conexão Google Necessária
+            </h3>
             <p className="text-xs text-slate-500">
-              Para listar, criar e visualizar respostas de formulários no Google Forms do IFCE Campus Tauá, faça login com sua conta Google com permissão concedida.
+              Para listar, criar e visualizar respostas de formulários no Google
+              Forms do IFCE Campus Tauá, faça login com sua conta Google com
+              permissão concedida.
             </p>
           </div>
           <button
@@ -550,7 +583,8 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                   Modelos de Formulário CPA (Prontos para Lançamento)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Clique para publicar instantaneamente um questionário padronizado no Google Forms do Campus Tauá.
+                  Clique para publicar instantaneamente um questionário
+                  padronizado no Google Forms do Campus Tauá.
                 </p>
               </div>
 
@@ -560,7 +594,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                   disabled={isLoadingForms}
                   className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-xl flex items-center gap-2 shadow-2xs cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingForms ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isLoadingForms ? "animate-spin" : ""}`}
+                  />
                   <span>Atualizar</span>
                 </button>
 
@@ -628,15 +664,21 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
             {isLoadingForms ? (
               <div className="py-12 text-center text-slate-400 space-y-2">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#006837]" />
-                <p className="text-xs font-medium">Carregando formulários do Google Forms...</p>
+                <p className="text-xs font-medium">
+                  Carregando formulários do Google Forms...
+                </p>
               </div>
             ) : formsList.length === 0 ? (
               <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-xl space-y-3">
                 <FileSpreadsheet className="w-10 h-10 text-slate-300 mx-auto" />
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-700">Nenhum formulário no Google Drive</p>
+                  <p className="text-xs font-bold text-slate-700">
+                    Nenhum formulário no Google Drive
+                  </p>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Ainda não há formulários criados nesta conta. Escolha um dos modelos da CPA acima ou clique em "Criar Formulário Personalizado".
+                    Ainda não há formulários criados nesta conta. Escolha um dos
+                    modelos da CPA acima ou clique em "Criar Formulário
+                    Personalizado".
                   </p>
                 </div>
               </div>
@@ -657,13 +699,17 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                       <div className="flex items-center gap-3 text-[11px] text-slate-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          Modificado:{' '}
+                          Modificado:{" "}
                           {form.modifiedTime
-                            ? new Date(form.modifiedTime).toLocaleDateString('pt-BR')
-                            : 'N/A'}
+                            ? new Date(form.modifiedTime).toLocaleDateString(
+                                "pt-BR",
+                              )
+                            : "N/A"}
                         </span>
                         <span>•</span>
-                        <span className="text-emerald-700 font-medium">Google Forms Oficial</span>
+                        <span className="text-emerald-700 font-medium">
+                          Google Forms Oficial
+                        </span>
                       </div>
                     </div>
 
@@ -728,7 +774,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
 
             <form onSubmit={handleCreateCustomForm} className="space-y-5">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Título do Formulário *</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Título do Formulário *
+                </label>
                 <input
                   type="text"
                   required
@@ -740,7 +788,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Descrição / Instruções</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Descrição / Instruções
+                </label>
                 <textarea
                   rows={2}
                   placeholder="Instruções aos discentes ou servidores respondentes do Campus Tauá..."
@@ -780,7 +830,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                           required
                           placeholder="Digite o enunciado da pergunta..."
                           value={q.title}
-                          onChange={(e) => updateQuestion(idx, 'title', e.target.value)}
+                          onChange={(e) =>
+                            updateQuestion(idx, "title", e.target.value)
+                          }
                           className="flex-1 h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#006837]"
                         />
                         {customQuestions.length > 1 && (
@@ -796,15 +848,25 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
 
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-2">
-                          <label className="text-slate-500 font-medium">Tipo:</label>
+                          <label className="text-slate-500 font-medium">
+                            Tipo:
+                          </label>
                           <select
                             value={q.type}
-                            onChange={(e) => updateQuestion(idx, 'type', e.target.value as any)}
+                            onChange={(e) =>
+                              updateQuestion(idx, "type", e.target.value as any)
+                            }
                             className="h-8 px-2 bg-white border border-slate-200 rounded-md text-xs font-medium focus:outline-none"
                           >
-                            <option value="SCALE">Escala de Satisfação (1 a 5)</option>
-                            <option value="RADIO">Múltipla Escolha (Opção Única)</option>
-                            <option value="TEXT">Resposta de Texto Livre</option>
+                            <option value="SCALE">
+                              Escala de Satisfação (1 a 5)
+                            </option>
+                            <option value="RADIO">
+                              Múltipla Escolha (Opção Única)
+                            </option>
+                            <option value="TEXT">
+                              Resposta de Texto Livre
+                            </option>
                           </select>
                         </div>
 
@@ -812,7 +874,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                           <input
                             type="checkbox"
                             checked={q.required}
-                            onChange={(e) => updateQuestion(idx, 'required', e.target.checked)}
+                            onChange={(e) =>
+                              updateQuestion(idx, "required", e.target.checked)
+                            }
                             className="accent-[#006837]"
                           />
                           <span>Obrigatória</span>
@@ -865,7 +929,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                   <h3 className="text-base font-bold text-slate-800">
                     Inspeção do Formulário Google
                   </h3>
-                  <p className="text-[11px] text-slate-400">ID: {inspectFormId}</p>
+                  <p className="text-[11px] text-slate-400">
+                    ID: {inspectFormId}
+                  </p>
                 </div>
               </div>
               <button
@@ -879,7 +945,9 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
             {isLoadingInspect ? (
               <div className="py-12 text-center text-slate-400 space-y-2">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#006837]" />
-                <p className="text-xs font-medium">Buscando dados no Google Forms API...</p>
+                <p className="text-xs font-medium">
+                  Buscando dados no Google Forms API...
+                </p>
               </div>
             ) : inspectDetails ? (
               <div className="space-y-6">
@@ -897,7 +965,10 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                   <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#006837]">
                     <span>Perguntas: {inspectDetails.items?.length || 0}</span>
                     <span>•</span>
-                    <span>Total Respostas Recebidas: {inspectResponses?.totalResponses || 0}</span>
+                    <span>
+                      Total Respostas Recebidas:{" "}
+                      {inspectResponses?.totalResponses || 0}
+                    </span>
                   </div>
                 </div>
 
@@ -940,17 +1011,23 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                         </p>
                         {item.questionItem?.question?.choiceQuestion && (
                           <div className="pl-4 text-[11px] text-slate-500 space-y-0.5">
-                            {item.questionItem.question.choiceQuestion.options.map((opt, oIdx) => (
-                              <div key={oIdx} className="flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                <span>{opt.value}</span>
-                              </div>
-                            ))}
+                            {item.questionItem.question.choiceQuestion.options.map(
+                              (opt, oIdx) => (
+                                <div
+                                  key={oIdx}
+                                  className="flex items-center gap-1.5"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                  <span>{opt.value}</span>
+                                </div>
+                              ),
+                            )}
                           </div>
                         )}
                         {item.questionItem?.question?.scaleQuestion && (
                           <p className="text-[11px] text-[#006837] font-medium">
-                            Escala Linear ({item.questionItem.question.scaleQuestion.low} a{' '}
+                            Escala Linear (
+                            {item.questionItem.question.scaleQuestion.low} a{" "}
                             {item.questionItem.question.scaleQuestion.high})
                           </p>
                         )}
@@ -991,8 +1068,12 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                   Confirmar Exclusão de Formulário
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Tem certeza de que deseja mover o formulário{' '}
-                  <strong className="text-slate-800">"{deleteTarget.name}"</strong> para a lixeira do Google Drive? Esta ação removerá o formulário do sistema da CPA.
+                  Tem certeza de que deseja mover o formulário{" "}
+                  <strong className="text-slate-800">
+                    "{deleteTarget.name}"
+                  </strong>{" "}
+                  para a lixeira do Google Drive? Esta ação removerá o
+                  formulário do sistema da CPA.
                 </p>
               </div>
             </div>
@@ -1003,7 +1084,8 @@ export const GoogleFormsManager: React.FC<GoogleFormsManagerProps> = () => {
                 Aviso de Segurança
               </p>
               <p className="text-[11px] leading-relaxed">
-                As respostas acumuladas no Google Forms poderão deixar de aceitar novos envios.
+                As respostas acumuladas no Google Forms poderão deixar de
+                aceitar novos envios.
               </p>
             </div>
 
