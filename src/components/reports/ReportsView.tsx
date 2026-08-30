@@ -446,9 +446,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                 onToggleArea={toggleAreaAccordion}
                 onToggleQuestion={toggleQuestionInline}
                 onOpenQuestionDetails={setSelectedDetailQuestion}
-                getCategoryIcon={(category) => (
-                  <ReportsCategoryIcon category={category} />
-                )}
               />
               {/* =====================================================================
                   8. PAGINAÇÃO COMPACTA NO FINAL DA SEÇÃO DE PERGUNTAS

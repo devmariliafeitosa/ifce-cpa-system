@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-import type { ReactNode } from "react";
+import { ReportsCategoryIcon } from "./ReportsCategoryIcon";
 
 import type { ReportQuestion } from "../../data/reportsData";
 import { ReportsQuestionItem } from "./ReportsQuestionItem";
@@ -27,7 +27,6 @@ interface ReportsQuestionsListProps {
   onToggleArea: (area: string) => void;
   onToggleQuestion: (questionId: string) => void;
   onOpenQuestionDetails: (question: ReportQuestion) => void;
-  getCategoryIcon: (category: string) => ReactNode;
 }
 
 export function ReportsQuestionsList({
@@ -39,7 +38,6 @@ export function ReportsQuestionsList({
   onToggleArea,
   onToggleQuestion,
   onOpenQuestionDetails,
-  getCategoryIcon,
 }: ReportsQuestionsListProps) {
   return (
     <>
@@ -106,7 +104,7 @@ export function ReportsQuestionsList({
 
                     <div className="flex items-center gap-2">
                       <div className="p-1 bg-white border border-slate-200 rounded-md shadow-2xs">
-                        {getCategoryIcon(group.area)}
+                        <ReportsCategoryIcon category={group.area} />
                       </div>
 
                       <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
