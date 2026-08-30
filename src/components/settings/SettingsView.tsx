@@ -1,18 +1,17 @@
-import React, { useState } from "react";
 import {
-  Building2,
   Sliders,
   Bell,
   Shield,
   KeyRound,
   CheckCircle2,
   Save,
-  RotateCcw,
   Info,
   Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ChangePasswordModal } from "../profile/ChangePasswordModal";
+import { SettingsHeader } from "./SettingsHeader";
+import { SystemPreferencesCard } from "./SystemPreferencesCard";
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
 }
@@ -97,29 +96,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   return (
     <div className="w-full max-w-[96%] 2xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4 select-none animate-in fade-in duration-200">
       {/* Barra de Ações e Status */}
-      <div
-        id="settings-header"
-        className="bg-white border border-slate-200/90 rounded-xl px-4 py-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700">
-            Parâmetros & Preferências
-          </span>
-          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-[#006837] text-[10px] font-extrabold border border-emerald-200">
-            Painel Geral
-          </span>
-        </div>
-
-        {/* Action Button: Restaurar Padrões */}
-        <button
-          type="button"
-          onClick={handleResetDefaults}
-          className="h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-center shrink-0"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-          <span>Restaurar Padrões</span>
-        </button>
-      </div>
+      <SettingsHeader onResetDefaults={handleResetDefaults} />
 
       {/* Toast Notification */}
       <AnimatePresence>
@@ -151,92 +128,16 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       {/* Main Settings Grid Form (2 Columns on large screens) */}
       <form onSubmit={handleSaveSettings} className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-          {/* =====================================================================
-              CARD 1: PREFERÊNCIAS DO SISTEMA
-             ===================================================================== */}
-          <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs space-y-3.5 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
-                <div className="p-1.5 bg-emerald-50 text-[#006837] rounded-lg">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-xs font-black text-slate-900 tracking-tight">
-                    Preferências do Sistema
-                  </h2>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Parâmetros institucionais e contexto acadêmico padrão
-                  </p>
-                </div>
-              </div>
+          {/* CARD 1: PREFERÊNCIAS DO SISTEMA */}
 
-              {/* Nome do Sistema */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 block">
-                  Nome do Sistema / Instituição
-                </label>
-                <input
-                  type="text"
-                  value={systemName}
-                  onChange={(e) => setSystemName(e.target.value)}
-                  className="w-full h-8 px-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white transition-all"
-                  placeholder="Nome do sistema"
-                  required
-                />
-                <p className="text-[10px] text-slate-400 font-medium">
-                  Exibido nos cabeçalhos, formulários e relatórios emitidos.
-                </p>
-              </div>
-
-              {/* Grid 2 colunas: Campus Padrão e Período Acadêmico */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Campus Padrão */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-700 block">
-                    Campus Padrão
-                  </label>
-                  <select
-                    value={defaultCampus}
-                    onChange={(e) => setDefaultCampus(e.target.value)}
-                    className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-                  >
-                    <option value="Campus Tauá">IFCE • Campus Tauá</option>
-                    <option value="Campus Crateús">
-                      IFCE • Campus Crateús
-                    </option>
-                    <option value="Campus Canindé">
-                      IFCE • Campus Canindé
-                    </option>
-                    <option value="Campus Iguatu">IFCE • Campus Iguatu</option>
-                    <option value="Campus Cedro">IFCE • Campus Cedro</option>
-                    <option value="Reitoria">IFCE • Reitoria Geral</option>
-                  </select>
-                </div>
-
-                {/* Ano / Período Acadêmico Atual */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-700 block">
-                    Ano / Período Atual
-                  </label>
-                  <select
-                    value={currentAcademicPeriod}
-                    onChange={(e) => setCurrentAcademicPeriod(e.target.value)}
-                    className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-                  >
-                    <option value="2025.2">2025.2 (Próximo Semestre)</option>
-                    <option value="2025.1">2025.1 (Semestre Vigente)</option>
-                    <option value="2024.2">2024.2 (Semestre Anterior)</option>
-                    <option value="2024.1">2024.1 (Histórico)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-              <span>Identificador Institucional: IFCE-CPA-TAU</span>
-              <span className="text-[#006837] font-bold">Ativo</span>
-            </div>
-          </div>
+          <SystemPreferencesCard
+            systemName={systemName}
+            defaultCampus={defaultCampus}
+            currentAcademicPeriod={currentAcademicPeriod}
+            onSystemNameChange={setSystemName}
+            onDefaultCampusChange={setDefaultCampus}
+            onCurrentAcademicPeriodChange={setCurrentAcademicPeriod}
+          />
 
           {/* =====================================================================
               CARD 2: CONFIGURAÇÕES DAS AVALIAÇÕES
