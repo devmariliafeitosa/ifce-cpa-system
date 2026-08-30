@@ -1,3 +1,4 @@
+import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
 import { ReportsAreas } from "./ReportsAreas";
 import { ReportsIndicators } from "./ReportsIndicators";
 import { ReportsSummaryCards } from "./ReportsSummaryCards";
@@ -591,101 +592,32 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
              ===================================================================== */}
           <section id="sec-perguntas" className="scroll-mt-4">
             <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs space-y-3">
-              {/* Toolbar Compacta de Filtros & Busca no Topo */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
-                    Perguntas {selectedDimension !== 'todas' ? `• ${selectedDimension}` : '• Todas as Áreas'}
-                  </h2>
-                  <p className="text-[10px] text-slate-500 font-medium">
-                    Exibindo {filteredQuestions.length} perguntas filtradas
-                  </p>
-                </div>
+              <ReportsQuestionsToolbar
+                campaign={selectedCampaign}
+                selectedDimension={selectedDimension}
+                activeQuestionSegment={activeQuestionSegment}
+                classificationFilter={classificationFilter}
+                questionSearchTerm={questionSearchTerm}
+                filteredQuestionsCount={filteredQuestions.length}
+                onSegmentChange={(segment) => {
+                  setActiveQuestionSegment(segment);
+                  setCurrentPage(1);
+                }}
+                onDimensionChange={(dimension) => {
+                  setSelectedDimension(dimension);
+                  setCurrentPage(1);
+                }}
+                onClassificationChange={(classification) => {
+                  setClassificationFilter(classification);
+                  setCurrentPage(1);
+                }}
+                onSearchChange={(term) => {
+                  setQuestionSearchTerm(term);
+                  setCurrentPage(1);
+                }}
+              />
 
-                {/* Filtros em Linha Horizontal Compacta */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* 1. Filtro de Segmento */}
-                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
-                    {(['Todos', 'Discentes', 'Docentes', 'TAEs'] as const).map((seg) => (
-                      <button
-                        key={seg}
-                        onClick={() => {
-                          setActiveQuestionSegment(seg);
-                          setCurrentPage(1);
-                        }}
-                        className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                          activeQuestionSegment === seg
-                            ? 'bg-white text-[#006837] shadow-2xs'
-                            : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        {seg}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* 2. Filtro de Área */}
-                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/90 rounded-lg px-2 py-1">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase">Área:</span>
-                    <select
-                      value={selectedDimension}
-                      onChange={(e) => {
-                        setSelectedDimension(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
-                    >
-                      <option value="todas">Todas as Áreas</option>
-                      {selectedCampaign.dimensions.map((d) => (
-                        <option key={d.dimension} value={d.dimension}>
-                          {d.dimension}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 3. Filtro de Classificação */}
-                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/90 rounded-lg px-2 py-1">
-                    <Filter className="w-3 h-3 text-[#006837]" />
-                    <select
-                      value={classificationFilter}
-                      onChange={(e) => {
-                        setClassificationFilter(
-                          e.target.value as
-                            | 'todas'
-                            | 'Potencialidade'
-                            | 'Mediana'
-                            | 'Fragilidade'
-                            | 'Sem respostas'
-                        );
-                        setCurrentPage(1);
-                      }}
-                      className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
-                    >
-                      <option value="todas">Todas as classificações</option>
-                      <option value="Potencialidade">Potencialidade (≥ 70%)</option>
-                      <option value="Mediana">Avaliação Mediana (50-69%)</option>
-                      <option value="Fragilidade">Fragilidade (&lt; 50%)</option>
-                      <option value="Sem respostas">Sem respostas</option>
-                    </select>
-                  </div>
-
-                  {/* 4. Campo de Busca */}
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
-                    <input
-                      type="text"
-                      value={questionSearchTerm}
-                      onChange={(e) => {
-                        setQuestionSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      placeholder="Buscar pergunta..."
-                      className="w-36 sm:w-48 pl-8 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
-                    />
-                  </div>
-                </div>
-              </div>
+    {/* Botões para Expandir / Recolher Todas as Áreas */}
 
               {/* Botões para Expandir / Recolher Todas as Áreas */}
               {questionsByArea.length > 0 && (
