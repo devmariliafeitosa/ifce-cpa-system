@@ -1,5 +1,7 @@
 import { KeyRound, Shield } from "lucide-react";
 
+import { SettingsSelect } from "./SettingsSelect";
+
 interface SecuritySettingsCardProps {
   sessionTimeout: string;
   require2FA: boolean;
@@ -7,6 +9,29 @@ interface SecuritySettingsCardProps {
   onRequire2FAChange: (value: boolean) => void;
   onOpenPasswordModal: () => void;
 }
+
+const sessionTimeoutOptions = [
+  {
+    value: "30",
+    label: "30 minutos",
+  },
+  {
+    value: "60",
+    label: "1 hora (Recomendado)",
+  },
+  {
+    value: "120",
+    label: "2 horas",
+  },
+  {
+    value: "240",
+    label: "4 horas",
+  },
+  {
+    value: "480",
+    label: "8 horas (Jornada completa)",
+  },
+];
 
 export function SecuritySettingsCard({
   sessionTimeout,
@@ -43,17 +68,12 @@ export function SecuritySettingsCard({
             </span>
           </label>
 
-          <select
+          <SettingsSelect
             value={sessionTimeout}
-            onChange={(e) => onSessionTimeoutChange(e.target.value)}
-            className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-          >
-            <option value="30">30 minutos</option>
-            <option value="60">1 hora (Recomendado)</option>
-            <option value="120">2 horas</option>
-            <option value="240">4 horas</option>
-            <option value="480">8 horas (Jornada completa)</option>
-          </select>
+            options={sessionTimeoutOptions}
+            onChange={onSessionTimeoutChange}
+            ariaLabel="Selecionar tempo limite da sessão"
+          />
         </div>
 
         <div className="p-3 bg-slate-50/80 border border-slate-200/90 rounded-xl flex items-center justify-between gap-3">
@@ -90,13 +110,14 @@ export function SecuritySettingsCard({
 
           <button
             type="button"
+            aria-pressed={require2FA}
             onClick={() => onRequire2FAChange(!require2FA)}
             className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
               require2FA ? "bg-[#006837]" : "bg-slate-300"
             }`}
           >
-            <div
-              className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+            <span
+              className={`w-3.5 h-3.5 bg-white rounded-full transition-all absolute top-0.5 ${
                 require2FA ? "left-4.5" : "left-0.5"
               }`}
             />
@@ -106,6 +127,7 @@ export function SecuritySettingsCard({
 
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
         <span>Status de Proteção: LGPD & Criptografia</span>
+
         <span className="text-[#006837] font-bold">Protegido</span>
       </div>
     </div>
