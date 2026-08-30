@@ -1,3 +1,4 @@
+import { ReportsQuickNav } from "./ReportsQuickNav";
 import { ReportsAreaDrawer } from "./ReportsAreaDrawer";
 import { ReportsQuestionDetailModal } from "./ReportsQuestionDetailModal";
 import { ReportsQuestionsPagination } from "./ReportsQuestionsPagination";
@@ -19,9 +20,7 @@ import {
   FileText,
   Filter,
   GraduationCap,
-  HelpCircle,
   Layers,
-  PieChart,
   Printer,
   Search,
   Users,
@@ -787,67 +786,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
       {/* =====================================================================
           9. TRILHO DE NAVEGAÇÃO FLUTUANTE (QUICK NAV RAIL COM TOOLTIPS CLAROS)
          ===================================================================== */}
-      <div className="hidden lg:flex fixed right-4 top-1/2 -translate-y-1/2 z-30 flex-col gap-2 bg-white/95 backdrop-blur-md border border-slate-200 p-2 rounded-2xl shadow-lg">
-        <button
-          onClick={() => scrollToSection('resumo')}
-          title="Resumo Geral"
-          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
-            activeNavSection === 'resumo'
-              ? 'bg-[#006837] text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white text-slate-800 border border-slate-200 shadow-md text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Resumo
-          </span>
-        </button>
-
-        <button
-          onClick={() => scrollToSection('indicadores')}
-          title="Indicadores Gerais"
-          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
-            activeNavSection === 'indicadores'
-              ? 'bg-[#006837] text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <PieChart className="w-4 h-4" />
-          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white text-slate-800 border border-slate-200 shadow-md text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Indicadores
-          </span>
-        </button>
-
-        <button
-          onClick={() => scrollToSection('areas')}
-          title="Resultados por Área"
-          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
-            activeNavSection === 'areas'
-              ? 'bg-[#006837] text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white text-slate-800 border border-slate-200 shadow-md text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Áreas
-          </span>
-        </button>
-
-        <button
-          onClick={() => scrollToSection('perguntas')}
-          title="Perguntas da Área"
-          className={`p-2.5 rounded-xl transition-all cursor-pointer relative group ${
-            activeNavSection === 'perguntas'
-              ? 'bg-[#006837] text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white text-slate-800 border border-slate-200 shadow-md text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Perguntas
-          </span>
-        </button>
-      </div>
+      <ReportsQuickNav
+        activeSection={activeNavSection}
+        onNavigate={scrollToSection}
+      />
 
       {/* MODAL DE PDF */}
       <CpaPdfReportModal
