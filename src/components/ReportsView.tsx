@@ -1,3 +1,4 @@
+import { DonutChart } from "./reports/DonutChart";
 import {
   Award,
   BookOpen,
@@ -42,115 +43,57 @@ interface ReportsViewProps {
   onReturnToDashboard?: () => void;
 }
 
-// Custom SVG Donut Chart Component
-const DonutChart: React.FC<{
-  potencialidadePct: number;
-  medianaPct: number;
-  fragilidadePct: number;
-  size?: number;
-}> = ({ potencialidadePct, medianaPct, fragilidadePct, size = 115 }) => {
-  const radius = 46;
-  const strokeWidth = 11;
-  const circumference = 2 * Math.PI * radius;
-
-  const len1 = Math.max(0, (potencialidadePct / 100) * circumference);
-  const len2 = Math.max(0, (medianaPct / 100) * circumference);
-  const len3 = Math.max(0, (fragilidadePct / 100) * circumference);
-
-  const offset1 = 0;
-  const offset2 = len1;
-  const offset3 = len1 + len2;
-
-  const hasData = potencialidadePct > 0 || medianaPct > 0 || fragilidadePct > 0;
-
-  return (
-    <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 120 120" className="-rotate-90 transform">
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="transparent"
-          stroke={hasData ? '#f1f5f9' : '#e2e8f0'}
-          strokeWidth={strokeWidth}
-        />
-        {potencialidadePct > 0 && (
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="transparent"
-            stroke="#006837"
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${len1} ${circumference - len1}`}
-            strokeDashoffset={-offset1}
-            strokeLinecap="round"
-            className="transition-all duration-700 ease-out"
-          />
-        )}
-        {medianaPct > 0 && (
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="transparent"
-            stroke="#d97706"
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${len2} ${circumference - len2}`}
-            strokeDashoffset={-offset2}
-            strokeLinecap="round"
-            className="transition-all duration-700 ease-out"
-          />
-        )}
-        {fragilidadePct > 0 && (
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="transparent"
-            stroke="#dc2626"
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${len3} ${circumference - len3}`}
-            strokeDashoffset={-offset3}
-            strokeLinecap="round"
-            className="transition-all duration-700 ease-out"
-          />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none">
-        <span className="text-base font-black text-slate-900 tracking-tight leading-none">
-          {hasData ? `${potencialidadePct}%` : '0%'}
-        </span>
-        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
-          {hasData ? 'Potencial' : 'Sem respostas'}
-        </span>
-      </div>
-    </div>
-  );
-};
-
 export const ReportsView: React.FC<ReportsViewProps> = () => {
-  // Dynamic Report Campaigns state
+    // Dynamic Report Campaigns state
   const [reportCampaigns, setReportCampaigns] = useState<ReportCampaignData[]>(() => {
     const savedForms = localStorage.getItem('cpa_smart_forms');
     const forms: SmartForm[] = savedForms ? JSON.parse(savedForms) : INITIAL_SMART_FORMS;
     return buildReportsFromSmartForms(forms);
   });
 
-  // Real-time sync
+  // Selected Campaign State
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
+    reportCampaigns.length > 0 ? reportCampaigns[0].id : null
+  );
+  // Questions Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
+    // Real-time sync
   useEffect(() => {
-    const loadFormsAndSync = () => {
-      const savedForms = localStorage.getItem('cpa_smart_forms');
-      const forms: SmartForm[] = savedForms ? JSON.parse(savedForms) : INITIAL_SMART_FORMS;
+    const syncForms = (forms: SmartForm[]) => {
       const converted = buildReportsFromSmartForms(forms);
+
       setReportCampaigns(converted);
+
+      const nextCampaignId =
+        converted.length === 0
+          ? null
+          : selectedCampaignId &&
+              converted.some((campaign) => campaign.id === selectedCampaignId)
+            ? selectedCampaignId
+            : converted[0].id;
+
+      if (nextCampaignId !== selectedCampaignId) {
+        setSelectedCampaignId(nextCampaignId);
+        setCurrentPage(1);
+      }
     };
 
-    loadFormsAndSync();
+    const loadFormsAndSync = () => {
+      const savedForms = localStorage.getItem('cpa_smart_forms');
+      const forms: SmartForm[] = savedForms
+        ? JSON.parse(savedForms)
+        : INITIAL_SMART_FORMS;
 
-    const handleCustomEvent = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) {
-        setReportCampaigns(buildReportsFromSmartForms(e.detail));
+      syncForms(forms);
+    };
+
+    const handleCustomEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<SmartForm[]>;
+
+      if (Array.isArray(customEvent.detail)) {
+        syncForms(customEvent.detail);
       } else {
         loadFormsAndSync();
       }
@@ -165,16 +108,11 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
       window.removeEventListener('storage', loadFormsAndSync);
       window.removeEventListener('focus', loadFormsAndSync);
     };
-  }, []);
+  }, [selectedCampaignId, setCurrentPage]);
 
   // Filter States
   const [campusFilter, setCampusFilter] = useState<string>('todos');
   const [yearFilter, setYearFilter] = useState<string>('todos');
-
-  // Selected Campaign State
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
-    reportCampaigns.length > 0 ? reportCampaigns[0].id : null
-  );
 
   // Campaign Selector Dropdown
   const [isCampaignSelectorOpen, setIsCampaignSelectorOpen] = useState(false);
@@ -204,10 +142,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   // Inline Expanded Question state
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Record<string, boolean>>({});
 
-  // Questions Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
-
   // Export Menu State
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
@@ -217,21 +151,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   // Quick Nav active section
   const [activeNavSection, setActiveNavSection] = useState<'resumo' | 'indicadores' | 'areas' | 'perguntas'>('resumo');
 
-  // Sync selected campaign if list updates
-  useEffect(() => {
-    if (reportCampaigns.length > 0) {
-      if (!selectedCampaignId || !reportCampaigns.some((c) => c.id === selectedCampaignId)) {
-        setSelectedCampaignId(reportCampaigns[0].id);
-      }
-    } else {
-      setSelectedCampaignId(null);
-    }
-  }, [reportCampaigns, selectedCampaignId]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedDimension, activeQuestionSegment, classificationFilter, questionSearchTerm, selectedCampaignId]);
 
   // Available Campuses
   const availableCampuses = useMemo(() => {
@@ -386,18 +305,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     };
   }, [filteredQuestions, currentPage, itemsPerPage]);
 
-  // Default expand first area if not set
-  useEffect(() => {
-    if (questionsByArea.length > 0) {
-      setExpandedAreaNames((prev) => {
-        if (Object.keys(prev).length === 0) {
-          return { [questionsByArea[0].area]: true };
-        }
-        return prev;
-      });
-    }
-  }, [questionsByArea]);
-
   // Toggle Area Accordion
   const toggleAreaAccordion = (areaName: string) => {
     setExpandedAreaNames((prev) => ({
@@ -432,9 +339,13 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   }, [selectedCampaign, drawerDimension, activeQuestionSegment]);
 
   // Scroll handler for Quick Nav
-  const scrollToSection = (sectionId: string) => {
-    setActiveNavSection(sectionId as any);
+  const scrollToSection = (
+    sectionId: 'resumo' | 'indicadores' | 'areas' | 'perguntas'
+  ) => {
+    setActiveNavSection(sectionId);
+
     const element = document.getElementById(`sec-${sectionId}`);
+
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -546,6 +457,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                           key={c.id}
                           onClick={() => {
                             setSelectedCampaignId(c.id);
+                            setCurrentPage(1);
                             setIsCampaignSelectorOpen(false);
                           }}
                           className={`w-full p-2 rounded-lg text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
@@ -853,7 +765,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
 
               {selectedDimension !== 'todas' && (
                 <button
-                  onClick={() => setSelectedDimension('todas')}
+                  onClick={() => {
+                    setSelectedDimension('todas');
+                    setCurrentPage(1);
+                  }}
                   className="text-xs font-bold text-[#006837] hover:underline cursor-pointer"
                 >
                   Exibir Todas as Áreas
@@ -866,6 +781,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
               <div
                 onClick={() => {
                   setSelectedDimension('todas');
+                  setCurrentPage(1);
                   scrollToSection('perguntas');
                 }}
                 className={`bg-white border rounded-xl px-3 py-2 h-[82px] transition-all flex flex-col justify-between relative cursor-pointer ${
@@ -900,6 +816,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     key={dim.dimension}
                     onClick={() => {
                       setSelectedDimension(isSelected ? 'todas' : dim.dimension);
+                      setCurrentPage(1);
                       scrollToSection('perguntas');
                     }}
                     className={`bg-white border rounded-xl px-3 py-2 h-[82px] transition-all flex flex-col justify-between relative cursor-pointer ${
@@ -987,7 +904,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     {(['Todos', 'Discentes', 'Docentes', 'TAEs'] as const).map((seg) => (
                       <button
                         key={seg}
-                        onClick={() => setActiveQuestionSegment(seg)}
+                        onClick={() => {
+                          setActiveQuestionSegment(seg);
+                          setCurrentPage(1);
+                        }}
                         className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                           activeQuestionSegment === seg
                             ? 'bg-white text-[#006837] shadow-2xs'
@@ -1004,7 +924,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase">Área:</span>
                     <select
                       value={selectedDimension}
-                      onChange={(e) => setSelectedDimension(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedDimension(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
                     >
                       <option value="todas">Todas as Áreas</option>
@@ -1021,7 +944,17 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     <Filter className="w-3 h-3 text-[#006837]" />
                     <select
                       value={classificationFilter}
-                      onChange={(e) => setClassificationFilter(e.target.value as any)}
+                      onChange={(e) => {
+                        setClassificationFilter(
+                          e.target.value as
+                            | 'todas'
+                            | 'Potencialidade'
+                            | 'Mediana'
+                            | 'Fragilidade'
+                            | 'Sem respostas'
+                        );
+                        setCurrentPage(1);
+                      }}
                       className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
                     >
                       <option value="todas">Todas as classificações</option>
@@ -1038,7 +971,10 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                     <input
                       type="text"
                       value={questionSearchTerm}
-                      onChange={(e) => setQuestionSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setQuestionSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       placeholder="Buscar pergunta..."
                       className="w-36 sm:w-48 pl-8 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
                     />
