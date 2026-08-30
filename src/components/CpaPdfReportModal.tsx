@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
 import {
     AlertTriangle,
@@ -99,13 +99,11 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
 
             const sanitizeFileName = campaign.title.replace(/[^a-zA-Z0-9]/g, '_');
             pdf.save(`Relatorio_CPA_IFCE_${sanitizeFileName}.pdf`);
-        } catch (err) {
-            console.error('Erro ao gerar PDF:', err);
-            // Fallback to window.print if html2canvas faces issues
-            window.print();
-        } finally {
-            setIsGeneratingPdf(false);
-        }
+            } catch (err) {
+                console.error('Erro ao gerar PDF:', err);
+            } finally {
+                setIsGeneratingPdf(false);
+            }
     };
 
     return (
@@ -367,15 +365,12 @@ export const CpaPdfReportModal: React.FC<CpaPdfReportModalProps> = ({
                         {dimensionEntries.map(([categoryName, questions], index) => {
                             // Calculate category status
                             let potCount = 0;
-                            let medCount = 0;
                             let fragCount = 0;
 
                             questions.forEach((q) => {
                                 if (q.classification === 'Potencialidade') potCount++;
-                                else if (q.classification === 'Mediana') medCount++;
                                 else if (q.classification === 'Fragilidade') fragCount++;
                             });
-
                             const totalQ = questions.length;
                             const potPct = totalQ > 0 ? Math.round((potCount / totalQ) * 100) : 0;
                             const fragPct = totalQ > 0 ? Math.round((fragCount / totalQ) * 100) : 0;
