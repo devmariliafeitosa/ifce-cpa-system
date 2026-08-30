@@ -1,4 +1,5 @@
-import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
+
+import { ReportsQuestionItem } from "./ReportsQuestionItem";import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
 import { ReportsAreas } from "./ReportsAreas";
 import { ReportsIndicators } from "./ReportsIndicators";
 import { ReportsSummaryCards } from "./ReportsSummaryCards";
@@ -9,7 +10,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   FileCode,
   FileDown,
   FileSpreadsheet,
@@ -18,7 +18,6 @@ import {
   GraduationCap,
   HelpCircle,
   Layers,
-  Maximize2,
   PieChart,
   Printer,
   Search,
@@ -723,181 +722,17 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                               exit={{ opacity: 0, height: 0 }}
                               className="p-2 space-y-1.5 bg-slate-50/20"
                             >
-                              {group.questions.map((q, idx) => {
-                                const isExpandedInline = !!expandedQuestionIds[q.id];
-                                const isNoResp =
-                                  q.totalAnswers === 0 ||
-                                  selectedCampaign.totalResponses === 0 ||
-                                  q.classification === 'Sem respostas';
-
-                                return (
-                                  <div
-                                    key={q.id}
-                                    className={`border rounded-lg transition-all bg-white overflow-hidden ${
-                                      isExpandedInline
-                                        ? 'border-[#006837] ring-1 ring-[#006837]/20 shadow-2xs'
-                                        : 'border-slate-200/80 hover:border-slate-300'
-                                    }`}
-                                  >
-                                    {/* Linha da Pergunta Minimizada */}
-                                    <div
-                                      onClick={() => toggleQuestionInline(q.id)}
-                                      className="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer select-none hover:bg-slate-50/60 transition-colors"
-                                    >
-                                      <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
-                                        <span className="text-[10px] font-black text-slate-400 shrink-0 w-6">
-                                          #{String(idx + 1).padStart(2, '0')}
-                                        </span>
-
-                                        <div className="min-w-0 space-y-0.5 flex-1">
-                                          <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded-md">
-                                              {q.category}
-                                            </span>
-                                            <span className="text-[9px] font-semibold text-slate-400">
-                                              {q.segment}
-                                            </span>
-                                          </div>
-                                          <h4 className="text-xs font-bold text-slate-800 line-clamp-1">
-                                            {q.questionText}
-                                          </h4>
-                                        </div>
-                                      </div>
-
-                                      {/* Status / Badge & Botão Ver Detalhes */}
-                                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                                        {isNoResp ? (
-                                          <span className="text-[10px] px-2 py-0.5 rounded-md font-extrabold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
-                                            SEM RESPOSTAS
-                                          </span>
-                                        ) : (
-                                          <span
-                                            className={`text-[10px] px-2 py-0.5 rounded-md font-extrabold whitespace-nowrap ${
-                                              q.classification === 'Potencialidade'
-                                                ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
-                                                : q.classification === 'Mediana'
-                                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                                : 'bg-rose-50 text-rose-800 border border-rose-200'
-                                            }`}
-                                          >
-                                            {q.classification} • {q.approvalRate}%
-                                          </span>
-                                        )}
-
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleQuestionInline(q.id);
-                                          }}
-                                          className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
-                                            isExpandedInline
-                                              ? 'bg-[#006837] text-white'
-                                              : 'bg-slate-100 hover:bg-emerald-50 hover:text-[#006837] text-slate-700'
-                                          }`}
-                                        >
-                                          <span>{isExpandedInline ? 'Fechar' : 'Ver detalhes'}</span>
-                                          {isExpandedInline ? (
-                                            <ChevronUp className="w-3 h-3" />
-                                          ) : (
-                                            <ChevronDown className="w-3 h-3" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* Detalhes Expandidos Inline da Pergunta */}
-                                    <AnimatePresence>
-                                      {isExpandedInline && (
-                                        <motion.div
-                                          initial={{ opacity: 0, height: 0 }}
-                                          animate={{ opacity: 1, height: 'auto' }}
-                                          exit={{ opacity: 0, height: 0 }}
-                                          className="border-t border-slate-200 bg-slate-50/50 p-3.5 space-y-3"
-                                        >
-                                          {/* Info da Pergunta */}
-                                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-white border border-slate-200/80 rounded-lg">
-                                            <div>
-                                              <p className="text-xs font-bold text-slate-900 leading-snug">
-                                                {q.questionText}
-                                              </p>
-                                              <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium">
-                                                <span>Área: <strong className="text-slate-800">{q.category}</strong></span>
-                                                <span>•</span>
-                                                <span>Segmento: <strong className="text-slate-800">{q.segment}</strong></span>
-                                                <span>•</span>
-                                                <span>Respostas: <strong className="text-[#006837]">{q.totalAnswers}</strong></span>
-                                              </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                                              {isNoResp ? (
-                                                <span className="text-xs font-black px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg border border-slate-200">
-                                                  SEM RESPOSTAS
-                                                </span>
-                                              ) : (
-                                                <div className="text-right">
-                                                  <span className="text-xs font-bold text-slate-500 block">
-                                                    Satisfação alta: <strong className="text-base font-black text-[#006837]">{q.approvalRate}%</strong>
-                                                  </span>
-                                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006837]">
-                                                    {q.classification}
-                                                  </span>
-                                                </div>
-                                              )}
-
-                                              <button
-                                                onClick={() => setSelectedDetailQuestion(q)}
-                                                title="Abrir em modal completo"
-                                                className="p-1.5 bg-slate-100 hover:bg-emerald-100 text-[#006837] rounded-lg transition-colors cursor-pointer"
-                                              >
-                                                <Maximize2 className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
-                                          </div>
-
-                                          {/* Distribuição de Respostas */}
-                                          {isNoResp ? (
-                                            <div className="p-3 bg-white border border-slate-200 rounded-lg text-center text-xs text-slate-500 font-medium">
-                                              📋 Ainda não existem respostas registradas para esta pergunta.
-                                            </div>
-                                          ) : (
-                                            <div className="space-y-1.5 bg-white p-3 border border-slate-200/80 rounded-lg">
-                                              <h5 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
-                                                Distribuição de Respostas
-                                              </h5>
-
-                                              <div className="space-y-1.5 pt-1">
-                                                {q.alternatives.map((alt, aIdx) => (
-                                                  <div key={aIdx} className="space-y-0.5">
-                                                    <div className="flex justify-between text-xs text-slate-700 font-medium">
-                                                      <span>{alt.option}</span>
-                                                      <span className="font-bold text-slate-900">
-                                                        {alt.count} respostas ({alt.percentage}%)
-                                                      </span>
-                                                    </div>
-                                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                      <div
-                                                        style={{ width: `${alt.percentage}%` }}
-                                                        className={`h-full rounded-full transition-all ${
-                                                          aIdx === 0
-                                                            ? 'bg-[#006837]'
-                                                            : aIdx === 1
-                                                            ? 'bg-amber-500'
-                                                            : 'bg-rose-500'
-                                                        }`}
-                                                      />
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                );
-                              })}
+                              {group.questions.map((q, idx) => (
+                                <ReportsQuestionItem
+                                  key={q.id}
+                                  question={q}
+                                  index={idx}
+                                  campaignTotalResponses={selectedCampaign.totalResponses}
+                                  isExpanded={!!expandedQuestionIds[q.id]}
+                                  onToggle={() => toggleQuestionInline(q.id)}
+                                  onOpenDetails={() => setSelectedDetailQuestion(q)}
+                                />
+                              ))}
                             </motion.div>
                           )}
                         </AnimatePresence>
