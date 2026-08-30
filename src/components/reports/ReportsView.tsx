@@ -1,3 +1,4 @@
+import { ReportsCategoryIcon } from "./ReportsCategoryIcon";
 import { ReportsQuestionsList } from "./ReportsQuestionsList";
 import { ReportsFiltersBar } from "./ReportsFiltersBar";
 import { ReportsQuickNav } from "./ReportsQuickNav";
@@ -8,14 +9,6 @@ import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
 import { ReportsAreas } from "./ReportsAreas";
 import { ReportsIndicators } from "./ReportsIndicators";
 import { ReportsSummaryCards } from "./ReportsSummaryCards";
-import {
-  Award,
-  BookOpen,
-  Building2,
-  GraduationCap,
-  Layers,
-  Users,
-} from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { INITIAL_SMART_FORMS } from '../../data/formsData.ts';
 import type {
@@ -339,16 +332,7 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     }
   };
 
-  // Category Icon Helper
-  const getCategoryIcon = (category: string) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('infra')) return <Building2 className="w-4 h-4 text-[#006837]" />;
-    if (cat.includes('biblio')) return <BookOpen className="w-4 h-4 text-blue-600" />;
-    if (cat.includes('ensino')) return <GraduationCap className="w-4 h-4 text-[#006837]" />;
-    if (cat.includes('gestã') || cat.includes('gestao')) return <Award className="w-4 h-4 text-amber-600" />;
-    if (cat.includes('assistê') || cat.includes('estudant')) return <Users className="w-4 h-4 text-purple-600" />;
-    return <Layers className="w-4 h-4 text-[#006837]" />;
-  };
+  
 
   // Segment breakdown helper for selected question detail modal
   const selectedQuestionSegmentBreakdown = useMemo(() => {
@@ -418,7 +402,9 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
             scrollToSection("perguntas");
           }}
           onOpenArea={setDrawerDimension}
-          getCategoryIcon={getCategoryIcon}
+          getCategoryIcon={(category) => (
+            <ReportsCategoryIcon category={category} />
+          )}
         />
 
           {/* =====================================================================
@@ -463,7 +449,9 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
                 onToggleArea={toggleAreaAccordion}
                 onToggleQuestion={toggleQuestionInline}
                 onOpenQuestionDetails={setSelectedDetailQuestion}
-                getCategoryIcon={getCategoryIcon}
+                getCategoryIcon={(category) => (
+                  <ReportsCategoryIcon category={category} />
+                )}
               />
               {/* =====================================================================
                   8. PAGINAÇÃO COMPACTA NO FINAL DA SEÇÃO DE PERGUNTAS
@@ -503,7 +491,9 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
         campaignTotalResponses={selectedCampaign?.totalResponses}
         onSegmentChange={setActiveQuestionSegment}
         onClose={() => setDrawerDimension(null)}
-        getCategoryIcon={getCategoryIcon}
+        getCategoryIcon={(category) => (
+          <ReportsCategoryIcon category={category} />
+        )}
       />
       {/* =====================================================================
           9. TRILHO DE NAVEGAÇÃO FLUTUANTE (QUICK NAV RAIL COM TOOLTIPS CLAROS)
