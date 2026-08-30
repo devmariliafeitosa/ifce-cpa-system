@@ -1,9 +1,9 @@
+import { ReportsQuestionsList } from "./ReportsQuestionsList";
 import { ReportsFiltersBar } from "./ReportsFiltersBar";
 import { ReportsQuickNav } from "./ReportsQuickNav";
 import { ReportsAreaDrawer } from "./ReportsAreaDrawer";
 import { ReportsQuestionDetailModal } from "./ReportsQuestionDetailModal";
 import { ReportsQuestionsPagination } from "./ReportsQuestionsPagination";
-import { ReportsQuestionItem } from "./ReportsQuestionItem";
 import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
 import { ReportsAreas } from "./ReportsAreas";
 import { ReportsIndicators } from "./ReportsIndicators";
@@ -12,13 +12,10 @@ import {
   Award,
   BookOpen,
   Building2,
-  ChevronDown,
-  ChevronRight,
   GraduationCap,
   Layers,
   Users,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { INITIAL_SMART_FORMS } from '../../data/formsData.ts';
 import type {
@@ -457,129 +454,17 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
     {/* Botões para Expandir / Recolher Todas as Áreas */}
 
               {/* Botões para Expandir / Recolher Todas as Áreas */}
-              {questionsByArea.length > 0 && (
-                <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium px-1">
-                  <span>
-                    Agrupadas por área ({questionsByArea.length} áreas ativas)
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setAllAreasExpanded(true)}
-                      className="hover:text-[#006837] font-semibold cursor-pointer underline decoration-dotted"
-                    >
-                      Expandir todas
-                    </button>
-                    <span>•</span>
-                    <button
-                      onClick={() => setAllAreasExpanded(false)}
-                      className="hover:text-slate-700 font-semibold cursor-pointer underline decoration-dotted"
-                    >
-                      Recolher todas
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Caso Nenhuma pergunta seja encontrada */}
-              {questionsByArea.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <div className="text-slate-400 text-lg font-bold">Nenhuma pergunta encontrada</div>
-                  <p className="text-xs text-slate-500">
-                    Tente ajustar os filtros de segmento, área, classificação ou busca acima.
-                  </p>
-                </div>
-              ) : (
-                /* Lista Agrupada por Áreas em Accordions */
-                <div className="space-y-3">
-                  {questionsByArea.map((group) => {
-                    const isAreaExpanded = expandedAreaNames[group.area] !== false; // default true
-
-                    return (
-                      <div
-                        key={group.area}
-                        className="border border-slate-200/90 rounded-xl bg-white overflow-hidden shadow-2xs"
-                      >
-                        {/* Area Header Accordion Toggle */}
-                        <div
-                          onClick={() => toggleAreaAccordion(group.area)}
-                          className="px-3.5 py-2 bg-slate-50/80 hover:bg-slate-100/80 transition-colors flex flex-wrap items-center justify-between gap-2 cursor-pointer border-b border-slate-100"
-                        >
-                          <div className="flex items-center gap-2">
-                            <button className="p-0.5 text-slate-500 hover:text-slate-800 rounded-md">
-                              {isAreaExpanded ? (
-                                <ChevronDown className="w-4 h-4 text-[#006837]" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4 text-slate-400" />
-                              )}
-                            </button>
-
-                            <div className="flex items-center gap-2">
-                              <div className="p-1 bg-white border border-slate-200 rounded-md shadow-2xs">
-                                {getCategoryIcon(group.area)}
-                              </div>
-                              <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
-                                {group.area}
-                              </h3>
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-700">
-                                {group.questions.length} {group.questions.length === 1 ? 'pergunta' : 'perguntas'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Resumo/Badges da Área */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {group.semRespCount > 0 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                                ● {group.semRespCount} sem respostas
-                              </span>
-                            )}
-                            {group.potCount > 0 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-[#006837] border border-emerald-200">
-                                ● {group.potCount} Potencialidades
-                              </span>
-                            )}
-                            {group.medCount > 0 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                                ● {group.medCount} Medianas
-                              </span>
-                            )}
-                            {group.fragCount > 0 && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200">
-                                ● {group.fragCount} Fragilidades
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Conteúdo do Accordion da Área */}
-                        <AnimatePresence>
-                          {isAreaExpanded && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="p-2 space-y-1.5 bg-slate-50/20"
-                            >
-                              {group.questions.map((q, idx) => (
-                                <ReportsQuestionItem
-                                  key={q.id}
-                                  question={q}
-                                  index={idx}
-                                  campaignTotalResponses={selectedCampaign.totalResponses}
-                                  isExpanded={!!expandedQuestionIds[q.id]}
-                                  onToggle={() => toggleQuestionInline(q.id)}
-                                  onOpenDetails={() => setSelectedDetailQuestion(q)}
-                                />
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
+              <ReportsQuestionsList
+                groups={questionsByArea}
+                expandedAreaNames={expandedAreaNames}
+                expandedQuestionIds={expandedQuestionIds}
+                campaignTotalResponses={selectedCampaign.totalResponses}
+                onExpandAll={setAllAreasExpanded}
+                onToggleArea={toggleAreaAccordion}
+                onToggleQuestion={toggleQuestionInline}
+                onOpenQuestionDetails={setSelectedDetailQuestion}
+                getCategoryIcon={getCategoryIcon}
+              />
               {/* =====================================================================
                   8. PAGINAÇÃO COMPACTA NO FINAL DA SEÇÃO DE PERGUNTAS
                  ===================================================================== */}
