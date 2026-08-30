@@ -1,3 +1,4 @@
+import { ReportsExportMenu } from "./ReportsExportMenu";
 import { ReportsQuickNav } from "./ReportsQuickNav";
 import { ReportsAreaDrawer } from "./ReportsAreaDrawer";
 import { ReportsQuestionDetailModal } from "./ReportsQuestionDetailModal";
@@ -14,14 +15,9 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  FileCode,
-  FileDown,
-  FileSpreadsheet,
-  FileText,
   Filter,
   GraduationCap,
   Layers,
-  Printer,
   Search,
   Users,
 } from 'lucide-react';
@@ -35,7 +31,6 @@ import type {
 } from '../../data/reportsData.ts';
 import type { SmartForm } from "../../types.ts";
 import { buildReportsFromSmartForms } from '../../utils/reportConverter.ts';
-import { exportReportToCsv, exportReportToExcel } from '../../utils/reportExporter.ts';
 import { CpaPdfReportModal } from './CpaPdfReportModal.tsx';
 
 interface ReportsViewProps {
@@ -489,72 +484,13 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
         </div>
 
         {/* Botão Exportar relatório com Menu Dropdown */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-            disabled={!selectedCampaign}
-            className="h-8 px-3 bg-[#006837] hover:bg-[#00522b] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            <FileDown className="w-3.5 h-3.5" />
-            <span>Exportar relatório</span>
-            <ChevronDown className={`w-3 h-3 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          <AnimatePresence>
-            {isExportMenuOpen && selectedCampaign && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 w-48 space-y-1"
-              >
-                <button
-                  onClick={() => {
-                    setIsExportMenuOpen(false);
-                    setIsPdfModalOpen(true);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-rose-600" />
-                  <span>PDF (.pdf)</span>
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setIsExportMenuOpen(false);
-                    await exportReportToExcel(selectedCampaign);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Excel (.xlsx)</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsExportMenuOpen(false);
-                    exportReportToCsv(selectedCampaign);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <FileCode className="w-3.5 h-3.5 text-blue-600" />
-                  <span>CSV (.csv)</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsExportMenuOpen(false);
-                    window.print();
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-[#006837] rounded-lg flex items-center gap-2 transition-colors cursor-pointer border-t border-slate-100 pt-1"
-                >
-                  <Printer className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Imprimir</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <ReportsExportMenu
+          campaign={selectedCampaign}
+          isOpen={isExportMenuOpen}
+          onToggle={() => setIsExportMenuOpen(!isExportMenuOpen)}
+          onOpenPdf={() => setIsPdfModalOpen(true)}
+          onClose={() => setIsExportMenuOpen(false)}
+        />
       </div>
 
       {selectedCampaign ? (
