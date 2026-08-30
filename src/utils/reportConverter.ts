@@ -82,13 +82,13 @@ export function convertSmartFormToReportCampaign(
         segmentAnswers =
           form.responsesCount?.taes ?? Math.round(totalResponses * 0.1);
 
-      let approvalRate = 0;
+      let approvalRate: number;
       let classification:
         | "Potencialidade"
         | "Mediana"
         | "Fragilidade"
-        | "Sem respostas" = "Sem respostas";
-      let alternatives: ReportQuestionAlternative[] = [];
+        | "Sem respostas";
+      let alternatives: ReportQuestionAlternative[];
 
       if (segmentAnswers === 0) {
         approvalRate = 0;
@@ -150,10 +150,9 @@ export function convertSmartFormToReportCampaign(
         } else if (q.options && q.options.length > 0) {
           const countOpts = q.options.length;
           let remainingPct = 100;
-          let remainingCount = segmentAnswers;
 
           alternatives = q.options.map((opt, i) => {
-            let pct = 0;
+            let pct: number;
             if (i === countOpts - 1) {
               pct = Math.max(0, remainingPct);
             } else {
@@ -162,7 +161,6 @@ export function convertSmartFormToReportCampaign(
             }
             remainingPct -= pct;
             const cnt = Math.round((segmentAnswers * pct) / 100);
-            remainingCount -= cnt;
             return { option: opt, count: cnt, percentage: pct };
           });
 
