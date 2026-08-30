@@ -7,7 +7,7 @@ import { DashboardView } from "../../components/DashboardView";
 import { Header } from "../../components/Header";
 import { PlaceholderView } from "../../components/PlaceholderView";
 import { ProfileView } from "../../components/profile/ProfileView";
-import { SettingsView } from "../../components/SettingsView";
+import { SettingsView } from "../../components/settings/SettingsView";
 import { Sidebar } from "../../components/Sidebar";
 
 import type { NavTabId } from "../../components/navigation/navigationTypes";
@@ -28,12 +28,10 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
       case "dashboard":
         return <DashboardView onNavigateTab={setActiveTab} />;
 
-        case "relatorios":
-          return (
-            <ReportsView
-              onReturnToDashboard={() => setActiveTab("dashboard")}
-            />
-          );
+      case "relatorios":
+        return (
+          <ReportsView onReturnToDashboard={() => setActiveTab("dashboard")} />
+        );
       case "configuracoes":
         return (
           <SettingsView onReturnToDashboard={() => setActiveTab("dashboard")} />

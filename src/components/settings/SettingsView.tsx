@@ -9,10 +9,10 @@ import {
   Save,
   RotateCcw,
   Info,
-  Mail
+  Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChangePasswordModal } from "./profile/ChangePasswordModal";
+import { ChangePasswordModal } from "../profile/ChangePasswordModal";
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
 }
@@ -128,10 +128,11 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${showToast.type === "success"
+            className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${
+              showToast.type === "success"
                 ? "bg-emerald-50 border-emerald-200 text-[#006837]"
                 : "bg-blue-50 border-blue-200 text-blue-800"
-              }`}
+            }`}
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -293,12 +294,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   <button
                     type="button"
                     onClick={() => setAllowAnonymous(!allowAnonymous)}
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${allowAnonymous ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      allowAnonymous ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${allowAnonymous ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        allowAnonymous ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -318,12 +321,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     onClick={() =>
                       setRequireIdentification(!requireIdentification)
                     }
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${requireIdentification ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      requireIdentification ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${requireIdentification ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        requireIdentification ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -343,12 +348,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     onClick={() =>
                       setSingleResponsePerUser(!singleResponsePerUser)
                     }
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${singleResponsePerUser ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      singleResponsePerUser ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${singleResponsePerUser ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        singleResponsePerUser ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -413,12 +420,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                   <button
                     type="button"
                     onClick={() => setNotifyNewResponses(!notifyNewResponses)}
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${notifyNewResponses ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      notifyNewResponses ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${notifyNewResponses ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        notifyNewResponses ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -438,12 +447,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     onClick={() =>
                       setNotifyCampaignEnding(!notifyCampaignEnding)
                     }
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${notifyCampaignEnding ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      notifyCampaignEnding ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${notifyCampaignEnding ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        notifyCampaignEnding ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -463,12 +474,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                     onClick={() =>
                       setNotifyCampaignFinished(!notifyCampaignFinished)
                     }
-                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${notifyCampaignFinished ? "bg-[#006837]" : "bg-slate-300"
-                      }`}
+                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                      notifyCampaignFinished ? "bg-[#006837]" : "bg-slate-300"
+                    }`}
                   >
                     <div
-                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${notifyCampaignFinished ? "left-4.5" : "left-0.5"
-                        }`}
+                      className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                        notifyCampaignFinished ? "left-4.5" : "left-0.5"
+                      }`}
                     />
                   </button>
                 </div>
@@ -554,12 +567,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
                 <button
                   type="button"
                   onClick={() => setRequire2FA(!require2FA)}
-                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${require2FA ? "bg-[#006837]" : "bg-slate-300"
-                    }`}
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                    require2FA ? "bg-[#006837]" : "bg-slate-300"
+                  }`}
                 >
                   <div
-                    className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${require2FA ? "left-4.5" : "left-0.5"
-                      }`}
+                    className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                      require2FA ? "left-4.5" : "left-0.5"
+                    }`}
                   />
                 </button>
               </div>
