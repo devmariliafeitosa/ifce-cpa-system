@@ -402,9 +402,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
             scrollToSection("perguntas");
           }}
           onOpenArea={setDrawerDimension}
-          getCategoryIcon={(category) => (
-            <ReportsCategoryIcon category={category} />
-          )}
         />
 
           {/* =====================================================================

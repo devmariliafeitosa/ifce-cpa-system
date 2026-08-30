@@ -1,7 +1,5 @@
 import { Eye, Layers } from "lucide-react";
-
-import type { ReactNode } from "react";
-
+import { ReportsCategoryIcon } from "./ReportsCategoryIcon";
 import type {
   ReportCampaignData,
   ReportDimensionResult,
@@ -13,7 +11,6 @@ interface ReportsAreasProps {
   onShowAll: () => void;
   onSelectArea: (dimension: string) => void;
   onOpenArea: (dimension: ReportDimensionResult) => void;
-  getCategoryIcon: (category: string) => ReactNode;
 }
 
 export function ReportsAreas({
@@ -22,7 +19,6 @@ export function ReportsAreas({
   onShowAll,
   onSelectArea,
   onOpenArea,
-  getCategoryIcon,
 }: ReportsAreasProps) {
   return (
     <section id="sec-areas" className="scroll-mt-4 space-y-2">
@@ -98,7 +94,7 @@ export function ReportsAreas({
               <div className="flex items-center justify-between gap-1">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <div className="p-1 bg-slate-100 rounded-md flex-shrink-0">
-                    {getCategoryIcon(dimension.dimension)}
+                    <ReportsCategoryIcon category={dimension.dimension} />
                   </div>
 
                   <h3 className="text-xs font-extrabold text-slate-900 truncate">
