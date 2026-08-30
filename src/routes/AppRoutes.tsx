@@ -5,14 +5,13 @@ import { LoginPage } from "../pages/auth/LoginPage";
 import { ResetPasswordPage } from "../pages/auth/ResetPasswordPage";
 import { DashboardPage } from "../pages/DashboardPage/DashboardPage";
 import { ProfilePage } from "../pages/profile/ProfilePage";
-
 import { ROUTES } from "./routePaths";
 
 export function AppRoutes() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    navigate(ROUTES.LOGIN);
+    navigate(ROUTES.LOGIN, { replace: true });
   };
 
   return (
