@@ -1,8 +1,7 @@
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-import type { ReactNode } from "react";
-
+import { ReportsCategoryIcon } from "./ReportsCategoryIcon";
 import type {
   ReportDimensionResult,
   ReportQuestion,
@@ -17,7 +16,6 @@ interface ReportsAreaDrawerProps {
   campaignTotalResponses?: number;
   onSegmentChange: (segment: QuestionSegment) => void;
   onClose: () => void;
-  getCategoryIcon: (category: string) => ReactNode;
 }
 
 export function ReportsAreaDrawer({
@@ -27,7 +25,6 @@ export function ReportsAreaDrawer({
   campaignTotalResponses,
   onSegmentChange,
   onClose,
-  getCategoryIcon,
 }: ReportsAreaDrawerProps) {
   return (
     <AnimatePresence>
@@ -49,7 +46,7 @@ export function ReportsAreaDrawer({
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 bg-white rounded-lg shadow-xs border border-slate-200">
-                      {getCategoryIcon(dimension.dimension)}
+                      <ReportsCategoryIcon category={dimension.dimension} />
                     </div>
 
                     <div>

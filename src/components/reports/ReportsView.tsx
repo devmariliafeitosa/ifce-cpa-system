@@ -1,4 +1,3 @@
-import { ReportsCategoryIcon } from "./ReportsCategoryIcon";
 import { ReportsQuestionsList } from "./ReportsQuestionsList";
 import { ReportsFiltersBar } from "./ReportsFiltersBar";
 import { ReportsQuickNav } from "./ReportsQuickNav";
@@ -485,9 +484,6 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
         campaignTotalResponses={selectedCampaign?.totalResponses}
         onSegmentChange={setActiveQuestionSegment}
         onClose={() => setDrawerDimension(null)}
-        getCategoryIcon={(category) => (
-          <ReportsCategoryIcon category={category} />
-        )}
       />
       {/* =====================================================================
           9. TRILHO DE NAVEGAÇÃO FLUTUANTE (QUICK NAV RAIL COM TOOLTIPS CLAROS)
