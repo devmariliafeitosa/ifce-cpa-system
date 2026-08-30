@@ -15,8 +15,8 @@ import {
     X,
 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import type { ReportCampaignData, ReportQuestion } from '../data/reportsData';
-import { IFCELogo } from './auth/IFCELogo';
+import type { ReportCampaignData, ReportQuestion } from '../../data/reportsData';
+import { IFCELogo } from '../auth/IFCELogo';
 
 interface CpaPdfReportModalProps {
     isOpen: boolean;

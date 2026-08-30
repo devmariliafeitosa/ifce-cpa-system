@@ -1,4 +1,4 @@
-import { DonutChart } from "./reports/DonutChart";
+import { DonutChart } from "./DonutChart.tsx";
 import {
   Award,
   BookOpen,
@@ -28,16 +28,16 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { INITIAL_SMART_FORMS } from '../data/formsData';
+import { INITIAL_SMART_FORMS } from '../../data/formsData.ts';
 import type {
   ReportCampaignData,
   ReportDimensionResult,
   ReportQuestion,
-} from '../data/reportsData';
-import type { SmartForm } from "../types";
-import { buildReportsFromSmartForms } from '../utils/reportConverter';
-import { exportReportToCsv, exportReportToExcel } from '../utils/reportExporter.ts';
-import { CpaPdfReportModal } from './CpaPdfReportModal';
+} from '../../data/reportsData.ts';
+import type { SmartForm } from "../../types.ts";
+import { buildReportsFromSmartForms } from '../../utils/reportConverter.ts';
+import { exportReportToCsv, exportReportToExcel } from '../../utils/reportExporter.ts';
+import { CpaPdfReportModal } from './CpaPdfReportModal.tsx';
 
 interface ReportsViewProps {
   onReturnToDashboard?: () => void;
