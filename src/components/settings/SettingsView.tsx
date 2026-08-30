@@ -1,10 +1,10 @@
-import { Shield, KeyRound, CheckCircle2, Save, Info } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { Save, Info } from "lucide-react";
 import { ChangePasswordModal } from "../profile/ChangePasswordModal";
 import { SettingsHeader } from "./SettingsHeader";
 import { SystemPreferencesCard } from "./SystemPreferencesCard";
 import { EvaluationSettingsCard } from "./EvaluationSettingsCard";
 import { NotificationSettingsCard } from "./NotificationSettingsCard";
+import { SecuritySettingsCard } from "./SecuritySettingsCard";
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
 }
@@ -35,10 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
 
   // Modal & Toast States
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [showToast, setShowToast] = useState<{
-    message: string;
-    type: "success" | "info";
-  } | null>(null);
+  const [showToast, setShowToast] = useState<SettingsToastData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -92,31 +89,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       <SettingsHeader onResetDefaults={handleResetDefaults} />
 
       {/* Toast Notification */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${
-              showToast.type === "success"
-                ? "bg-emerald-50 border-emerald-200 text-[#006837]"
-                : "bg-blue-50 border-blue-200 text-blue-800"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{showToast.message}</span>
-            </div>
-            <button
-              onClick={() => setShowToast(null)}
-              className="p-1 hover:opacity-75 cursor-pointer text-slate-500 text-xs"
-            >
-              ✕
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SettingsToast toast={showToast} onClose={() => setShowToast(null)} />
 
       {/* Main Settings Grid Form (2 Columns on large screens) */}
       <form onSubmit={handleSaveSettings} className="space-y-4">
@@ -156,97 +129,14 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             onNotifyCampaignFinishedChange={setNotifyCampaignFinished}
           />
 
-          {/* =====================================================================
-              CARD 4: SEGURANÇA E ACESSO
-             ===================================================================== */}
-          <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs space-y-3.5 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
-                <div className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
-                  <Shield className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-xs font-black text-slate-900 tracking-tight">
-                    Segurança e Acesso
-                  </h2>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Políticas de sessão, credenciais e proteção de dados
-                  </p>
-                </div>
-              </div>
-
-              {/* Tempo de Sessão */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
-                  <span>Tempo Limite de Sessão por Inatividade</span>
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    Desconexão automática
-                  </span>
-                </label>
-                <select
-                  value={sessionTimeout}
-                  onChange={(e) => setSessionTimeout(e.target.value)}
-                  className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-                >
-                  <option value="30">30 minutos</option>
-                  <option value="60">1 hora (Recomendado)</option>
-                  <option value="120">2 horas</option>
-                  <option value="240">4 horas</option>
-                  <option value="480">8 horas (Jornada completa)</option>
-                </select>
-              </div>
-
-              {/* Alteração de Senha */}
-              <div className="p-3 bg-slate-50/80 border border-slate-200/90 rounded-xl flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-bold text-slate-800 block">
-                    Credenciais de Coordenador
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium block">
-                    Senha forte com requisitos de segurança ativos
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className="h-7 px-3 bg-white hover:bg-emerald-50 hover:text-[#006837] border border-slate-200 hover:border-emerald-300 text-slate-700 font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-                >
-                  <KeyRound className="w-3 h-3 text-[#006837]" />
-                  <span>Alterar Senha</span>
-                </button>
-              </div>
-
-              {/* Switch Autenticação em Duas Etapas (2FA) */}
-              <div className="flex items-center justify-between gap-3 p-2 bg-slate-50/70 border border-slate-200/80 rounded-lg">
-                <div>
-                  <span className="text-[11px] font-bold text-slate-800 block">
-                    Exigir autenticação em duas etapas (2FA)
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium block">
-                    Código de confirmação enviado ao e-mail institucional
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRequire2FA(!require2FA)}
-                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                    require2FA ? "bg-[#006837]" : "bg-slate-300"
-                  }`}
-                >
-                  <div
-                    className={`w-3.5 h-3.5 bg-white rounded-full transition-transform absolute top-0.5 ${
-                      require2FA ? "left-4.5" : "left-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-              <span>Status de Proteção: LGPD & Criptografia</span>
-              <span className="text-[#006837] font-bold">Protegido</span>
-            </div>
-          </div>
+          {/* CARD 4: SEGURANÇA E ACESSO */}
+          <SecuritySettingsCard
+            sessionTimeout={sessionTimeout}
+            require2FA={require2FA}
+            onSessionTimeoutChange={setSessionTimeout}
+            onRequire2FAChange={setRequire2FA}
+            onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
+          />
         </div>
 
         {/* Footer Actions: Botão Discreto Salvar Alterações */}
