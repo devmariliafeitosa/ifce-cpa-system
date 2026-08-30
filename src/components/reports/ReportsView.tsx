@@ -1,5 +1,6 @@
-
-import { ReportsQuestionItem } from "./ReportsQuestionItem";import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
+import { ReportsQuestionsPagination } from "./ReportsQuestionsPagination";
+import { ReportsQuestionItem } from "./ReportsQuestionItem";
+import { ReportsQuestionsToolbar } from "./ReportsQuestionsToolbar";
 import { ReportsAreas } from "./ReportsAreas";
 import { ReportsIndicators } from "./ReportsIndicators";
 import { ReportsSummaryCards } from "./ReportsSummaryCards";
@@ -745,47 +746,14 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
               {/* =====================================================================
                   8. PAGINAÇÃO COMPACTA NO FINAL DA SEÇÃO DE PERGUNTAS
                  ===================================================================== */}
-              {paginatedQuestionsData.totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                  <span className="text-xs text-slate-500 font-medium">
-                    Exibindo {paginatedQuestionsData.startIndex + 1}–
-                    {Math.min(paginatedQuestionsData.endIndex, paginatedQuestionsData.totalCount)} de{' '}
-                    <strong className="text-slate-800">{paginatedQuestionsData.totalCount}</strong> perguntas
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      disabled={paginatedQuestionsData.currentPage === 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
-                    >
-                      ← Anterior
-                    </button>
-
-                    {Array.from({ length: paginatedQuestionsData.totalPages }, (_, i) => i + 1).map((pNum) => (
-                      <button
-                        key={pNum}
-                        onClick={() => setCurrentPage(pNum)}
-                        className={`w-7 h-7 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
-                          pNum === paginatedQuestionsData.currentPage
-                            ? 'bg-[#006837] text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        {pNum}
-                      </button>
-                    ))}
-
-                    <button
-                      disabled={paginatedQuestionsData.currentPage === paginatedQuestionsData.totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(paginatedQuestionsData.totalPages, p + 1))}
-                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
-                    >
-                      Próxima →
-                    </button>
-                  </div>
-                </div>
-              )}
+              <ReportsQuestionsPagination
+                currentPage={paginatedQuestionsData.currentPage}
+                totalPages={paginatedQuestionsData.totalPages}
+                startIndex={paginatedQuestionsData.startIndex}
+                endIndex={paginatedQuestionsData.endIndex}
+                totalCount={paginatedQuestionsData.totalCount}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </section>
         </div>
