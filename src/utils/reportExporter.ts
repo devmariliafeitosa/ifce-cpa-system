@@ -190,7 +190,7 @@ export async function exportReportToExcel(
 
   questionsByArea.forEach((questionsMap, areaName) => {
     // Clean sheet name (max 31 chars, no invalid chars)
-    const sheetName = areaName.substring(0, 30).replace(/[:\\\/\?\*\[\]]/g, "");
+    const sheetName = areaName.substring(0, 30).replace(/[:\\/?*[\]]/g, "");
     const areaSheet = workbook.addWorksheet(sheetName || "Área");
 
     areaSheet.addRow([`ÁREA AVALIADA: ${areaName.toUpperCase()}`]);
@@ -259,7 +259,7 @@ export async function exportReportToExcel(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const fileName = `${campaign.title.replace(/[^a-zA-Z0-9_\-]/g, "_")}_Relatorio_CPA.xlsx`;
+  const fileName = `${campaign.title.replace(/[^a-zA-Z0-9_-]/g, "_")}_Relatorio_CPA.xlsx`;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
@@ -336,7 +336,7 @@ export function exportReportToCsv(campaign: ReportCampaignData): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const fileName = `${campaign.title.replace(/[^a-zA-Z0-9_\-]/g, "_")}_Relatorio_CPA.csv`;
+  const fileName = `${campaign.title.replace(/[^a-zA-Z0-9_-]/g, "_")}_Relatorio_CPA.csv`;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
