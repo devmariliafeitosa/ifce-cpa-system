@@ -1,4 +1,4 @@
-import { ReportsExportMenu } from "./ReportsExportMenu";
+import { ReportsFiltersBar } from "./ReportsFiltersBar";
 import { ReportsQuickNav } from "./ReportsQuickNav";
 import { ReportsAreaDrawer } from "./ReportsAreaDrawer";
 import { ReportsQuestionDetailModal } from "./ReportsQuestionDetailModal";
@@ -12,13 +12,10 @@ import {
   Award,
   BookOpen,
   Building2,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Filter,
   GraduationCap,
   Layers,
-  Search,
   Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -367,132 +364,36 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
   return (
     <div className="w-full max-w-[95%] xl:max-w-[1400px] mx-auto px-2 sm:px-4 py-3 space-y-3.5 relative">
       {/* =====================================================================
-          1. BARRA DE FILTROS ÚNICA E COMPACTA
-         ===================================================================== */}
-      <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-          <div className="flex items-center gap-1 text-slate-500 text-xs font-bold shrink-0">
-            <Filter className="w-3.5 h-3.5 text-[#006837]" />
-            <span className="hidden md:inline">Filtros:</span>
-          </div>
-
-          {/* Campus */}
-          <select
-            value={campusFilter}
-            onChange={(e) => setCampusFilter(e.target.value)}
-            className="h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
-          >
-            <option value="todos">Todos Campi</option>
-            {availableCampuses.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-
-          {/* Ano */}
-          <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            className="h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
-          >
-            <option value="todos">Todos Anos</option>
-            {availableYears.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-
-          {/* Seletor de Questionário / Campanha */}
-          <div className="relative min-w-[180px] max-w-[260px] flex-1">
-            <button
-              onClick={() => setIsCampaignSelectorOpen(!isCampaignSelectorOpen)}
-              className="w-full h-8 px-2.5 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-lg text-xs font-bold text-slate-800 flex items-center justify-between gap-1.5 shadow-2xs transition-all cursor-pointer text-left"
-            >
-              <span className="truncate">
-                {selectedCampaign ? selectedCampaign.title : 'Selecione um questionário'}
-              </span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 text-slate-500 flex-shrink-0 transition-transform ${
-                  isCampaignSelectorOpen ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-
-            {/* Dropdown Menu */}
-            <AnimatePresence>
-              {isCampaignSelectorOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  className="absolute left-0 top-full mt-1 z-40 bg-white border border-slate-200 rounded-xl shadow-xl p-2 space-y-1.5 w-72 sm:w-80 overflow-hidden flex flex-col"
-                >
-                  <div className="relative flex-shrink-0">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                    <input
-                      type="text"
-                      value={campaignSearchTerm}
-                      onChange={(e) => setCampaignSearchTerm(e.target.value)}
-                      placeholder="Pesquisar questionário..."
-                      className="w-full pl-8 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837]"
-                    />
-                  </div>
-
-                  <div className="max-h-52 overflow-y-auto space-y-1 pr-1 flex-1">
-                    {filteredCampaignsList.length === 0 ? (
-                      <div className="p-2 text-center text-xs text-slate-400">
-                        Nenhum questionário encontrado.
-                      </div>
-                    ) : (
-                      filteredCampaignsList.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setSelectedCampaignId(c.id);
-                            setCurrentPage(1);
-                            setIsCampaignSelectorOpen(false);
-                          }}
-                          className={`w-full p-2 rounded-lg text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
-                            c.id === selectedCampaignId
-                              ? 'bg-[#006837] text-white font-bold'
-                              : 'hover:bg-slate-50 text-slate-700 font-medium'
-                          }`}
-                        >
-                          <div className="truncate pr-2">
-                            <div className="truncate">{c.title}</div>
-                            <div
-                              className={`text-[10px] mt-0.5 ${
-                                c.id === selectedCampaignId ? 'text-emerald-100' : 'text-slate-400'
-                              }`}
-                            >
-                              {c.campus} • {c.period}
-                            </div>
-                          </div>
-                          {c.id === selectedCampaignId && (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Botão Exportar relatório com Menu Dropdown */}
-        <ReportsExportMenu
-          campaign={selectedCampaign}
-          isOpen={isExportMenuOpen}
-          onToggle={() => setIsExportMenuOpen(!isExportMenuOpen)}
-          onOpenPdf={() => setIsPdfModalOpen(true)}
-          onClose={() => setIsExportMenuOpen(false)}
-        />
-      </div>
-
+    1. BARRA DE FILTROS ÚNICA E COMPACTA
+   ===================================================================== */}
+   <ReportsFiltersBar
+      availableCampuses={availableCampuses}
+      availableYears={availableYears}
+      campusFilter={campusFilter}
+      yearFilter={yearFilter}
+      selectedCampaign={selectedCampaign}
+      selectedCampaignId={selectedCampaignId}
+      filteredCampaigns={filteredCampaignsList}
+      isCampaignSelectorOpen={isCampaignSelectorOpen}
+      campaignSearchTerm={campaignSearchTerm}
+      isExportMenuOpen={isExportMenuOpen}
+      onCampusChange={setCampusFilter}
+      onYearChange={setYearFilter}
+      onCampaignSelectorToggle={() =>
+        setIsCampaignSelectorOpen(!isCampaignSelectorOpen)
+      }
+      onCampaignSearchChange={setCampaignSearchTerm}
+      onCampaignSelect={(campaignId) => {
+        setSelectedCampaignId(campaignId);
+        setCurrentPage(1);
+        setIsCampaignSelectorOpen(false);
+      }}
+      onExportToggle={() =>
+        setIsExportMenuOpen(!isExportMenuOpen)
+      }
+  onExportClose={() => setIsExportMenuOpen(false)}
+  onOpenPdf={() => setIsPdfModalOpen(true)}
+/>
       {selectedCampaign ? (
         <div className="space-y-3.5">
           {/* =====================================================================
