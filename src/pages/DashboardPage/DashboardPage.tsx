@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { ReportsView } from "../../components/reports/ReportsView";
 import { Footer } from "../../components/auth/Footer";
-import { DashboardView } from "../../components/DashboardView";
+import { DashboardView } from "../../components/dashboard/DashboardView";
 import { Header } from "../../components/Header";
 import { PlaceholderView } from "../../components/PlaceholderView";
 import { ProfileView } from "../../components/profile/ProfileView";

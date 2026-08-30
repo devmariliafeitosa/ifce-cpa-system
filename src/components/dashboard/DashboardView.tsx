@@ -25,14 +25,14 @@ import { AnimatePresence, motion } from "motion/react";
 
 import React, { useEffect, useMemo, useState } from "react";
 
-import { INITIAL_SMART_FORMS } from "../data/formsData";
-import { INITIAL_PARTICIPANTS } from "../data/participantsData";
+import { INITIAL_SMART_FORMS } from "../../data/formsData";
+import { INITIAL_PARTICIPANTS } from "../../data/participantsData";
 
-import type { Participant, SmartForm } from "../types";
+import type { Participant, SmartForm } from "../../types";
 
-import { buildReportsFromSmartForms } from "../utils/reportConverter";
+import { buildReportsFromSmartForms } from "../../utils/reportConverter";
 
-import type { NavTabId } from "./navigation/navigationTypes";
+import type { NavTabId } from "../navigation/navigationTypes";
 
 interface DashboardViewProps {
   onNavigateTab: (tab: NavTabId) => void;
@@ -41,11 +41,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateTab,
 }) => {
-  /*
-   * ============================================================
-   * 1. ESTADOS DOS DADOS
-   * ============================================================
-   */
+  /* 1. ESTADOS DOS DADOS */
 
   const [smartForms, setSmartForms] = useState<SmartForm[]>(() => {
     try {
@@ -57,9 +53,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       const parsed = JSON.parse(saved) as SmartForm[];
 
-      return Array.isArray(parsed)
-        ? parsed
-        : INITIAL_SMART_FORMS;
+      return Array.isArray(parsed) ? parsed : INITIAL_SMART_FORMS;
     } catch {
       return INITIAL_SMART_FORMS;
     }
@@ -75,9 +69,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       const parsed = JSON.parse(saved) as Participant[];
 
-      return Array.isArray(parsed)
-        ? parsed
-        : INITIAL_PARTICIPANTS;
+      return Array.isArray(parsed) ? parsed : INITIAL_PARTICIPANTS;
     } catch {
       return INITIAL_PARTICIPANTS;
     }
@@ -93,9 +85,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return `hoje às ${hours}:${minutes}`;
   });
 
-  /*
-   * Cards complementares
-   */
+  /* Cards complementares */
 
   const [openSecondary, setOpenSecondary] = useState<Record<string, boolean>>({
     syncGoogleForms: false,
@@ -103,9 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     calendarioCpa: false,
   });
 
-  /*
-   * Modal de detalhes da área
-   */
+  /* Modal de detalhes da área */
 
   const [selectedAreaDetail, setSelectedAreaDetail] = useState<{
     name: string;
@@ -116,18 +104,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     categoryKey?: string;
   } | null>(null);
 
-  /*
-   * Modal de detalhes da campanha
-   */
+  /* Modal de detalhes da campanha */
 
   const [selectedCampaignDetail, setSelectedCampaignDetail] =
     useState<SmartForm | null>(null);
 
-  /*
-   * ============================================================
-   * SINCRONIZAÇÃO DOS DADOS
-   * ============================================================
-   */
+  /* SINCRONIZAÇÃO DOS DADOS */
 
   useEffect(() => {
     const syncData = () => {
@@ -185,11 +167,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     };
   }, []);
 
-  /*
-   * ============================================================
-   * 2. MÉTRICAS DO DASHBOARD
-   * ============================================================
-   */
+  /* 2. MÉTRICAS DO DASHBOARD */
 
   const activeForms = useMemo(() => {
     return smartForms.filter((form) => {
@@ -205,9 +183,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return activeForms.length > 0 ? activeForms[0] : null;
   }, [activeForms]);
 
-  /*
-   * Total de respostas
-   */
+  /* Total de respostas */
 
   const totalResponses = useMemo(() => {
     return smartForms.reduce(
@@ -237,9 +213,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }, [smartForms]);
 
-  /*
-   * Universo estimado
-   */
+  /* Universo estimado */
 
   const discentesUniverse = useMemo(() => {
     const count = participants.filter(
@@ -267,9 +241,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const totalUniverse = discentesUniverse + docentesUniverse + taesUniverse;
 
-  /*
-   * Taxas de participação
-   */
+  /* Taxas de participação */
 
   const overallParticipationRate = useMemo(() => {
     if (totalResponses === 0) {
@@ -309,9 +281,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return Math.min(100, Math.round((taesResponses / taesUniverse) * 100));
   }, [taesResponses, taesUniverse]);
 
-  /*
-   * Métricas da campanha ativa
-   */
+  /* Métricas da campanha ativa */
 
   const activeCampaignResponses = activeCampaign?.responsesCount?.total || 0;
 
@@ -328,11 +298,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return `${rate}%`;
   }, [activeCampaign, activeCampaignResponses, totalUniverse]);
 
-  /*
-   * ============================================================
-   * ÁREAS AVALIADAS
-   * ============================================================
-   */
+  /* ÁREAS AVALIADAS */
 
   const evaluatedAreas = useMemo(() => {
     const baseAreas = [
@@ -446,9 +412,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     });
   }, [totalResponses, smartForms, activeCampaign]);
 
-  /*
-   * Situação geral
-   */
+  /* Situação geral */
 
   const situacaoGeral = useMemo(() => {
     if (totalResponses === 0) {
@@ -494,9 +458,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="w-full max-w-[96%] 2xl:max-w-[1440px] mx-auto px-2 sm:px-4 py-4 space-y-4 select-none">
-      {/* =====================================================
-          INDICADORES PRINCIPAIS
-      ===================================================== */}
+      {/* INDICADORES PRINCIPAIS */}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Questionários */}
@@ -588,9 +550,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* =====================================================
-          CONTEÚDO PRINCIPAL
-      ===================================================== */}
+      {/* CONTEÚDO PRINCIPAL */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 space-y-4 flex flex-col">
@@ -910,14 +870,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                       <div className="shrink-0 flex items-center gap-2">
                         <span
-                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md text-center ${area.status === "POTENCIALIDADE"
+                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md text-center ${
+                            area.status === "POTENCIALIDADE"
                               ? "bg-emerald-100 text-[#006837] border border-emerald-200/80"
                               : area.status === "AVALIAÇÃO MEDIANA"
                                 ? "bg-amber-100 text-amber-800 border border-amber-200/80"
                                 : area.status === "FRAGILIDADE"
                                   ? "bg-rose-100 text-rose-700 border border-rose-200/80"
                                   : "bg-slate-200/70 text-slate-600 border border-slate-200"
-                            }`}
+                          }`}
                         >
                           {area.status}
                         </span>
