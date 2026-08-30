@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
+import { ReportsView } from "../../components/ReportsView";
 import { Footer } from "../../components/auth/Footer";
 import { DashboardView } from "../../components/DashboardView";
 import { Header } from "../../components/Header";
@@ -27,6 +28,12 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
       case "dashboard":
         return <DashboardView onNavigateTab={setActiveTab} />;
 
+        case "relatorios":
+          return (
+            <ReportsView
+              onReturnToDashboard={() => setActiveTab("dashboard")}
+            />
+          );
       case "configuracoes":
         return (
           <SettingsView onReturnToDashboard={() => setActiveTab("dashboard")} />
