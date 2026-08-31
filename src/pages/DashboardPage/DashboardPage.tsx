@@ -3,12 +3,8 @@ import { useState } from "react";
 
 import { ReportsView } from "../../components/reports/ReportsView";
 import { Footer } from "../../components/auth/Footer";
-<<<<<<< HEAD
-import { DashboardView } from "../../components/DashboardView";
-import { FormsManagerView } from "../../components/FormsManagerView";
-=======
 import { DashboardView } from "../../components/dashboard/DashboardView";
->>>>>>> 8f4f6807239461457af43e164fd00317282d16e6
+import { FormsManagerView } from "../../components/forms/FormsManager/FormsManagerView";
 import { Header } from "../../components/Header";
 import { ParticipantsView } from "../../components/ParticipantsView";
 import { PlaceholderView } from "../../components/PlaceholderView";
