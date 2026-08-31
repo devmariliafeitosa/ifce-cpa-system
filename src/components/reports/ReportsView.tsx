@@ -134,19 +134,39 @@ export const ReportsView: React.FC<ReportsViewProps> = () => {
 
   // Available Campuses
   const availableCampuses = useMemo(() => {
-    const set = new Set<string>();
-    reportCampaigns.forEach((c) => {
-      if (c.campus) set.add(c.campus);
+    const set = new Set<string>([
+      "Campus Tauá",
+      "Campus Crateús",
+      "Campus Iguatu",
+      "Campus Quixadá",
+      "Campus Fortaleza",
+    ]);
+
+    reportCampaigns.forEach((campaign) => {
+      if (campaign.campus) {
+        set.add(campaign.campus);
+      }
     });
+
     return Array.from(set);
   }, [reportCampaigns]);
 
   // Available Years
   const availableYears = useMemo(() => {
-    const set = new Set<string>();
-    reportCampaigns.forEach((c) => {
-      if (c.year) set.add(c.year);
+    const set = new Set<string>([
+      "2026",
+      "2025",
+      "2024",
+      "2023",
+      "2022",
+    ]);
+
+    reportCampaigns.forEach((campaign) => {
+      if (campaign.year) {
+        set.add(campaign.year);
+      }
     });
+
     return Array.from(set).sort().reverse();
   }, [reportCampaigns]);
 
