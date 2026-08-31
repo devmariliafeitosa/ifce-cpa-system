@@ -88,6 +88,10 @@ export interface FormSubmission {
   segment: "alunos" | "docentes" | "taes";
   submittedAt: string;
   answers: FormParticipantAnswer[];
+  // Optional, non-identifying metadata (RN005: never includes e-mail, name or
+  // any other data capable of tracing the answer back to a person).
+  campaignId?: string;
+  studentLevel?: StudentLevel;
 }
 
 export interface Campaign {

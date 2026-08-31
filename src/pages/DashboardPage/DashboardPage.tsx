@@ -4,7 +4,9 @@ import { useState } from "react";
 import { ReportsView } from "../../components/reports/ReportsView";
 import { Footer } from "../../components/auth/Footer";
 import { DashboardView } from "../../components/DashboardView";
+import { FormsManagerView } from "../../components/FormsManagerView";
 import { Header } from "../../components/Header";
+import { ParticipantsView } from "../../components/ParticipantsView";
 import { PlaceholderView } from "../../components/PlaceholderView";
 import { ProfileView } from "../../components/profile/ProfileView";
 import { SettingsView } from "../../components/settings/SettingsView";
@@ -27,6 +29,17 @@ export function DashboardPage({ user, onLogout }: DashboardPageProps) {
     switch (activeTab) {
       case "dashboard":
         return <DashboardView onNavigateTab={setActiveTab} />;
+
+      case "formularios":
+        return (
+          <FormsManagerView
+            onReturnToDashboard={() => setActiveTab("dashboard")}
+            onSelectTab={(tab) => setActiveTab(tab as NavTabId)}
+          />
+        );
+
+      case "participantes":
+        return <ParticipantsView />;
 
       case "relatorios":
         return (

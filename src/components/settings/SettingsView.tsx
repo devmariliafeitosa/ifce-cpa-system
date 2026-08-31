@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Save, Info } from "lucide-react";
 import { ChangePasswordModal } from "../profile/ChangePasswordModal";
 import { SettingsHeader } from "./SettingsHeader";
+import { SettingsToast } from "./SettingsToast";
+import type { SettingsToastData } from "./SettingsToast";
 import { SystemPreferencesCard } from "./SystemPreferencesCard";
 import { EvaluationSettingsCard } from "./EvaluationSettingsCard";
 import { NotificationSettingsCard } from "./NotificationSettingsCard";

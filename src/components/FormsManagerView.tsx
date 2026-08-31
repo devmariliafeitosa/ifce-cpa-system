@@ -58,7 +58,7 @@ import { getAccessToken, googleSignIn } from '../lib/googleAuth.ts';
 import type { GoogleFormFile } from '../services/googleFormsService';
 import { createGoogleForm, listGoogleForms } from '../services/googleFormsService';
 import type { Campaign, QuestionCategory, SmartForm, SmartQuestion, StudentLevel, TargetAudience } from '../types';
-import { CampaignQRCodeModal } from './CampaignQRCodeModal.ts';
+import { CampaignQRCodeModal } from './CampaignQRCodeModal';
 
 // Helper to calculate campaign/form status automatically based on current date/time
 export const getCampaignStatus = (
@@ -1319,8 +1319,9 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
   };
 
   const handleSaveProgress = () => {
+    const draftCampaignId = `camp-${Date.now()}`;
     const draftCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
+      id: draftCampaignId,
       formId: form.id,
       formTitle: form.title,
       title: title.trim() || `Rascunho de Campanha - ${form.title}`,
@@ -1339,7 +1340,7 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
       createdAt: new Date().toLocaleDateString('pt-BR'),
       status: 'Rascunho',
       sentEmailsCount: totalRecipients,
-      uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=draft-${Date.now()}`,
+      uniqueTokenUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br'}/responder/${draftCampaignId}`,
     };
 
     if (onSaveProgressDraft) {
@@ -1382,8 +1383,9 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
 
     const computedStatus = getCampaignStatus(startDate, startTime, endDate, endTime, 'Ativa');
 
+    const newCampaignId = `camp-${Date.now()}`;
     const newCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
+      id: newCampaignId,
       formId: form.id,
       formTitle: form.title,
       title,
@@ -1404,9 +1406,7 @@ export const SendCampaignWizardModal: React.FC<SendCampaignWizardModalProps> = (
       createdAt: new Date().toLocaleDateString('pt-BR'),
       status: computedStatus,
       sentEmailsCount: totalRecipients,
-      uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=suap-${Math.floor(
-        100000 + Math.random() * 900000
-      )}`,
+      uniqueTokenUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br'}/responder/${newCampaignId}`,
     };
 
     onLaunchCampaign(newCampaign, {
@@ -2956,8 +2956,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     return [
       {
         id: 'camp-1',
-        formId: 'form-smart-1',
-        formTitle: 'Avaliação Docente e das Disciplinas - 2026.2',
+        formId: 'form-cpa-taua-2025-1',
+        formTitle: 'Avaliação Institucional Unificada 2025.1 - Campus Tauá',
         title: 'Campanha de Avaliação Institucional 2026.2 - Campus Tauá',
         campus: 'Campus Tauá',
         segment: 'todos',
@@ -2968,7 +2968,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         createdAt: '15/08/2026',
         status: 'Ativa',
         sentEmailsCount: 2450,
-        uniqueTokenUrl: 'https://cpa.ifce.edu.br/avaliacao/form-smart-1?token=suap-taua-883921',
+        uniqueTokenUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br'}/responder/camp-1`,
       },
     ];
   });
@@ -2996,25 +2996,25 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const handleOpenQRCodeForForm = (form: SmartForm) => {
     let campaign = campaignsList.find((c) => c.formId === form.id);
     if (!campaign) {
+      const newCampaignId = `camp-${Date.now()}`;
       campaign = {
-        id: `camp-${Date.now()}`,
+        id: newCampaignId,
         formId: form.id,
         formTitle: form.title,
         title: `Campanha de Avaliação - ${form.title}`,
         campus: form.campus || 'Campus Tauá',
         segment: 'todos',
-        startDate: new Date().toLocaleDateString('pt-BR'),
-        endDate: '30/12/2026',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '2026-12-30',
         customMessage: 'Convite para Avaliação Institucional CPA IFCE',
         createdAt: new Date().toLocaleDateString('pt-BR'),
         status: form.status === 'Ativo' ? 'Ativa' : 'Rascunho',
         sentEmailsCount: 2450,
-        uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=suap-${Math.floor(
-          100000 + Math.random() * 900000
-        )}`,
+        uniqueTokenUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br'}/responder/${newCampaignId}`,
         qrCodeAccessCount: 184,
         qrCodeResponsesCount: 142,
       };
+      setCampaignsList([campaign, ...campaignsList]);
     }
     setViewingQrCodeCampaign(campaign);
     setOpenActionMenuId(null);
@@ -3029,8 +3029,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       return;
     }
 
+    const newCampaignId = `camp-${Date.now()}`;
     const newCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
+      id: newCampaignId,
       formId: campaignModalForm.id,
       formTitle: campaignModalForm.title,
       title: campaignTitle,
@@ -3049,9 +3050,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           : campaignSegment === 'docentes'
           ? 350
           : 300,
-      uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${campaignModalForm.id}?token=suap-${Math.floor(
-        100000 + Math.random() * 900000
-      )}`,
+      uniqueTokenUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br'}/responder/${newCampaignId}`,
     };
 
     setCampaignsList([newCampaign, ...campaignsList]);
