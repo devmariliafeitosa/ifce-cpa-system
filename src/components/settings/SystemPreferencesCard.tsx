@@ -1,5 +1,7 @@
 import { Building2 } from "lucide-react";
 
+import { SettingsSelect } from "./SettingsSelect";
+
 interface SystemPreferencesCardProps {
   systemName: string;
   defaultCampus: string;
@@ -8,6 +10,52 @@ interface SystemPreferencesCardProps {
   onDefaultCampusChange: (value: string) => void;
   onCurrentAcademicPeriodChange: (value: string) => void;
 }
+
+const campusOptions = [
+  {
+    value: "Campus Tauá",
+    label: "IFCE • Campus Tauá",
+  },
+  {
+    value: "Campus Crateús",
+    label: "IFCE • Campus Crateús",
+  },
+  {
+    value: "Campus Canindé",
+    label: "IFCE • Campus Canindé",
+  },
+  {
+    value: "Campus Iguatu",
+    label: "IFCE • Campus Iguatu",
+  },
+  {
+    value: "Campus Cedro",
+    label: "IFCE • Campus Cedro",
+  },
+  {
+    value: "Reitoria",
+    label: "IFCE • Reitoria Geral",
+  },
+];
+
+const academicPeriodOptions = [
+  {
+    value: "2025.2",
+    label: "2025.2 (Próximo Semestre)",
+  },
+  {
+    value: "2025.1",
+    label: "2025.1 (Semestre Vigente)",
+  },
+  {
+    value: "2024.2",
+    label: "2024.2 (Semestre Anterior)",
+  },
+  {
+    value: "2024.1",
+    label: "2024.1 (Histórico)",
+  },
+];
 
 export function SystemPreferencesCard({
   systemName,
@@ -44,7 +92,7 @@ export function SystemPreferencesCard({
           <input
             type="text"
             value={systemName}
-            onChange={(e) => onSystemNameChange(e.target.value)}
+            onChange={(event) => onSystemNameChange(event.target.value)}
             className="w-full h-8 px-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white transition-all"
             placeholder="Nome do sistema"
             required
@@ -61,18 +109,12 @@ export function SystemPreferencesCard({
               Campus Padrão
             </label>
 
-            <select
+            <SettingsSelect
               value={defaultCampus}
-              onChange={(e) => onDefaultCampusChange(e.target.value)}
-              className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="Campus Tauá">IFCE • Campus Tauá</option>
-              <option value="Campus Crateús">IFCE • Campus Crateús</option>
-              <option value="Campus Canindé">IFCE • Campus Canindé</option>
-              <option value="Campus Iguatu">IFCE • Campus Iguatu</option>
-              <option value="Campus Cedro">IFCE • Campus Cedro</option>
-              <option value="Reitoria">IFCE • Reitoria Geral</option>
-            </select>
+              options={campusOptions}
+              onChange={onDefaultCampusChange}
+              ariaLabel="Selecionar campus padrão"
+            />
           </div>
 
           <div className="space-y-1">
@@ -80,22 +122,19 @@ export function SystemPreferencesCard({
               Ano / Período Atual
             </label>
 
-            <select
+            <SettingsSelect
               value={currentAcademicPeriod}
-              onChange={(e) => onCurrentAcademicPeriodChange(e.target.value)}
-              className="w-full h-8 px-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] focus:bg-white cursor-pointer"
-            >
-              <option value="2025.2">2025.2 (Próximo Semestre)</option>
-              <option value="2025.1">2025.1 (Semestre Vigente)</option>
-              <option value="2024.2">2024.2 (Semestre Anterior)</option>
-              <option value="2024.1">2024.1 (Histórico)</option>
-            </select>
+              options={academicPeriodOptions}
+              onChange={onCurrentAcademicPeriodChange}
+              ariaLabel="Selecionar período acadêmico atual"
+            />
           </div>
         </div>
       </div>
 
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
         <span>Identificador Institucional: IFCE-CPA-TAU</span>
+
         <span className="text-[#006837] font-bold">Ativo</span>
       </div>
     </div>

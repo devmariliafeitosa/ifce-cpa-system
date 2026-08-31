@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Save, Info } from "lucide-react";
+import { useState, type FC, type FormEvent } from "react";
 import { ChangePasswordModal } from "../profile/ChangePasswordModal";
 import { SettingsHeader } from "./SettingsHeader";
 import { SettingsToast } from "./SettingsToast";
@@ -8,11 +7,14 @@ import { SystemPreferencesCard } from "./SystemPreferencesCard";
 import { EvaluationSettingsCard } from "./EvaluationSettingsCard";
 import { NotificationSettingsCard } from "./NotificationSettingsCard";
 import { SecuritySettingsCard } from "./SecuritySettingsCard";
+import { SettingsActions } from "./SettingsActions";
+
+
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = () => {
+export const SettingsView: FC<SettingsViewProps> = () => {
   // Preferências do Sistema
   const [systemName, setSystemName] = useState(
     "Sistema de Autoavaliação Institucional • CPA IFCE",
@@ -36,21 +38,23 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   const [sessionTimeout, setSessionTimeout] = useState("60");
   const [require2FA, setRequire2FA] = useState(false);
 
-  // Modal & Toast States
+  // Modal e Toast
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [showToast, setShowToast] = useState<SettingsToastData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveSettings = (event: FormEvent) => {
+    event.preventDefault();
     setIsSaving(true);
 
     setTimeout(() => {
       setIsSaving(false);
+
       setShowToast({
         message: "Configurações do sistema salvas e aplicadas com sucesso!",
         type: "success",
       });
+
       setTimeout(() => setShowToast(null), 3500);
     }, 400);
   };
@@ -60,6 +64,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       message: "Senha do coordenador atualizada com sucesso!",
       type: "success",
     });
+
     setTimeout(() => setShowToast(null), 4000);
   };
 
@@ -67,14 +72,17 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
     setSystemName("Sistema de Autoavaliação Institucional • CPA IFCE");
     setDefaultCampus("Campus Tauá");
     setCurrentAcademicPeriod("2025.1");
+
     setDefaultDuration("30");
     setAllowAnonymous(true);
     setRequireIdentification(true);
     setSingleResponsePerUser(true);
+
     setNotifyNewResponses(true);
     setNotifyCampaignEnding(true);
     setNotifyCampaignFinished(true);
     setAlertEmail("cpa.taua@ifce.edu.br");
+
     setSessionTimeout("60");
     setRequire2FA(false);
 
@@ -83,6 +91,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
         "Configurações restauradas para os padrões institucionais da CPA.",
       type: "info",
     });
+
     setTimeout(() => setShowToast(null), 3500);
   };
 
@@ -94,11 +103,10 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       {/* Toast Notification */}
       <SettingsToast toast={showToast} onClose={() => setShowToast(null)} />
 
-      {/* Main Settings Grid Form (2 Columns on large screens) */}
+      {/* Main Settings Grid Form */}
       <form onSubmit={handleSaveSettings} className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           {/* CARD 1: PREFERÊNCIAS DO SISTEMA */}
-
           <SystemPreferencesCard
             systemName={systemName}
             defaultCampus={defaultCampus}
@@ -142,30 +150,11 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
           />
         </div>
 
-        {/* Footer Actions: Botão Discreto Salvar Alterações */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <Info className="w-4 h-4 text-[#006837] shrink-0" />
-            <span>
-              As alterações efetuadas serão aplicadas imediatamente a todas as
-              sessões da CPA do Campus Tauá.
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="h-8 px-4 bg-[#006837] hover:bg-[#00522b] text-white font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? "Salvando..." : "Salvar Alterações"}</span>
-            </button>
-          </div>
-        </div>
+        {/* Ações */}
+        <SettingsActions isSaving={isSaving} />
       </form>
 
-      {/* Password Change Modal */}
+      {/* Modal de Alteração de Senha */}
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}

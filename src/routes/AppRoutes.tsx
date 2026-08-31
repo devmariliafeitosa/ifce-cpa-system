@@ -13,7 +13,7 @@ export function AppRoutes() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    navigate(ROUTES.LOGIN);
+    navigate(ROUTES.LOGIN, { replace: true });
   };
 
   return (
