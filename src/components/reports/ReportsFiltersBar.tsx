@@ -1,3 +1,4 @@
+import { ReportsSelect } from "./ReportsSelect";
 import {
   CheckCircle2,
   ChevronDown,
@@ -58,37 +59,35 @@ export function ReportsFiltersBar({
           <span className="hidden md:inline">Filtros:</span>
         </div>
 
-        <select
+        <ReportsSelect
           value={campusFilter}
-          onChange={(event) =>
-            onCampusChange(event.target.value)
-          }
-          className="h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
-        >
-          <option value="todos">Todos Campi</option>
+          options={[
+            {
+              value: "todos",
+              label: "Todos Campi",
+            },
+            ...availableCampuses.map((campus) => ({
+              value: campus,
+              label: campus,
+            })),
+          ]}
+          onChange={onCampusChange}
+        />
 
-          {availableCampuses.map((campus) => (
-            <option key={campus} value={campus}>
-              {campus}
-            </option>
-          ))}
-        </select>
-
-        <select
+        <ReportsSelect
           value={yearFilter}
-          onChange={(event) =>
-            onYearChange(event.target.value)
-          }
-          className="h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-[#006837] cursor-pointer"
-        >
-          <option value="todos">Todos Anos</option>
-
-          {availableYears.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+          options={[
+            {
+              value: "todos",
+              label: "Todos Anos",
+            },
+            ...availableYears.map((year) => ({
+              value: year,
+              label: year,
+            })),
+          ]}
+          onChange={onYearChange}
+        />
 
         <div className="relative min-w-[180px] max-w-[260px] flex-1">
           <button

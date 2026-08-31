@@ -1,3 +1,4 @@
+import { ReportsSelect } from "./ReportsSelect";
 import { Filter, Search } from "lucide-react";
 
 import type { ReportCampaignData } from "../../data/reportsData";
@@ -77,54 +78,55 @@ export function ReportsQuestionsToolbar({
             Área:
           </span>
 
-          <select
+          <ReportsSelect
             value={selectedDimension}
-            onChange={(event) =>
-              onDimensionChange(event.target.value)
-            }
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
-          >
-            <option value="todas">Todas as Áreas</option>
-
-            {campaign.dimensions.map((dimension) => (
-              <option
-                key={dimension.dimension}
-                value={dimension.dimension}
-              >
-                {dimension.dimension}
-              </option>
-            ))}
-          </select>
+            options={[
+              {
+                value: "todas",
+                label: "Todas as Áreas",
+              },
+              ...campaign.dimensions.map((dimension) => ({
+                value: dimension.dimension,
+                label: dimension.dimension,
+              })),
+            ]}
+            onChange={onDimensionChange}
+          />
         </div>
 
         <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/90 rounded-lg px-2 py-1">
           <Filter className="w-3 h-3 text-[#006837]" />
 
-          <select
+          <ReportsSelect
             value={classificationFilter}
-            onChange={(event) =>
+            options={[
+              {
+                value: "todas",
+                label: "Todas as classificações",
+              },
+              {
+                value: "Potencialidade",
+                label: "Potencialidade (≥ 70%)",
+              },
+              {
+                value: "Mediana",
+                label: "Avaliação Mediana (50-69%)",
+              },
+              {
+                value: "Fragilidade",
+                label: "Fragilidade (< 50%)",
+              },
+              {
+                value: "Sem respostas",
+                label: "Sem respostas",
+              },
+            ]}
+            onChange={(value) =>
               onClassificationChange(
-                event.target.value as ClassificationFilter,
+                value as ClassificationFilter,
               )
             }
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
-          >
-            <option value="todas">
-              Todas as classificações
-            </option>
-            <option value="Potencialidade">
-              Potencialidade (≥ 70%)
-            </option>
-            <option value="Mediana">
-              Avaliação Mediana (50-69%)
-            </option>
-            <option value="Fragilidade">
-              Fragilidade (&lt; 50%)
-            </option>
-            <option value="Sem respostas">
-              Sem respostas
-            </option>
-          </select>
+          />
         </div>
 
         <div className="relative">
