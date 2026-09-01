@@ -10,8 +10,23 @@ async function create(req, res) {
     try {
         const { action, description, timestamp } = req.body || {};
         const userId = req.user && (req.user.uid || req.user.id || req.user.userId);
+        
+        if (!userId) {
+          return res.status(401).json({ error: 'User not authenticated' });
+        }
+        
         const log = await logsService.recordAction(userId, action, description, timestamp);
-        return res.status(201).json(log);
+        
+        if (!log) {
+          return res.status(400).json({ error: 'Failed to record log' });
+        }
+        
+        return res.status(201).json({ 
+          success: true,
+          userId,
+          actionRecorded: log.action,
+          timestamp: log.storedAt 
+        });
   
     } catch (error) {
         return handleError(res, error);
