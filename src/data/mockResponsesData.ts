@@ -1,4 +1,4 @@
-import { TargetAudience } from '../types';
+import type { TargetAudience } from '../types';
 
 export interface ParticipantResponseRow {
   id: string;
@@ -8,12 +8,11 @@ export interface ParticipantResponseRow {
   segment: TargetAudience;
   campus: string;
   date: string;
-  answers: Record<string, string | number>; // questionId -> answer text or scale value
+  answers: Record<string, string | number>; 
 }
 
 export const MOCK_PARTICIPANT_RESPONSES: ParticipantResponseRow[] = [
-  // --- Form 1: Avaliação Institucional Unificada 2025.1 - Campus Tauá ---
-  // Alunos (Discentes)
+ 
   {
     id: 'resp-101',
     formId: 'form-cpa-taua-2025-1',
