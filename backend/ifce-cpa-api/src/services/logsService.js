@@ -35,7 +35,17 @@ async function getUserLog(userId) {
   }
 
   try {
-    return await logsRepository.buscarLogsPorUsuario(userId);
+    const logData = await logsRepository.buscarLogsPorUsuario(userId);
+    
+    if (logData?.actions) {
+      return {
+        ...logData,
+        actionsCount: logData.actions.length,
+        lastAction: logData.actions[logData.actions.length - 1] || null
+      };
+    }
+    
+    return logData;
   } catch (err) {
     console.error('Failed to fetch log:', err.message);
     return null;
@@ -44,7 +54,13 @@ async function getUserLog(userId) {
 
 async function getLogs() {
   try {
-    return await logsRepository.buscarTodosLogs();
+    const allLogs = await logsRepository.buscarTodosLogs();
+    
+    return allLogs.map(log => ({
+      ...log,
+      actionsCount: log.actions ? log.actions.length : 0,
+      lastAction: log.actions ? log.actions[log.actions.length - 1] : null
+    }));
   } catch (err) {
     console.error('Failed to fetch logs:', err.message);
     return [];
