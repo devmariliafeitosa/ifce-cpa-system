@@ -9,14 +9,15 @@ async function adicionarAcao(userId, textoAcao) {
 
   if (!doc.exists) {
     await docRef.set({
+      userId,
       actions: [textoAcao],
       createdAt: FieldValue.serverTimestamp(),
-      updateAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
   } else {
     await docRef.update({
       actions: FieldValue.arrayUnion(textoAcao),
-      updateAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
   }
 }
@@ -27,4 +28,10 @@ async function buscarLogsPorUsuario(userId) {
   return { id: doc.id, ...doc.data() };
 }
 
-module.exports = { adicionarAcao, buscarLogsPorUsuario };
+async function buscarTodosLogs() {
+  const snapshot = await logsCollection.get();
+  if (snapshot.empty) return [];
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+module.exports = { adicionarAcao, buscarLogsPorUsuario, buscarTodosLogs };
