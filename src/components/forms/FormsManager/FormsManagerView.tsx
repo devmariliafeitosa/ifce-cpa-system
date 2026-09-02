@@ -8,7 +8,6 @@ import {
   X,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { INITIAL_SMART_FORMS } from '../../../data/formsData.ts';
 import { getAccessToken, googleSignIn } from '../../../lib/googleAuth.ts';
 import type { GoogleFormFile } from '../../../services/googleFormsService';
 import { createGoogleForm, listGoogleForms } from '../../../services/googleFormsService';
@@ -21,10 +20,11 @@ import type {
   TargetAudience,
 } from '../../../types';
 import { CampaignQRCodeModal } from "../../CampaignQRCodeModal";
+import { useFormWizard } from '../../../hooks/useFormWizard';
+import { useFormsData } from '../../../hooks/useFormsData';
 
 import { QuestionClassificationView } from './components/QuestionClassificationView';
 import { FormsListPanel } from './components/FormsListPanel';
-import type { CPATemplateItem } from './data/cpaTemplates';
 import type { DriveFormMock } from './data/mockDriveForms';
 import { QUESTION_CATEGORIES } from './data/questionCategories';
 import { getCampaignStatus } from './utils/campaignStatus';
@@ -40,34 +40,49 @@ import { EmailEditModal } from './modals/EmailEditModal';
 import { QrCodePreviewModal } from './modals/QrCodePreviewModal';
 import { LaunchCampaignConfirmModal } from './modals/LaunchCampaignConfirmModal';
 
-// Re-exportado para compatibilidade com quem importava utilitários diretamente daqui
-export { getCampaignStatus, getCountdownBadgeInfo, formatCompactPeriod, getCompactStatusBadge } from './utils/campaignStatus';
-export { MOCK_DRIVE_FORMS } from './data/mockDriveForms';
-export type { DriveFormMock } from './data/mockDriveForms';
-export { QUESTION_CATEGORIES } from './data/questionCategories';
-export { CPA_TEMPLATES_DATA } from './data/cpaTemplates';
-export type { CPATemplateItem } from './data/cpaTemplates';
-export { IFCE_CAMPUSES, WIZARD_STEPS } from './data/constants';
-export { FormRowActionButton } from './components/FormRowActionButton';
-export { SendCampaignWizardModal } from './modals/SendCampaignWizardModal';
+
 
 interface FormsManagerViewProps {
-  onReturnToDashboard?: () => void;
   onSelectTab?: (tab: string) => void;
 }
 
 export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   onSelectTab,
 }) => {
-  // Main Forms State
-  const [forms, setForms] = useState<SmartForm[]>(() => {
-    const saved = localStorage.getItem('cpa_smart_forms');
-    return saved ? JSON.parse(saved) : INITIAL_SMART_FORMS;
-  });
+  const {
+    wizardStep,
+    setWizardStep,
+    wizardQuestions: formQuestions,
+    setWizardQuestions: setFormQuestions,
+    wizardTitle: formTitle,
+    setWizardTitle: setFormTitle,
+    wizardDescription: formDescription,
+    setWizardDescription: setFormDescription,
+    expandedQuestionIds,
+    setExpandedQuestionIds,
+    toggleQuestionExpanded,
+    handleMoveWizardQuestion,
+    handleUpdateWizardQuestionField,
+    handleRemoveWizardQuestion,
+    handleAddGeneralQuestion,
+  } = useFormWizard();
 
-  useEffect(() => {
-    localStorage.setItem('cpa_smart_forms', JSON.stringify(forms));
-  }, [forms]);
+  const {
+    forms,
+    setForms,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    audienceFilter,
+    setAudienceFilter,
+    campusFilter,
+    setCampusFilter,
+    periodFilter,
+    setPeriodFilter,
+    availablePeriods,
+    filteredForms,
+  } = useFormsData();
 
   // Notifications
   const [notification, setNotification] = useState<{
@@ -82,64 +97,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }, 5000);
   };
 
-  // Search and Filter State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'Ativo' | 'Rascunho' | 'Encerrado'>('todos');
-  const [audienceFilter, setAudienceFilter] = useState<'todos' | 'alunos' | 'docentes' | 'taes'>('todos');
-  const [campusFilter, setCampusFilter] = useState<string>('todos');
-  const [periodFilter, setPeriodFilter] = useState<string>('todos');
-
-  // Extrai dinamicamente apenas os períodos de formulários efetivamente cadastrados/ativos no sistema
-  const availablePeriods = React.useMemo(() => {
-    const periodMap = new Map<string, string>();
-
-    forms.forEach((f) => {
-      // Tenta capturar padrão de semestre no título ou período (ex: 2026.2, 2025.1)
-      const semesterMatch = (f.title + ' ' + (f.periodo || '')).match(/\b20\d{2}\.[12]\b/);
-      if (semesterMatch) {
-        const sem = semesterMatch[0];
-        periodMap.set(sem, `Semestre ${sem}`);
-      }
-
-      if (f.periodo && f.periodo.trim()) {
-        const trimmed = f.periodo.trim();
-        if (/^\d{4}\.[12]$/.test(trimmed)) {
-          periodMap.set(trimmed, `Semestre ${trimmed}`);
-        } else if (!semesterMatch) {
-          if (f.startDate) {
-            const parts = f.startDate.split('-');
-            if (parts.length === 3) {
-              const year = parts[0];
-              const month = parseInt(parts[1], 10);
-              const sem = `${year}.${month >= 7 ? 2 : 1}`;
-              periodMap.set(sem, `Semestre ${sem}`);
-            }
-          } else {
-            const dateMatch = trimmed.match(/20\d{2}/);
-            if (dateMatch) {
-              const year = dateMatch[0];
-              const sem = `${year}.1`;
-              periodMap.set(sem, `Semestre ${sem}`);
-            } else {
-              periodMap.set(trimmed, trimmed);
-            }
-          }
-        }
-      } else if (f.startDate && !semesterMatch) {
-        const parts = f.startDate.split('-');
-        if (parts.length === 3) {
-          const year = parts[0];
-          const month = parseInt(parts[1], 10);
-          const sem = `${year}.${month >= 7 ? 2 : 1}`;
-          periodMap.set(sem, `Semestre ${sem}`);
-        }
-      }
-    });
-
-    return Array.from(periodMap.entries())
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => b.value.localeCompare(a.value));
-  }, [forms]);
+  // Carregamento inicial, isLoading, forms/setForms, filtros de busca (searchTerm,
+  // statusFilter, audienceFilter, campusFilter, periodFilter), availablePeriods e
+  // filteredForms agora são responsabilidade do hook useFormsData().
 
   // Se o período filtrado não existir mais, volta para 'todos'
   useEffect(() => {
@@ -328,17 +288,13 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     });
   };
 
-  // Wizard State (Steps 1 to 5)
-  const [wizardStep, setWizardStep] = useState<number>(1);
+  // Wizard State (Steps 1 to 5) — wizardStep agora vem de useFormWizard()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<SmartForm | null>(null);
   const [selectedSegment, setSelectedSegment] = useState<'alunos' | 'docentes' | 'taes'>('alunos');
   const [completedSegments, setCompletedSegments] = useState<string[]>([]);
-  const [publishStatus, setPublishStatus] = useState<'Ativo' | 'Rascunho'>('Ativo');
 
-  // Form Builder Inputs
-  const [formTitle, setFormTitle] = useState('');
-  const [formDescription, setFormDescription] = useState('');
+  // Form Builder Inputs — formTitle/formDescription agora vêm de useFormWizard()
   const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
   const [formPeriodo, setFormPeriodo] = useState('2026.2');
   const [, setFormCategory] = useState<string>('Autoavaliação Institucional');
@@ -354,8 +310,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     'Eixo 3: Políticas Acadêmicas',
     'Eixo 5: Infraestrutura Física',
   ]);
-  const [formQuestions, setFormQuestions] = useState<SmartQuestion[]>([]);
-  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Record<string, boolean>>({});
+  // formQuestions/setFormQuestions e expandedQuestionIds/setExpandedQuestionIds
+  // agora vêm de useFormWizard() (aliased de wizardQuestions)
 
   // Step 6: Envio da Campanha state
   const [wizardCampaignName, setWizardCampaignName] = useState('');
@@ -383,23 +339,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [showEmailEditModal, setShowEmailEditModal] = useState(false);
   const [showQrCodePreviewModal, setShowQrCodePreviewModal] = useState(false);
 
-  const toggleQuestionExpanded = (id: string) => {
-    setExpandedQuestionIds((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const handleSelectPresetDays = (days: number) => {
-    setFormDurationPreset(days);
-    const baseDate = formStartDate ? new Date(formStartDate + 'T00:00:00') : new Date();
-    baseDate.setDate(baseDate.getDate() + days);
-    const year = baseDate.getFullYear();
-    const month = String(baseDate.getMonth() + 1).padStart(2, '0');
-    const day = String(baseDate.getDate()).padStart(2, '0');
-    setFormEndDate(`${year}-${month}-${day}`);
-  };
-
   // Open Create Wizard
   const handleOpenCreateModal = () => {
     setEditingForm(null);
@@ -418,7 +357,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormAudiences(['alunos', 'docentes', 'taes']);
     setSelectedSegment('alunos');
     setCompletedSegments([]);
-    setPublishStatus('Ativo');
     setFormEixos([
       'Eixo 1: Planejamento e Avaliação',
       'Eixo 3: Políticas Acadêmicas',
@@ -456,7 +394,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormDurationPreset('custom');
     setFormQuestions(form.questions || []);
     setExpandedQuestionIds({});
-    setPublishStatus(form.status === 'Rascunho' ? 'Rascunho' : 'Ativo');
     setSelectedSegment('alunos');
     const existingSegs: string[] = [];
     if (form.questions?.some((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos'))) existingSegs.push('alunos');
@@ -521,104 +458,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       };
       setForms([newForm, ...forms]);
       showNotification('success', `Progresso salvo! Novo formulário "${titleToSave}" armazenado em Rascunho.`);
-    }
-
-    setIsCreateModalOpen(false);
-  };
-
-  // Finalize / Publicar Form
-  const handleFinalizeForm = () => {
-    const titleToSave = formTitle.trim() || 'Avaliação Institucional CPA';
-    const questionsToSave: SmartQuestion[] =
-      formQuestions.length > 0
-        ? formQuestions
-        : [
-            {
-              id: `q-${Date.now()}-1`,
-              title: 'Como você avalia as condições de apoio acadêmico e infraestrutura do campus?',
-              type: 'SCALE',
-              required: true,
-              category: 'Ensino',
-              audiences: ['todos'],
-              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
-            },
-          ];
-
-    if (publishStatus !== 'Rascunho') {
-      if (!formStartDate || !formEndDate) {
-        showNotification('error', 'Por favor, defina o período de respostas (data inicial e final).');
-        return;
-      }
-
-      const startObj = new Date(`${formStartDate}T${formStartTime || '08:00'}:00`);
-      const endObj = new Date(`${formEndDate}T${formEndTime || '23:59'}:00`);
-
-      if (isNaN(startObj.getTime()) || isNaN(endObj.getTime())) {
-        showNotification('error', 'Datas ou horários inválidos informados para o período de respostas.');
-        return;
-      }
-
-      if (endObj <= startObj) {
-        showNotification('error', 'A data/horário de encerramento não pode ser anterior ou igual ao início.');
-        return;
-      }
-    }
-
-    const computedStatus =
-      publishStatus === 'Rascunho'
-        ? 'Rascunho'
-        : getCampaignStatus(formStartDate, formStartTime, formEndDate, formEndTime, publishStatus);
-
-    const formatDateShort = (dStr: string) => {
-      if (!dStr) return '';
-      const p = dStr.split('-');
-      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
-      return dStr;
-    };
-
-    const formattedPeriodo = `${formatDateShort(formStartDate)} ${formStartTime} - ${formatDateShort(formEndDate)} ${formEndTime}`;
-
-    if (editingForm) {
-      const updated: SmartForm = {
-        ...editingForm,
-        title: titleToSave,
-        description: formDescription,
-        campus: formCampus,
-        periodo: formattedPeriodo,
-        startDate: formStartDate,
-        startTime: formStartTime,
-        endDate: formEndDate,
-        endTime: formEndTime,
-        questions: questionsToSave,
-        updatedAt: new Date().toLocaleDateString('pt-BR'),
-        status: computedStatus,
-      };
-      setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
-      showNotification(
-        'success',
-        `Formulário "${titleToSave}" atualizado e salvo como ${computedStatus.toUpperCase()}!`
-      );
-    } else {
-      const newForm: SmartForm = {
-        id: `form-smart-${Date.now()}`,
-        title: titleToSave,
-        description: formDescription,
-        campus: formCampus,
-        periodo: formattedPeriodo,
-        startDate: formStartDate,
-        startTime: formStartTime,
-        endDate: formEndDate,
-        endTime: formEndTime,
-        status: computedStatus,
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        questions: questionsToSave,
-        responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
-      };
-      setForms([newForm, ...forms]);
-      showNotification(
-        'success',
-        `Formulário "${titleToSave}" cadastrado e publicado com status ${computedStatus.toUpperCase()}!`
-      );
     }
 
     setIsCreateModalOpen(false);
@@ -698,36 +537,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setIsCampaignSentSuccess(true);
   };
 
-  // Question Manipulation Helpers for Steps 2 and 4
-  const handleAddGeneralQuestion = () => {
-    const newId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    setFormQuestions((prev) => [
-      ...prev,
-      {
-        id: newId,
-        title: '',
-        type: 'SCALE',
-        required: true,
-        category: 'Ensino',
-        audiences: ['todos'],
-        options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
-      },
-    ]);
-    setExpandedQuestionIds({ [newId]: true });
-
-    // Exibe a nova pergunta centralizada na área visível
-    setTimeout(() => {
-      const el = document.getElementById(`wizard-question-card-${newId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const input = el.querySelector<HTMLInputElement>('input[type="text"]');
-        if (input) {
-          input.focus({ preventScroll: true });
-        }
-      }
-    }, 60);
-  };
-
+  // Question Manipulation Helpers for Steps 2 e 4
+  // handleAddGeneralQuestion agora vem de useFormWizard()
   const handleAddSegmentQuestion = (seg: 'alunos' | 'docentes' | 'taes') => {
     const newId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setFormQuestions((prev) => [
@@ -757,70 +568,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }, 60);
   };
 
-  const handleRemoveWizardQuestion = (id: string) => {
-    setFormQuestions((prev) => prev.filter((q) => q.id !== id));
-  };
-
-  const handleMoveWizardQuestion = (id: string, direction: 'up' | 'down') => {
-    setFormQuestions((prev) => {
-      const idx = prev.findIndex((q) => q.id === id);
-      if (idx === -1) return prev;
-      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
-      const newArr = [...prev];
-      const temp = newArr[idx];
-      newArr[idx] = newArr[targetIdx];
-      newArr[targetIdx] = temp;
-      return newArr;
-    });
-  };
-
-  const handleUpdateWizardQuestionField = (id: string, field: keyof SmartQuestion, value: any) => {
-    setFormQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === id) {
-          if (field === 'type') {
-            let options: string[] | undefined = undefined;
-            if (value === 'SCALE') {
-              options = ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'];
-            } else if (value === 'YES_NO') {
-              options = ['Sim', 'Não'];
-            } else if (['RADIO', 'CHECKBOX'].includes(value)) {
-              options = q.options && q.options.length > 0 ? q.options : ['Opção 1', 'Opção 2'];
-            }
-            return { ...q, type: value, options };
-          }
-          return { ...q, [field]: value };
-        }
-        return q;
-      })
-    );
-  };
-
-  const handleChooseNextSegment = () => {
-    if (!completedSegments.includes(selectedSegment)) {
-      setCompletedSegments((prev) => [...prev, selectedSegment]);
-    }
-    setWizardStep(3);
-    showNotification('info', `Perguntas salvas! Escolha o próximo segmento ou avance para a revisão.`);
-  };
-
-  // Helper to load CPA template items into current questions
-  const handleLoadCPATemplate = (template: CPATemplateItem) => {
-    if (!formTitle.trim()) {
-      setFormTitle(`${template.title} - ${new Date().getFullYear()}`);
-    }
-    if (!formDescription.trim()) {
-      setFormDescription(template.description);
-    }
-    setFormQuestions(
-      template.questions.map((q) => ({
-        ...q,
-        id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      }))
-    );
-    showNotification('success', `Perguntas do modelo "${template.title}" carregadas no formulário!`);
-  };
+  // handleRemoveWizardQuestion, handleMoveWizardQuestion e
+  // handleUpdateWizardQuestionField agora vêm de useFormWizard()
 
   // Participant Responder Mode ("Visão do Participante")
   const [respondingForm, setRespondingForm] = useState<SmartForm | null>(null);
@@ -857,13 +606,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     localStorage.setItem('cpa_submitted_campaign_ids', JSON.stringify(submittedCampaignIds));
   }, [submittedCampaignIds]);
 
-  const [campaignTitle, setCampaignTitle] = useState('');
-  const [campaignCampus, setCampaignCampus] = useState('Campus Tauá');
-  const [campaignSegment, setCampaignSegment] = useState<TargetAudience>('todos');
-  const [campaignStartDate, setCampaignStartDate] = useState('2026-08-15');
-  const [campaignEndDate, setCampaignEndDate] = useState('2026-12-30');
-  const [campaignCustomMessage, setCampaignCustomMessage] = useState('');
-
   const [campaignsList, setCampaignsList] = useState<Campaign[]>(() => {
     const saved = localStorage.getItem('cpa_campaigns_list');
     if (saved) return JSON.parse(saved);
@@ -894,16 +636,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Open Campaign Configuration Modal
   const handleOpenCampaignModal = (form: SmartForm) => {
     setCampaignModalForm(form);
-    setCampaignTitle(`Campanha de Avaliação Institucional 2026.2 - ${form.title}`);
-    setCampaignCampus(form.campus || 'Campus Tauá');
-    setCampaignSegment('todos');
-    setCampaignStartDate(new Date().toISOString().split('T')[0]);
-    const future = new Date();
-    future.setDate(future.getDate() + 90);
-    setCampaignEndDate(future.toISOString().split('T')[0]);
-    setCampaignCustomMessage(
-      `Prezado(a) participante,\n\nA Comissão Própria de Avaliação (CPA) do IFCE convida você a responder à "${form.title}".\n\nSua opinião é fundamental para orientar as melhorias de ensino, infraestrutura, biblioteca e gestão no campus. O preenchimento leva cerca de 3 a 5 minutos.\n\nAtenciosamente,\nCoordenação da CPA - IFCE.`
-    );
     setOpenActionMenuId(null);
   };
 
@@ -932,49 +664,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }
     setViewingQrCodeCampaign(campaign);
     setOpenActionMenuId(null);
-  };
-
-  // Launch / Save Campaign
-  const handleLaunchCampaign = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!campaignModalForm) return;
-    if (!campaignTitle.trim()) {
-      showNotification('error', 'Por favor, informe o título da campanha.');
-      return;
-    }
-
-    const newCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
-      formId: campaignModalForm.id,
-      formTitle: campaignModalForm.title,
-      title: campaignTitle,
-      campus: campaignCampus,
-      segment: campaignSegment,
-      startDate: campaignStartDate,
-      endDate: campaignEndDate,
-      customMessage: campaignCustomMessage,
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'Ativa',
-      sentEmailsCount:
-        campaignSegment === 'todos'
-          ? 2450
-          : campaignSegment === 'alunos'
-          ? 1800
-          : campaignSegment === 'docentes'
-          ? 350
-          : 300,
-      uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${campaignModalForm.id}?token=suap-${Math.floor(
-        100000 + Math.random() * 900000
-      )}`,
-    };
-
-    setCampaignsList([newCampaign, ...campaignsList]);
-    setForms(forms.map((f) => (f.id === campaignModalForm.id ? { ...f, status: 'Ativo' } : f)));
-    showNotification(
-      'success',
-      `Campanha "${campaignTitle}" configurada e ativada com sucesso! Convocação disparada para o e-mail institucional.`
-    );
-    setCampaignModalForm(null);
   };
 
   // Action Menu Handlers
@@ -1019,102 +708,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }
   };
 
-  // Save Created or Edited Form
-  const handleSaveForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTitle.trim()) {
-      showNotification('error', 'Por favor, informe o título do formulário.');
-      return;
-    }
-
-    if (formQuestions.length === 0) {
-      showNotification('error', 'Adicione pelo menos uma pergunta ao formulário.');
-      return;
-    }
-
-    if (editingForm) {
-      // Update
-      const updated: SmartForm = {
-        ...editingForm,
-        title: formTitle,
-        description: formDescription,
-        campus: formCampus,
-        questions: formQuestions,
-        updatedAt: new Date().toLocaleDateString('pt-BR'),
-      };
-      setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
-      showNotification('success', `Formulário "${formTitle}" atualizado com sucesso!`);
-    } else {
-      // Create New
-      const newForm: SmartForm = {
-        id: `form-smart-${Date.now()}`,
-        title: formTitle,
-        description: formDescription,
-        campus: formCampus,
-        status: 'Rascunho',
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        questions: formQuestions,
-        responsesCount: {
-          total: 0,
-          alunos: 0,
-          docentes: 0,
-          taes: 0,
-        },
-      };
-      setForms([newForm, ...forms]);
-      showNotification('success', `Novo Formulário "${formTitle}" salvo em rascunho com sucesso!`);
-    }
-
-    setIsCreateModalOpen(false);
-  };
-
-  // Question manipulation helpers
-  const handleAddQuestion = () => {
-    const newId = `q-${Date.now()}`;
-    setFormQuestions((prev) => [
-      ...prev,
-      {
-        id: newId,
-        title: '',
-        type: 'SCALE',
-        required: true,
-        audiences: ['todos'],
-      },
-    ]);
-    setTimeout(() => {
-      const el = document.getElementById(`wizard-question-card-${newId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const input = el.querySelector<HTMLInputElement>('input[type="text"]');
-        if (input) {
-          input.focus({ preventScroll: true });
-        }
-      }
-    }, 60);
-  };
-
-  const handleRemoveQuestion = (id: string) => {
-    if (formQuestions.length <= 1) {
-      showNotification('info', 'O formulário deve ter no mínimo uma pergunta.');
-      return;
-    }
-    setFormQuestions(formQuestions.filter((q) => q.id !== id));
-  };
-
-  const handleUpdateQuestion = (id: string, field: keyof SmartQuestion, value: any) => {
-    setFormQuestions(
-      formQuestions.map((q) => {
-        if (q.id === id) {
-          if (field === 'type' && value === 'YES_NO') {
-            return { ...q, type: 'YES_NO', options: ['Sim', 'Não'] };
-          }
-          return { ...q, [field]: value };
-        }
-        return q;
-      })
-    );
-  };
-
   // Question option manipulation helpers
   const handleAddQuestionOption = (questionId: string) => {
     setFormQuestions(
@@ -1143,39 +736,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         if (q.id !== questionId) return q;
         const opts = (q.options || []).filter((_, idx) => idx !== optionIdx);
         return { ...q, options: opts };
-      })
-    );
-  };
-
-  const handleToggleAudience = (questionId: string, target: TargetAudience) => {
-    setFormQuestions(
-      formQuestions.map((q) => {
-        if (q.id !== questionId) return q;
-
-        let newAudiences = [...q.audiences];
-
-        if (target === 'todos') {
-          // If toggled 'todos'
-          if (newAudiences.includes('todos')) {
-            newAudiences = ['alunos']; // fallback
-          } else {
-            newAudiences = ['todos'];
-          }
-        } else {
-          // If 'todos' was checked, remove 'todos' first
-          if (newAudiences.includes('todos')) {
-            newAudiences = newAudiences.filter((a) => a !== 'todos');
-          }
-
-          if (newAudiences.includes(target)) {
-            newAudiences = newAudiences.filter((a) => a !== target);
-            if (newAudiences.length === 0) newAudiences = ['todos'];
-          } else {
-            newAudiences.push(target);
-          }
-        }
-
-        return { ...q, audiences: newAudiences };
       })
     );
   };
@@ -1384,61 +944,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setDeletingForm(null);
   };
 
-  // Handlers mantidos para as próximas etapas do módulo.
-  // As referências abaixo evitam que o TypeScript trate essas funções como código morto
-  // enquanto as telas correspondentes ainda não estão conectadas nesta refatoração.
-  void handleSelectPresetDays;
-  void handleFinalizeForm;
-  void handleChooseNextSegment;
-  void handleLoadCPATemplate;
-  void handleLaunchCampaign;
-  void handleSaveForm;
-  void handleAddQuestion;
-  void handleRemoveQuestion;
-  void handleUpdateQuestion;
-  void handleToggleAudience;
-
-  // Filtered forms list for table and grid
-  const filteredForms = forms.filter((f) => {
-    const matchesSearch =
-      f.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'todos' || f.status === statusFilter;
-    const matchesAudience =
-      audienceFilter === 'todos' ||
-      f.questions.some(
-        (q) => q.audiences.includes('todos') || q.audiences.includes(audienceFilter as any)
-      );
-    const matchesCampus = campusFilter === 'todos' || f.campus === campusFilter;
-    const matchesPeriod = (() => {
-      if (periodFilter === 'todos') return true;
-      const filterLower = periodFilter.toLowerCase();
-
-      if (f.periodo && f.periodo.toLowerCase().includes(filterLower)) return true;
-      if (f.title && f.title.toLowerCase().includes(filterLower)) return true;
-
-      if (f.startDate) {
-        const parts = f.startDate.split('-');
-        if (parts.length === 3) {
-          const year = parts[0];
-          const month = parseInt(parts[1], 10);
-          const sem = `${year}.${month >= 7 ? 2 : 1}`;
-          if (sem.toLowerCase() === filterLower) return true;
-        }
-      }
-
-      const yearOnly = filterLower.split('.')[0];
-      if (yearOnly.length === 4 && !isNaN(Number(yearOnly))) {
-        if (f.periodo && f.periodo.includes(yearOnly)) return true;
-        if (f.startDate && f.startDate.includes(yearOnly)) return true;
-        if (f.createdAt && f.createdAt.includes(yearOnly)) return true;
-      }
-
-      return false;
-    })();
-
-    return matchesSearch && matchesStatus && matchesAudience && matchesCampus && matchesPeriod;
-  });
+  // filteredForms agora vem de useFormsData()
 
   // Render Classificação das Perguntas Screen if active
   if (classifyingForm) {
@@ -1636,7 +1142,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
           <input
             type="text"
             value={q.title}
-            onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value)}
+            onChange={(e) => handleUpdateWizardQuestionField(q.id, 'title', e.target.value as any)}
             placeholder="Ex: Como você avalia a infraestrutura física dos laboratórios do campus?"
             className="w-full h-10 px-3.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837]"
           />
@@ -1696,7 +1202,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
               <input
                 type="checkbox"
                 checked={q.required ?? true}
-                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked)}
+                onChange={(e) => handleUpdateWizardQuestionField(q.id, 'required', e.target.checked as any)}
                 className="accent-[#006837] w-4 h-4 cursor-pointer"
               />
               <span>Resposta Obrigatória</span>
