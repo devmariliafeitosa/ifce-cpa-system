@@ -1,5 +1,6 @@
+import { getCampaignStatus } from "@/src/utils/formsUtils";
 import { INITIAL_SMART_FORMS } from "../../../data/formsData";
-import { getCampaignStatus } from "../../../components/FormsManagerView";
+
 import type { Campaign, FormSubmission, SmartForm } from "../../../types";
 
 const CAMPAIGNS_KEY = "cpa_campaigns_list";
@@ -43,7 +44,7 @@ export function isCampaignOpen(campaign: Campaign): boolean {
     campaign.endTime,
     campaign.status
   );
-  return status === "Ativa";
+  return status === "Publicado";
 }
 
 // RN004 — cada usuário só pode responder uma vez por campanha/ciclo.
