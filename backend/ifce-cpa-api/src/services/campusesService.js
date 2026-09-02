@@ -1,5 +1,5 @@
 const campusesRepository = require('../repositories/campusesRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 
 async function criarCampus({ nome, sigla, ativo = true }, criadoPor) {
   if (!nome || !sigla) {
