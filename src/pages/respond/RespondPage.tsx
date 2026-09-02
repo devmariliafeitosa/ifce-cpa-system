@@ -167,14 +167,18 @@ export const RespondPage: React.FC = () => {
     setStep("success");
   };
 
-  const stepIndex =
-    step === "identify" ? 1 : step === "segment" ? 2 : step === "questionnaire" ? 3 : 4;
+  const stepIndex: Record<FlowStep, number> = {
+    identify: 1,
+    segment: 2,
+    questionnaire: 3,
+    success: 4,
+  };
 
   return (
     <RespondShell
       campaignTitle={campaign.title}
       campus={campaign.campus}
-      stepIndex={stepIndex}
+      stepIndex={stepIndex[step]}
     >
       {step === "identify" && (
         <EmailIdentifyStep
