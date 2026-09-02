@@ -3,24 +3,35 @@ const { getFirestore } = require('firebase-admin/firestore');
 
 function carregarCredencial(envVar, caminhoFallback) {
   if (process.env[envVar]) {
-    return JSON.parse(process.env[envVar]);
+    try {
+      return JSON.parse(process.env[envVar]);
+    } catch (err) {
+      console.error(`Erro ao parsear JSON da variável ${envVar}:`, err.message);
+    }
   }
-  // fallback pra desenvolvimento local
+  // Fallback para desenvolvimento local
   return require(caminhoFallback);
 }
 
-// Credenciais dos dois projetos
+// Credenciais dos projetos
 const serviceAccountPrincipal = carregarCredencial(
   'FIREBASE_SERVICE_ACCOUNT',
   '../../serviceAccountKey.json'
 );
 
-const serviceAccountLogs = carregarCredencial(
-  'FIREBASE_LOGS_SERVICE_ACCOUNT',
-  '../../serviceAccountLogsKey.json'
-);
+// Tenta carregar o banco de logs; se não existir o segundo JSON localmente, usa a principal para não travar o dev
+let serviceAccountLogs;
+try {
+  serviceAccountLogs = carregarCredencial(
+    'FIREBASE_LOGS_SERVICE_ACCOUNT',
+    '../../serviceAccountLogsKey.json'
+  );
+} catch (e) {
+  console.warn('⚠️ serviceAccountLogsKey.json não encontrado. Usando a chave principal para os logs.');
+  serviceAccountLogs = serviceAccountPrincipal;
+}
 
-
+// Inicializa os apps do Firebase com a função modular 'cert'
 const appPrincipal = initializeApp(
   {
     credential: cert(serviceAccountPrincipal),
@@ -37,6 +48,7 @@ const appLogs = initializeApp(
   'logs'
 );
 
+// Instâncias do Firestore
 const dbPrincipal = getFirestore(appPrincipal);
 const dbLogs = getFirestore(appLogs);
 
