@@ -1,6 +1,6 @@
 const respostaFormsRepository = require('../repositories/respostaFormsRepository');
 const formsRepository = require('../repositories/formsRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 const { dbPrincipal } = require('../config/database');
 
 function validarAnswers(answers) {
