@@ -1,5 +1,5 @@
 const questionsRepository = require('../repositories/questionsRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 
 const AUDIENCES_VALIDAS = ['aluno', 'docente', 'servidor', 'coordenador'];
 const TIPOS_VALIDOS = ['multipla_escolha', 'texto_livre', 'escala', 'sim_nao'];
