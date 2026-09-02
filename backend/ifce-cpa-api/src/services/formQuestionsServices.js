@@ -1,7 +1,7 @@
 const formQuestionsRepository = require('../repositories/formQuestionsRepository');
 const formsRepository = require('../repositories/formsRepository');
 const questionsRepository = require('../repositories/questionsRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 
 async function vincularQuestion(formId, questionId, criadoPor) {
   const form = await formsRepository.buscarFormPorId(formId);
