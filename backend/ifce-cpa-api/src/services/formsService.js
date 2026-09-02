@@ -1,5 +1,5 @@
 const formsRepository = require('../repositories/formsRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 
 const STATUS_VALIDOS = ['rascunho', 'publicado', 'encerrado'];
 
@@ -81,6 +81,19 @@ async function encerrarForm(formId, atualizadoPor) {
   });
 }
 
+async function deletarForm(formId, deletadoPor) {
+  const existente = await formsRepository.buscarFormPorId(formId);
+  if (!existente) throw new Error(`Formulário "${formId}" não encontrado`);
+
+  await formsRepository.removerForm(formId);
+
+  await registrarLog({
+    userId: deletadoPor,
+    tipo: 'DELETE',
+    descricao: `deletou o formulário "${existente.title}"`,
+  });
+}
+
 module.exports = {
   criarForm,
   buscarForm,
@@ -88,4 +101,5 @@ module.exports = {
   atualizarForm,
   ativarForm,
   encerrarForm,
+  deletarForm, // Adicionado às exportações
 };
