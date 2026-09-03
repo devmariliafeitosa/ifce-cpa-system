@@ -1,7 +1,7 @@
 const { dbPrincipal } = require('../config/database');
 const usersRepository = require('../repositories/usersRepository');
-const roleRepository = require('../repositories/roleRepository');
-const { registrarLog } = require('./logsServices');
+const roleRepository = require('../repositories/rolesRepository');
+const { registrarLog } = require('./logsService');
 
 const ROLES_VALIDOS = ['aluno', 'docente', 'servidor', 'coordenador'];
 
