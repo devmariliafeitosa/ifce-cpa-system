@@ -27,4 +27,23 @@ function requireOwnerOrAdmin(req, res, next) {
 	return next();
 }
 
-module.exports = { authenticate, requireAdmin, requireOwnerOrAdmin };
+function exigirRole(...rolesPermitidas) {
+  return (req, res, next) => {
+    if (!req.user) {
+      const erro = new Error('Não autenticado');
+      erro.status = 401;
+      return next(erro);
+    }
+
+    const temPermissao = req.user.roles?.some((role) => rolesPermitidas.includes(role));
+    if (!temPermissao) {
+      const erro = new Error('Sem permissão para essa ação');
+      erro.status = 403;
+      return next(erro);
+    }
+
+    next();
+  };
+}
+
+module.exports = { authenticate, requireAdmin, requireOwnerOrAdmin, exigirRole };

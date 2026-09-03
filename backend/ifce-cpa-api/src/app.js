@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const questionsRoutes = require('./routes/questionsRoutes');
 const express = require('express');
 const cors = require('cors');
 const logsRoutes = require('./routes/logsRoutes');
@@ -29,5 +30,8 @@ app.use((error, req, res, next) => {
 	console.error(error);
 	return res.status(500).json({ error: 'Server Inner Error' });
 });
+
+
+app.use('/questions', questionsRoutes);
 
 module.exports = app;
