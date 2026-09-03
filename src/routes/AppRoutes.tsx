@@ -5,6 +5,8 @@ import { LoginPage } from "../pages/auth/LoginPage";
 import { ResetPasswordPage } from "../pages/auth/ResetPasswordPage";
 import { DashboardPage } from "../pages/DashboardPage/DashboardPage";
 import { ProfilePage } from "../pages/profile/ProfilePage";
+import { RespondPage } from "../pages/respond/RespondPage";
+
 import { ROUTES } from "./routePaths";
 
 export function AppRoutes() {
@@ -30,6 +32,8 @@ export function AppRoutes() {
       />
 
       <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+
+      <Route path={ROUTES.RESPOND} element={<RespondPage />} />
 
       <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
     </Routes>

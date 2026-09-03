@@ -4,4 +4,9 @@ export const ROUTES = {
   RESET_PASSWORD: "/redefinir-senha",
   DASHBOARD: "/dashboard",
   PROFILE: "/perfil",
+  RESPOND: "/responder/:token",
 } as const;
+
+// Helper to build a concrete participant response URL for a given campaign.
+export const buildRespondPath = (campaignToken: string) =>
+  `/responder/${campaignToken}`;

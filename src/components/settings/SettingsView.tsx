@@ -1,13 +1,14 @@
-import { SettingsActions } from "./SettingsActions";
 import { useState, type FC, type FormEvent } from "react";
-
 import { ChangePasswordModal } from "../profile/ChangePasswordModal";
+import { SettingsHeader } from "./SettingsHeader";
+import { SettingsToast } from "./SettingsToast";
+import type { SettingsToastData } from "./SettingsToast";
+import { SystemPreferencesCard } from "./SystemPreferencesCard";
 import { EvaluationSettingsCard } from "./EvaluationSettingsCard";
 import { NotificationSettingsCard } from "./NotificationSettingsCard";
 import { SecuritySettingsCard } from "./SecuritySettingsCard";
-import { SettingsHeader } from "./SettingsHeader";
-import { SettingsToast, type SettingsToastData } from "./SettingsToast";
-import { SystemPreferencesCard } from "./SystemPreferencesCard";
+import { SettingsActions } from "./SettingsActions";
+
 
 interface SettingsViewProps {
   onReturnToDashboard?: () => void;
