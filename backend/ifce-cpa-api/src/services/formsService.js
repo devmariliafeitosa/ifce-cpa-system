@@ -1,5 +1,5 @@
 const formsRepository = require('../repositories/formsRepository');
-const { registrarLog } = require('./logsServices');
+const { registrarLog } = require('./logsService');
 
 const STATUS_VALIDOS = ['rascunho', 'publicado', 'encerrado'];
 

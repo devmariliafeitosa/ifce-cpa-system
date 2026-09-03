@@ -1,10 +1,13 @@
 require('dotenv').config();
 
 const questionsRoutes = require('./routes/questionsRoutes');
+const logsRoutes = require('./routes/logsRoutes');
+const usersRoutes = require('./routes/usersRoutes');
+const formsRoutes = require('./routes/formsRoutes');
+
+const { requestLogger } = require('./middlewares/requestLogger');
 const express = require('express');
 const cors = require('cors');
-const logsRoutes = require('./routes/logsRoutes');
-const { requestLogger } = require('./middlewares/requestLogger');
 
 const app = express();
 const corsOrigins = process.env.CORS_ORIGIN
@@ -33,5 +36,7 @@ app.use((error, req, res, next) => {
 
 
 app.use('/questions', questionsRoutes);
+app.use('/users', usersRoutes);
+app.use('/forms', formsRoutes);
 
 module.exports = app;
