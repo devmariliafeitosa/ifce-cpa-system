@@ -23,4 +23,22 @@ async function listarUsuarios() {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-module.exports = { criarUsuario, buscarUsuarioPorId, atualizarUsuario, listarUsuarios };
+async function buscarUsuarioPorEmail(email) {
+  const snapshot = await usersCollection
+    .where('email', '==', email)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+
+  return {
+    id: doc.id,
+    ...doc.data(),
+  };
+}
+
+module.exports = { criarUsuario, buscarUsuarioPorId, atualizarUsuario, listarUsuarios, buscarUsuarioPorEmail };
