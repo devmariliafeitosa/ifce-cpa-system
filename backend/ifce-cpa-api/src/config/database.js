@@ -1,43 +1,39 @@
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
+const path = require('node:path');
 
 function carregarCredencial(envVar, caminhoFallback) {
   if (process.env[envVar]) {
     return JSON.parse(process.env[envVar]);
   }
-  // fallback pra desenvolvimento local
+
   return require(caminhoFallback);
 }
 
-// Credenciais dos dois projetos
-const serviceAccountPrincipal = carregarCredencial(
+const serviceAccount = carregarCredencial(
   'FIREBASE_SERVICE_ACCOUNT',
-  '../../serviceAccountKey.json'
+  path.resolve(__dirname, '../../serviceAccountKey.json')
 );
-
-const serviceAccountLogs = carregarCredencial(
-  'FIREBASE_LOGS_SERVICE_ACCOUNT',
-  '../../serviceAccountLogsKey.json'
-);
-
 
 const appPrincipal = initializeApp(
   {
-    credential: cert(serviceAccountPrincipal),
-    projectId: serviceAccountPrincipal.project_id,
+    credential: cert(serviceAccount),
+    projectId: serviceAccount.project_id,
   },
-  'principal'
-);
-
-const appLogs = initializeApp(
-  {
-    credential: cert(serviceAccountLogs),
-    projectId: serviceAccountLogs.project_id,
-  },
-  'logs'
+  "principal"
 );
 
 const dbPrincipal = getFirestore(appPrincipal);
-const dbLogs = getFirestore(appLogs);
 
-module.exports = { dbPrincipal, dbLogs };
+// Por enquanto os logs ficam no mesmo Firestore.
+const dbLogs = dbPrincipal;
+
+// Firebase Authentication usado pelo backend.
+const authPrincipal = getAuth(appPrincipal);
+
+module.exports = {
+  dbPrincipal,
+  dbLogs,
+  authPrincipal,
+};

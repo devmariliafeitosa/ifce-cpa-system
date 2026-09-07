@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const authRoutes = require('./routes/authRoutes');
 const questionsRoutes = require('./routes/questionsRoutes');
 const logsRoutes = require('./routes/logsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
@@ -21,6 +22,7 @@ app.use(requestLogger);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/logs', logsRoutes);
+app.use('/api/auth', authRoutes);
 
 app.use((error, req, res, next) => {
 	if (error instanceof SyntaxError && error.status === 400 && error.body) {

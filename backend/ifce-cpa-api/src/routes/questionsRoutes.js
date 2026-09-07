@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 
 const questionsController = require('../controllers/questionController');
-const { exigirRole } = require('../middlewares/authMiddleware');
+const { authenticate, exigirRole} = require('../middlewares/authMiddleware');
 
-router.post('/', exigirRole('coordenador'), questionsController.criar);
-router.put('/:id', exigirRole('coordenador'), questionsController.atualizar);
-router.delete('/:id', exigirRole('coordenador'), questionsController.remover);
+router.post('/', authenticate, exigirRole('coordenador'), questionsController.criar);
+router.put('/:id', authenticate, exigirRole('coordenador'), questionsController.atualizar);
+router.delete('/:id', authenticate, exigirRole('coordenador'), questionsController.remover);
 
 router.get('/:id', questionsController.buscarPorId);
 router.get('/', questionsController.listar);
