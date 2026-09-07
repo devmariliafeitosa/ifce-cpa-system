@@ -58,7 +58,7 @@ export function LoginForm({
     const result = await authenticateCoordinator({
       email: data.email,
       password: data.password,
-      prefilledEmail,
+      rememberMe: data.rememberMe ?? false,
     });
 
     if (!result.success) {
