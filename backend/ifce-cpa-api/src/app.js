@@ -5,6 +5,9 @@ const questionsRoutes = require('./routes/questionsRoutes');
 const logsRoutes = require('./routes/logsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const formsRoutes = require('./routes/formsRoutes');
+const respostaFormsRoutes = require('./routes/respostaFormsRoutes');
+const formQuestionsRoutes = require('./routes/formQuestionRoutes');
+
 
 const { requestLogger } = require('./middlewares/requestLogger');
 const express = require('express');
@@ -40,5 +43,7 @@ app.use((error, req, res, next) => {
 app.use('/questions', questionsRoutes);
 app.use('/users', usersRoutes);
 app.use('/forms', formsRoutes);
+app.use('/respostaForms', respostaFormsRoutes);
+app.use('/form-questions', formQuestionsRoutes);
 
 module.exports = app;
