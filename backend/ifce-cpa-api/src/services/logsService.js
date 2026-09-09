@@ -1,6 +1,6 @@
 // src/services/logsService.js
 const logsRepository = require('../repositories/logsRepository');
-const { buildAction, isValidAction } = require('../models/logs');
+const { buildAction } = require('../models/logs');
 
 const VALID_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE', 'AUTH', 'RESPONSE', 'READ', 'ERROR']);
 
@@ -15,7 +15,9 @@ async function recordAction(userId, action, description, timestamp = new Date())
     return null;
   }
 
-  const validatedAction = validateAction(action);
+  const validatedAction = VALID_ACTIONS.has(action)
+  ? action
+  : 'READ';
   
   try {
     const actionText = buildAction(validatedAction, description, timestamp);
