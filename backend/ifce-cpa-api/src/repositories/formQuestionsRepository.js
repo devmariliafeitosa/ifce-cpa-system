@@ -1,12 +1,12 @@
 const { dbPrincipal } = require('../config/database');
 const { FieldValue } = require('firebase-admin/firestore');
 
-const formQuestionsCollection = dbPrincipal.collection('formQuestions');
+const formQuestionsCollection = dbPrincipal.collection('forms_questions_relation');
 
 async function criarRelacao(formId, questionId) {
-  const docRef = formQuestionsCollection.doc();
+  const docRef = formQuestionsCollection.doc(); // gera id aleatório
   await docRef.set({
-    idForm: dbPrincipal.collection('forms').doc(formId),
+    idForms: dbPrincipal.collection('forms').doc(formId),
     idQuestion: dbPrincipal.collection('questions').doc(questionId),
     createdAt: FieldValue.serverTimestamp(),
   });
@@ -17,7 +17,7 @@ async function buscarQuestionsPorForm(formId) {
   const formRef = dbPrincipal.collection('forms').doc(formId);
 
   const snapshot = await formQuestionsCollection
-    .where('idForm', '==', formRef)
+    .where('idForms', '==', formRef)
     .get();
 
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
