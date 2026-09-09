@@ -1,15 +1,11 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import type { User } from 'firebase/auth';
 import {
   getAuth,
-  signInWithPopup,
   GoogleAuthProvider,
   onAuthStateChanged,
-  User,
+  signInWithPopup,
   signOut,
-  sendPasswordResetEmail,
-  verifyPasswordResetCode,
-  confirmPasswordReset,
-  ActionCodeSettings,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -64,7 +60,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 
     cachedAccessToken = credential.accessToken;
     return { user: result.user, accessToken: cachedAccessToken };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro no Login Google:', error);
     throw error;
   } finally {
@@ -79,58 +75,4 @@ export const getAccessToken = (): string | null => {
 export const googleLogout = async () => {
   await signOut(auth);
   cachedAccessToken = null;
-};
-
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  'auth/invalid-email': 'E-mail em formato inválido.',
-  'auth/user-not-found': 'Nenhuma conta encontrada para este e-mail.',
-  'auth/missing-email': 'Informe um e-mail válido.',
-  'auth/invalid-continue-uri': 'URL de redirecionamento inválida para redefinição de senha.',
-  'auth/unauthorized-continue-uri': 'Domínio não autorizado para recuperação de senha.',
-  'auth/expired-action-code': 'O link de redefinição expirou. Solicite um novo link.',
-  'auth/invalid-action-code': 'O link de redefinição é inválido ou já foi utilizado.',
-  'auth/weak-password': 'A nova senha é muito fraca.',
-  'auth/network-request-failed': 'Falha de rede. Verifique sua conexão e tente novamente.',
-  'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-};
-
-const getAuthErrorMessage = (error: any, fallback: string): string => {
-  const code = error?.code as string | undefined;
-  if (code && AUTH_ERROR_MESSAGES[code]) {
-    return AUTH_ERROR_MESSAGES[code];
-  }
-  return fallback;
-};
-
-export const sendResetPasswordEmail = async (
-  email: string,
-  actionCodeSettings?: ActionCodeSettings
-): Promise<void> => {
-  try {
-    await sendPasswordResetEmail(auth, email, actionCodeSettings);
-  } catch (error: any) {
-    throw new Error(
-      getAuthErrorMessage(error, 'Não foi possível enviar o link de recuperação no momento.')
-    );
-  }
-};
-
-export const validatePasswordResetCode = async (oobCode: string): Promise<string> => {
-  try {
-    return await verifyPasswordResetCode(auth, oobCode);
-  } catch (error: any) {
-    throw new Error(
-      getAuthErrorMessage(error, 'O link de redefinição nao é válido.')
-    );
-  }
-};
-
-export const applyPasswordReset = async (oobCode: string, newPassword: string): Promise<void> => {
-  try {
-    await confirmPasswordReset(auth, oobCode, newPassword);
-  } catch (error: any) {
-    throw new Error(
-      getAuthErrorMessage(error, 'Não foi possível redefinir a senha com este link.')
-    );
-  }
 };

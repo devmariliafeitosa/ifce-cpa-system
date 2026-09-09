@@ -1,27 +1,21 @@
 import React, { useState, useRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import {
+  QRCodeSVG } from 'qrcode.react';
 import {
   X,
   QrCode,
   Download,
-  Printer,
   Copy,
   Check,
   ExternalLink,
-  Building2,
   Calendar,
-  Users,
-  CheckCircle2,
   Share2,
   BarChart3,
   Sliders,
   FileText,
-  Sparkles,
-  Info,
-  Maximize2
 } from 'lucide-react';
-import { Campaign } from '../types';
-import { IFCELogo } from './IFCELogo';
+import type { Campaign } from '../types';
+import { IFCELogo } from './auth/IFCELogo';
 
 interface CampaignQRCodeModalProps {
   campaign: Campaign;
@@ -76,7 +70,7 @@ export const CampaignQRCodeModal: React.FC<CampaignQRCodeModalProps> = ({
   const handleTestLink = () => {
     window.open(campaignUrl, '_blank', 'noopener,noreferrer');
     if (showNotification) {
-      showNotification('info', 'Abrindo o formulário da campanha em uma nova aba...');
+      showNotification('info', 'Abrindo o questionário da campanha em uma nova aba...');
     }
   };
 
@@ -587,7 +581,7 @@ export const CampaignQRCodeModal: React.FC<CampaignQRCodeModalProps> = ({
                 {/* CARD 3: Link do Formulário & Testar Link */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Link Direto do Formulário</span>
+                    <span>Link Direto do Questionário</span>
                     <span className="text-[10px] text-emerald-700 font-semibold">CPA SUAP Integration</span>
                   </label>
                   <div className="flex items-center gap-2">

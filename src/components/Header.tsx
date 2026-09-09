@@ -1,7 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, User, Settings, LogOut, ChevronDown, Building2, Bell } from 'lucide-react';
-import { NavTabId } from './Sidebar';
-import { UserCoordinator } from '../types';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Menu,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Building2,
+  Bell,
+} from "lucide-react";
+import type { NavTabId } from "./navigation/navigationTypes";
+import type { UserCoordinator } from "../types";
 
 interface HeaderProps {
   activeTab: NavTabId;
@@ -11,50 +19,39 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const PAGE_TITLES: Record<NavTabId, { title: string; subtitle: string }> = {
+const PAGE_TITLES: Record<NavTabId, { title: string }> = {
   dashboard: {
-    title: 'Dashboard',
-    subtitle: 'Bem-vindo ao Sistema da Comissão Própria de Avaliação.',
+    title: "Dashboard",
   },
   relatorios: {
-    title: 'Relatórios Institucionais',
-    subtitle: 'Consolidação e exportação dos relatórios da CPA.',
+    title: "Relatórios",
   },
-  'google-forms': {
-    title: 'Gerenciador Google Forms',
-    subtitle: 'Integração oficial com Google Forms e Drive no Campus Tauá.',
+  "google-forms": {
+    title: "Google Forms",
   },
   formularios: {
-    title: 'Formulários de Avaliação',
-    subtitle: 'Gerenciamento de questionários e instrumentos avaliativos.',
+    title: "Questionários",
   },
-  'novo-formulario': {
-    title: 'Novo Formulário',
-    subtitle: 'Criação de novos formulários de avaliação por ciclo.',
+  "novo-formulario": {
+    title: "Novo Questionário",
   },
   participantes: {
-    title: 'Participantes do Sistema',
-    subtitle: 'Gerenciamento e controle de usuários cadastrados (Alunos, Docentes e TAEs).',
+    title: "Participantes",
   },
   alunos: {
-    title: 'Participação dos Alunos',
-    subtitle: 'Acompanhamento do engajamento do corpo discente.',
+    title: "Alunos",
   },
   docentes: {
-    title: 'Participação dos Docentes',
-    subtitle: 'Painel de resposta e engajamento do corpo docente.',
+    title: "Docentes",
   },
   taes: {
-    title: 'Técnicos Administrativos (TAEs)',
-    subtitle: 'Engajamento dos servidores técnico-administrativos.',
+    title: "TAEs",
   },
   configuracoes: {
-    title: 'Configurações do Sistema',
-    subtitle: 'Preferências gerais, parâmetros de ciclo e permissões.',
+    title: "Configurações",
   },
   perfil: {
-    title: 'Perfil do Coordenador',
-    subtitle: 'Informações da conta e dados institucionais.',
+    title: "Perfil",
   },
 };
 
@@ -69,8 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageInfo = PAGE_TITLES[activeTab] || {
-    title: 'Painel CPA',
-    subtitle: 'Bem-vindo ao Sistema de Avaliação Institucional.',
+    title: "Questionários",
   };
 
   // Close user dropdown on outside click
@@ -83,16 +79,16 @@ export const Header: React.FC<HeaderProps> = ({
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const userName = user?.name || 'Coordenador CPA Tauá';
-  const userCampus = user?.campus || 'Campus Tauá';
-  const userEmail = user?.email || 'cpa.taua@ifce.edu.br';
+  const userName = user?.name || "Coordenador CPA Tauá";
+  const userCampus = user?.campus || "Campus Tauá";
+  const userEmail = user?.email || "cpa.taua@ifce.edu.br";
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 py-3 flex items-center justify-between gap-4">
       {/* Left: Mobile Toggle & Page Title */}
       <div className="flex items-center gap-3 md:gap-4">
         <button
@@ -103,13 +99,14 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-tight">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none">
             {pageInfo.title}
           </h1>
-          <p className="text-xs text-slate-500 font-normal hidden sm:block mt-0.5">
-            {pageInfo.subtitle}
-          </p>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+            IFCE Campus Tauá
+          </span>
         </div>
       </div>
 
@@ -147,15 +144,21 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-slate-600' : ''}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180 text-slate-600" : ""}`}
+            />
           </button>
 
           {/* User Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200/90 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3.5 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-semibold text-slate-800">{userName}</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{userEmail}</p>
+                <p className="text-xs font-semibold text-slate-800">
+                  {userName}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                  {userEmail}
+                </p>
                 <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-[#006837] bg-[#E8F5EE] px-2 py-0.5 rounded-md">
                   <Building2 className="w-3 h-3" />
                   <span>{userCampus}</span>
@@ -165,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="py-1">
                 <button
                   onClick={() => {
-                    onSelectTab('perfil');
+                    onSelectTab("perfil");
                     setIsDropdownOpen(false);
                   }}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#006837] transition-colors text-left"
@@ -176,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 <button
                   onClick={() => {
-                    onSelectTab('configuracoes');
+                    onSelectTab("configuracoes");
                     setIsDropdownOpen(false);
                   }}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#006837] transition-colors text-left"
