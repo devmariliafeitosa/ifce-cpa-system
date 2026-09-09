@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
-const respostaFormsController = require('../controllers/respostaFormController');
-const { exigirRole } = require('../middlewares/authMiddleware');
+const respostaFormsController =
+  require('../controllers/respostaFormController');
 
-router.post('/', respostaFormsController.enviar);
+const { authenticate, exigirRole } = require('../middlewares/authMiddleware');
 
-router.get('/minhas', respostaFormsController.listarMinhas);
+router.post('/', authenticate, respostaFormsController.enviar);
 
-router.get('/form/:formId', exigirRole('coordenador'), respostaFormsController.listarPorForm);
+router.get('/minhas', authenticate, respostaFormsController.listarMinhas);
 
-router.get('/:id', respostaFormsController.buscarPorId);
+router.get('/form/:formId', authenticate, exigirRole('coordenador'), respostaFormsController.listarPorForm);
+
+router.get('/:id', authenticate, respostaFormsController.buscarPorId);
 
 module.exports = router;
