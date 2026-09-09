@@ -1,47 +1,55 @@
-import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+const { signInWithEmailAndPassword, signOut } = require('firebase/auth');
+const { clientAuth } = require('../config/database');
+const usersRepository = require('../repositories/usersRepository');
+const usersServices = require('./usersService');
+const { registrarLog } = require('./logsService');
 
-class AuthService {
-    constructor() {
-        this.auth = getAuth();
-        this.db = getFirestore();
-    }
+async function login(email, senha) {
+  let userCredential;
 
-    async buscarAlunoPorEmail(email) {
-        const alunosRef = collection(this.db, "alunos");
-        const q = query(alunosRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
+  try {
+    userCredential = await signInWithEmailAndPassword(clientAuth, email, senha);
+  } catch (err) {
+    console.error('Erro real do Firebase Auth:', err.code, err.message);
+    const erro = new Error('Credenciais inválidas. Verifique seu e-mail e senha.');
+    erro.status = 401;
+    throw erro;
+  }
 
-        if (querySnapshot.empty) {
-        return null;
-        }
+  const firebaseUser = userCredential.user;
 
-        // Retorna o ID e os atributos (curso, matricula, semestre) do primeiro documento encontrado
-        const docAluno = querySnapshot.docs[0];
-        return {
-        id: docAluno.id,
-        ...docAluno.data()
-        };
-    }
+  const usuarioBasico = await usersRepository.buscarUsuarioPorEmail(firebaseUser.email);
 
-    async loginAluno(email, senha) {
+  if (!usuarioBasico) {
+    await signOut(clientAuth);
+    const erro = new Error('Usuário autenticado no Firebase, mas não cadastrado no sistema.');
+    erro.status = 403; 
+    throw erro;
+  }
 
-        const userCredential = await signInWithEmailAndPassword(this.auth, email, senha);
-        const user = userCredential.user;
+  if (usuarioBasico.ativo === false) {
+    await signOut(clientAuth);
+    const erro = new Error('Usuário desativado.');
+    erro.status = 403;
+    throw erro;
+  }
 
-        const dadosAluno = await this.buscarAlunoPorEmail(user.email);
+  // busca os dados completos, cruzando com as coleções de role (aluno/docente/servidor/coordenador)
+  const usuarioCompleto = await usersServices.buscarUsuarioCompleto(usuarioBasico.id);
 
-        if (!dadosAluno) {
-        await signOut(this.auth);
-        throw new Error("ALUNO_NOT_FOUND");
-        }
+  const idToken = await firebaseUser.getIdToken();
 
-        return {
-            uid: user.uid,
-            email: user.email,
-            aluno: dadosAluno
-        };
-    }
+  await registrarLog({
+    userId: usuarioBasico.id,
+    tipo: 'AUTH',
+    descricao: 'fez login',
+  });
+
+  return {
+    firebaseUid: firebaseUser.uid,
+    idToken,
+    usuario: usuarioCompleto,
+  };
 }
 
-export default new AuthService();
+module.exports = { login };
