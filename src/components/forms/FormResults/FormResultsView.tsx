@@ -10,10 +10,10 @@ import {
   Table,
   Users,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-import { INITIAL_SMART_FORMS } from '../../../data/formsData';
-import { MOCK_PARTICIPANT_RESPONSES } from '../../../data/mockResponsesData';
-import type { TargetAudience } from '../../../types';
+import React, {useEffect, useMemo, useState } from 'react';
+import { listForms } from '../../../services/forms.service';
+import {listResponsesByForm, type ResultResponseRow } from '../../../services/responses.service';
+import type { SmartForm, TargetAudience } from '../../../types';
 
 import { classifyAnswer, getSegmentResult, calculateCpaFinalResult } from './utils/cpaMethodology';
 import type { CpaSegmentResult } from './utils/cpaMethodology';
@@ -26,16 +26,98 @@ interface FormResultsViewProps {
   onReturnToForms?: () => void;
 }
 
+const EMPTY_FORM: SmartForm = {
+  id: '',
+  title: 'Carregando...',
+  description: '',
+  campus: '',
+  status: 'Rascunho',
+  createdAt: '',
+  questions: [],
+
+  responsesCount: {
+    total: 0,
+    alunos: 0,
+    docentes: 0,
+    taes: 0,
+  },
+};
+
 export const FormResultsView: React.FC<FormResultsViewProps> = ({
   initialFormId,
   onReturnToForms,
 }) => {
-  const [selectedFormId, setSelectedFormId] = useState<string>(
-    initialFormId || INITIAL_SMART_FORMS[0].id
-  );
-  const [activeTab, setActiveTab] = useState<'respostas' | 'consolidacao' | 'resultado-final'>(
-    'consolidacao'
-  );
+const [forms, setForms] =
+  useState<SmartForm[]>([]);
+
+const [
+  responses,
+  setResponses
+] = useState<
+  ResultResponseRow[]
+>([]);
+
+const [
+  selectedFormId,
+  setSelectedFormId
+] = useState<string>(
+  initialFormId || ''
+);
+
+const [
+  activeTab,
+  setActiveTab
+] = useState<
+  | 'respostas'
+  | 'consolidacao'
+  | 'resultado-final'
+>('respostas');
+
+    useEffect(() => {
+  let active = true;
+
+  async function load() {
+    try {
+      const data =
+        await listForms();
+
+      if (!active) {
+        return;
+      }
+
+      setForms(data);
+
+      setSelectedFormId(
+        (current) => {
+          if (
+            current &&
+            data.some(
+              (form) =>
+                form.id === current
+            )
+          ) {
+            return current;
+          }
+
+          return (
+            data[0]?.id || ''
+          );
+        }
+      );
+    } catch (error) {
+      console.error(
+        'Erro ao carregar formulários dos resultados:',
+        error
+      );
+    }
+  }
+
+  void load();
+
+  return () => {
+    active = false;
+  };
+}, []);
 
   // Filters
   const [filterCampus, setFilterCampus] = useState('todos');
@@ -43,23 +125,120 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Selected Form Details
-  const selectedForm = useMemo(() => {
-    return INITIAL_SMART_FORMS.find((f) => f.id === selectedFormId) || INITIAL_SMART_FORMS[0];
-  }, [selectedFormId]);
+const selectedForm =
+  useMemo(() => {
+    return (
+      forms.find(
+        (form) =>
+          form.id ===
+          selectedFormId
+      ) ||
+      forms[0] ||
+      EMPTY_FORM
+    );
+  }, [
+    forms,
+    selectedFormId,
+  ]);
+
+  useEffect(() => {
+  let active = true;
+
+  async function loadResponses() {
+    if (!selectedForm.id) {
+      setResponses([]);
+      return;
+    }
+
+    try {
+      const data =
+        await listResponsesByForm(
+          selectedForm.id,
+          selectedForm.campus
+        );
+
+      if (!active) {
+        return;
+      }
+
+      console.log(
+        '[RESULTADOS]',
+        data
+      );
+
+      setResponses(data);
+    } catch (error) {
+      console.error(
+        'Erro ao carregar respostas:',
+        error
+      );
+
+      if (active) {
+        setResponses([]);
+      }
+    }
+  }
+
+  void loadResponses();
+
+  return () => {
+    active = false;
+  };
+}, [
+  selectedForm.id,
+  selectedForm.campus,
+]);
 
   // Filtered Raw Participant Responses for Aba 1
-  const rawResponses = useMemo(() => {
-    return MOCK_PARTICIPANT_RESPONSES.filter((r) => {
-      const matchesForm = r.formId === selectedForm.id || r.formId === 'form-cpa-taua-2025-1';
-      const matchesCampus = filterCampus === 'todos' || r.campus === filterCampus;
-      const matchesSegment = filterSegment === 'todos' || r.segment === filterSegment;
-      const matchesSearch =
-        searchTerm === '' ||
-        r.respondentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.respondentEmail.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesForm && matchesCampus && matchesSegment && matchesSearch;
-    });
-  }, [selectedForm, filterCampus, filterSegment, searchTerm]);
+const rawResponses =
+  useMemo(() => {
+    return responses.filter(
+      (response) => {
+        const matchesForm =
+          response.formId ===
+          selectedForm.id;
+
+        const matchesCampus =
+          filterCampus ===
+            'todos' ||
+          response.campus ===
+            filterCampus;
+
+        const matchesSegment =
+          filterSegment ===
+            'todos' ||
+          response.segment ===
+            filterSegment;
+
+        const search =
+          searchTerm
+            .toLowerCase()
+            .trim();
+
+        const matchesSearch =
+          !search ||
+          response.respondentName
+            .toLowerCase()
+            .includes(search) ||
+          response.respondentEmail
+            .toLowerCase()
+            .includes(search);
+
+        return (
+          matchesForm &&
+          matchesCampus &&
+          matchesSegment &&
+          matchesSearch
+        );
+      }
+    );
+  }, [
+    responses,
+    selectedForm.id,
+    filterCampus,
+    filterSegment,
+    searchTerm,
+  ]);
 
   // Calculated Segment Statistics for Aba 2 (Consolidação por Segmento)
   const consolidatedBySegment = useMemo(() => {
@@ -255,7 +434,7 @@ export const FormResultsView: React.FC<FormResultsViewProps> = ({
             onChange={(e) => setSelectedFormId(e.target.value)}
             className="px-3.5 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#006837] max-w-xs cursor-pointer"
           >
-            {INITIAL_SMART_FORMS.map((f) => (
+            {forms.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.title}
               </option>
