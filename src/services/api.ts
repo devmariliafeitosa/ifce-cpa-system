@@ -49,11 +49,23 @@ function waitForFirebaseUser(): Promise<User | null> {
 export async function getAuthToken(): Promise<string | null> {
   const user = await waitForFirebaseUser();
 
+  console.log(
+    "[AUTH DEBUG] Firebase user:",
+    user?.email ?? null
+  );
+
   if (!user) {
     return null;
   }
 
-  return user.getIdToken();
+  const token = await user.getIdToken();
+
+  console.log(
+    "[AUTH DEBUG] Token encontrado:",
+    Boolean(token)
+  );
+
+  return token;
 }
 
 export function setStoredAuthUser(
@@ -112,16 +124,21 @@ export async function apiRequest<T>(
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (auth) {
-    const token = await getAuthToken();
+if (auth) {
+  const token = await getAuthToken();
 
-    if (token) {
-      requestHeaders.set(
-        "Authorization",
-        `Bearer ${token}`,
-      );
-    }
+  if (!token) {
+    throw new ApiError(
+      "Sessão Firebase não encontrada. Faça login novamente.",
+      401
+    );
   }
+
+  requestHeaders.set(
+    "Authorization",
+    `Bearer ${token}`
+  );
+}
 
   const response = await fetch(`${API_URL}${path}`, {
     ...rest,
