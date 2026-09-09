@@ -27,4 +27,32 @@ async function buscarPorId(req, res, next) {
   }
 }
 
-module.exports = { criar, buscarPorId };
+async function listar(req, res, next) {
+  try {
+    const usuarios = await usersServices.listarUsuarios();
+    res.json(usuarios.map(formatarUsuarioResponse));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function atualizar(req, res, next) {
+  try {
+    const dadosValidados = validarAtualizacaoUsuario(req.body);
+    await usersServices.atualizarUsuario(req.params.id, dadosValidados, req.user.id);
+    res.status(200).json({ mensagem: 'Usuário atualizado com sucesso' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function desativar(req, res, next) {
+  try {
+    await usersServices.desativarUsuario(req.params.id, req.user.id);
+    res.status(200).json({ mensagem: 'Usuário desativado com sucesso' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { criar, buscarPorId, listar, atualizar, desativar };

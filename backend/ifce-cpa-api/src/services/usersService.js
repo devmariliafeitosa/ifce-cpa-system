@@ -69,4 +69,44 @@ async function buscarUsuarioCompleto(userId) {
   return { ...usuario, dadosRoles };
 }
 
-module.exports = { criarUsuario, buscarUsuarioCompleto };
+async function listarUsuarios() {
+  return usersRepository.listarUsuarios();
+}
+
+async function atualizarUsuario(userId, dados, atualizadoPor) {
+  const existente = await usersRepository.buscarUsuarioPorId(userId);
+  if (!existente) {
+    throw new Error(`Usuário "${userId}" não encontrado`);
+  }
+
+  const dadosParaSalvar = { ...dados };
+  if (dados.campusId) {
+    dadosParaSalvar.campusId = dbPrincipal.collection('campuses').doc(dados.campusId);
+  }
+
+  await usersRepository.atualizarUsuario(userId, dadosParaSalvar);
+
+  await registrarLog({
+    userId: atualizadoPor,
+    tipo: 'UPDATE',
+    descricao: `atualizou o usuário ${existente.nome}`,
+  });
+}
+
+async function desativarUsuario(userId, desativadoPor) {
+  await usersRepository.atualizarUsuario(userId, { ativo: false });
+
+  await registrarLog({
+    userId: desativadoPor,
+    tipo: 'UPDATE',
+    descricao: `desativou o usuário ${userId}`,
+  });
+}
+
+module.exports = {
+  criarUsuario,
+  buscarUsuarioCompleto,
+  listarUsuarios,
+  atualizarUsuario,
+  desativarUsuario,
+};
