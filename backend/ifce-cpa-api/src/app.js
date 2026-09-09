@@ -5,7 +5,7 @@ const logsRoutes = require('./routes/logsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const formsRoutes = require('./routes/formsRoutes');
 const respostaFormsRoutes = require('./routes/respostaFormsRoutes');
-const formQuestionsRoutes = require('./routes/formQuestionsRoutes');
+const formQuestionsRoutes = require('./routes/formQuestionRoutes');
 
 
 const { requestLogger } = require('./middlewares/requestLogger');

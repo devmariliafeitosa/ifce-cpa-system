@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const respostaFormsController = require('../controllers/respostaFormsController');
+const respostaFormsController = require('../controllers/respostaFormController');
 const { exigirRole } = require('../middlewares/authMiddleware');
 
 router.post('/', respostaFormsController.enviar);
