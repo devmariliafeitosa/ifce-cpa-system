@@ -1,5 +1,5 @@
 const questionsServices = require('../services/questionsService');
-const { validarCriacaoQuestion, validarAtualizacaoQuestion } = require('../dto/questionDTO');
+const { validarCriacaoQuestion, validarAtualizacaoQuestion } = require('../dto/questionDto');
 const { formatarQuestionResponse } = require('../models/questionModel');
 
 async function criar(req, res, next) {
