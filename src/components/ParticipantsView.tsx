@@ -19,12 +19,13 @@ import {
   Trash2,
   AlertTriangle,
   Upload,
-  BookOpen,
-  Check,
-  RotateCcw,
-  Sparkles,
+  RotateCcw
 } from 'lucide-react';
-import { Participant, ParticipantSegment, StudentLevelType } from '../types';
+import type {
+  Participant,
+  ParticipantSegment,
+  StudentLevelType,
+} from "../types";
 import { INITIAL_PARTICIPANTS } from '../data/participantsData';
 
 const IFCE_CAMPI = [
@@ -201,15 +202,15 @@ export const ParticipantsView: React.FC = () => {
         prev.map((item) =>
           item.id === editingParticipant.id
             ? {
-                ...item,
-                name: formData.name.trim(),
-                email: formData.email.trim(),
-                segment: formData.segment,
-                studentLevel: formData.segment === 'discente' ? formData.studentLevel : undefined,
-                matricula: matriculaCheck.formattedMatricula,
-                campus: formData.campus,
-                status: formData.status,
-              }
+              ...item,
+              name: formData.name.trim(),
+              email: formData.email.trim(),
+              segment: formData.segment,
+              studentLevel: formData.segment === 'discente' ? formData.studentLevel : undefined,
+              matricula: matriculaCheck.formattedMatricula,
+              campus: formData.campus,
+              status: formData.status,
+            }
             : item
         )
       );
@@ -389,13 +390,12 @@ export const ParticipantsView: React.FC = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${
-              notification.type === 'success'
+            className={`p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-2xs border ${notification.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-[#006837]'
                 : notification.type === 'danger'
-                ? 'bg-rose-50 border-rose-200 text-rose-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}
+                  ? 'bg-rose-50 border-rose-200 text-rose-800'
+                  : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -523,11 +523,10 @@ export const ParticipantsView: React.FC = () => {
               <button
                 key={seg.id}
                 onClick={() => setSegmentFilter(seg.id)}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs ${
-                  segmentFilter === seg.id
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap text-xs ${segmentFilter === seg.id
                     ? 'bg-[#006837] text-white font-bold shadow-2xs'
                     : 'hover:text-slate-900 hover:bg-slate-200/60'
-                }`}
+                  }`}
               >
                 {seg.label}
               </button>
@@ -669,13 +668,12 @@ export const ParticipantsView: React.FC = () => {
                     <td className="py-2.5 px-3.5">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 ${
-                            p.segment === 'discente'
+                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 ${p.segment === 'discente'
                               ? 'bg-indigo-100 text-indigo-700'
                               : p.segment === 'docente'
-                              ? 'bg-emerald-100 text-[#006837]'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
+                                ? 'bg-emerald-100 text-[#006837]'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
                         >
                           {p.name.charAt(0).toUpperCase()}
                         </div>
@@ -693,13 +691,12 @@ export const ParticipantsView: React.FC = () => {
                     {/* Segment Badge */}
                     <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${
-                          p.segment === 'discente'
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${p.segment === 'discente'
                             ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                             : p.segment === 'docente'
-                            ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
-                            : 'bg-amber-50 text-amber-800 border border-amber-200'
-                        }`}
+                              ? 'bg-emerald-50 text-[#006837] border border-emerald-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
+                          }`}
                       >
                         {p.segment === 'discente' ? (
                           <>
@@ -743,16 +740,14 @@ export const ParticipantsView: React.FC = () => {
                       <button
                         onClick={() => handleToggleStatus(p)}
                         title="Clique para alternar o status"
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold cursor-pointer transition-all ${
-                          p.status === 'Ativo'
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold cursor-pointer transition-all ${p.status === 'Ativo'
                             ? 'bg-emerald-100 text-[#006837] border border-emerald-200 hover:bg-emerald-200'
                             : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
-                        }`}
+                          }`}
                       >
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            p.status === 'Ativo' ? 'bg-[#006837]' : 'bg-slate-400'
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full ${p.status === 'Ativo' ? 'bg-[#006837]' : 'bg-slate-400'
+                            }`}
                         />
                         {p.status}
                       </button>
@@ -879,11 +874,10 @@ export const ParticipantsView: React.FC = () => {
                         key={seg.id}
                         type="button"
                         onClick={() => setFormData({ ...formData, segment: seg.id })}
-                        className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all text-center cursor-pointer ${
-                          formData.segment === seg.id
+                        className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all text-center cursor-pointer ${formData.segment === seg.id
                             ? 'bg-[#E8F5EE] border-[#006837] text-[#006837] shadow-2xs'
                             : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         {seg.label}
                       </button>
@@ -943,11 +937,10 @@ export const ParticipantsView: React.FC = () => {
                         setFormData({ ...formData, matricula: e.target.value });
                         if (matriculaError) setMatriculaError(null);
                       }}
-                      className={`w-full h-8 px-2.5 text-xs bg-slate-50 border rounded-lg focus:outline-none font-mono transition-colors ${
-                        matriculaError
+                      className={`w-full h-8 px-2.5 text-xs bg-slate-50 border rounded-lg focus:outline-none font-mono transition-colors ${matriculaError
                           ? 'border-rose-400 bg-rose-50/30'
                           : 'border-slate-200 focus:border-[#006837]'
-                      }`}
+                        }`}
                     />
                     {matriculaError && (
                       <p className="text-[10px] font-bold text-rose-600 flex items-start gap-1 mt-0.5 leading-tight">

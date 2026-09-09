@@ -1,5 +1,10 @@
-export type ParticipantSegment = 'discente' | 'docente' | 'tae';
-export type StudentLevelType = 'Técnico' | 'Graduação' | 'Especialização' | 'Mestrado' | 'Doutorado';
+﻿export type ParticipantSegment = "discente" | "docente" | "tae";
+export type StudentLevelType =
+  | "Técnico"
+  | "Graduação"
+  | "Especialização"
+  | "Mestrado"
+  | "Doutorado";
 
 export interface Participant {
   id: string;
@@ -9,15 +14,24 @@ export interface Participant {
   studentLevel?: StudentLevelType;
   matricula?: string;
   campus: string;
-  status: 'Ativo' | 'Inativo';
+  status: "Ativo" | "Inativo";
   createdAt: string;
 }
 
-export type AuthView = 'login' | 'forgot-password' | 'register' | 'reset-password';
+export type AuthView =
+  | "login"
+  | "forgot-password"
+  | "register"
+  | "reset-password";
 
-export type TargetAudience = 'todos' | 'alunos' | 'docentes' | 'taes';
+export type TargetAudience = "todos" | "alunos" | "docentes" | "taes";
 
-export type StudentLevel = 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao';
+export type StudentLevel =
+  | "todos"
+  | "tecnico"
+  | "graduacao"
+  | "mestrado"
+  | "pos_graduacao";
 
 export interface UserCoordinator {
   id: string;
@@ -38,29 +52,29 @@ export interface AuthState {
 }
 
 export type QuestionCategory =
-  | 'Planejamento Institucional'
-  | 'Ensino'
-  | 'Pesquisa'
-  | 'Extensão'
-  | 'Infraestrutura'
-  | 'Biblioteca'
-  | 'Tecnologia'
-  | 'Comunicação'
-  | 'Assistência Estudantil'
-  | 'Gestão'
-  | 'Sustentabilidade'
-  | 'Outros';
+  | "Planejamento Institucional"
+  | "Ensino"
+  | "Pesquisa"
+  | "Extensão"
+  | "Infraestrutura"
+  | "Biblioteca"
+  | "Tecnologia"
+  | "Comunicação"
+  | "Assistência Estudantil"
+  | "Gestão"
+  | "Sustentabilidade"
+  | "Outros";
 
 export interface SmartQuestion {
   id: string;
   title: string;
   description?: string;
-  type: 'SCALE' | 'RADIO' | 'CHECKBOX' | 'DROPDOWN' | 'YES_NO';
+  type: "SCALE" | "RADIO" | "CHECKBOX" | "DROPDOWN" | "YES_NO";
   required: boolean;
   category?: QuestionCategory;
   options?: string[];
   audiences: TargetAudience[]; // ['todos'], or ['alunos'], or ['docentes', 'taes']
-  studentLevel?: StudentLevel; // Subsegmentação para discentes: 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao'
+  studentLevel?: StudentLevel; // Subsegmenta├º├úo para discentes: 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao'
 }
 
 export interface FormParticipantAnswer {
@@ -71,9 +85,13 @@ export interface FormParticipantAnswer {
 export interface FormSubmission {
   id: string;
   formId: string;
-  segment: 'alunos' | 'docentes' | 'taes';
+  segment: "alunos" | "docentes" | "taes";
   submittedAt: string;
   answers: FormParticipantAnswer[];
+  // Optional, non-identifying metadata (RN005: never includes e-mail, name or
+  // any other data capable of tracing the answer back to a person).
+  campaignId?: string;
+  studentLevel?: StudentLevel;
 }
 
 export interface Campaign {
@@ -89,7 +107,7 @@ export interface Campaign {
   endTime?: string;
   customMessage: string;
   createdAt: string;
-  status: 'Ativa' | 'Agendada' | 'Encerrada' | 'Concluída' | 'Rascunho';
+  status: "Ativa" | "Agendada" | "Encerrada" | "Concluída" | "Rascunho";
   sentEmailsCount: number;
   uniqueTokenUrl?: string;
   qrCodeAccessCount?: number;
@@ -102,7 +120,13 @@ export interface SmartForm {
   title: string;
   description: string;
   campus: string;
-  status: 'Ativo' | 'Agendada' | 'Ativa' | 'Encerrada' | 'Encerrado' | 'Rascunho';
+  status:
+    | "Ativo"
+    | "Agendada"
+    | "Ativa"
+    | "Encerrada"
+    | "Encerrado"
+    | "Rascunho";
   createdAt: string;
   updatedAt?: string;
   periodo?: string;

@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-
+const { authenticate, exigirRole } = require('../middlewares/authMiddleware');
 const usersController = require('../controllers/usersController');
-const { exigirRole } = require('../middlewares/authMiddleware');
 
 router.post('/', exigirRole('coordenador'), usersController.criar);
 router.get('/', exigirRole('coordenador'), usersController.listar);

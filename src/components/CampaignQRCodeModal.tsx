@@ -1,27 +1,21 @@
 import React, { useState, useRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import {
+  QRCodeSVG } from 'qrcode.react';
 import {
   X,
   QrCode,
   Download,
-  Printer,
   Copy,
   Check,
   ExternalLink,
-  Building2,
   Calendar,
-  Users,
-  CheckCircle2,
   Share2,
   BarChart3,
   Sliders,
   FileText,
-  Sparkles,
-  Info,
-  Maximize2
 } from 'lucide-react';
-import { Campaign } from '../types';
-import { IFCELogo } from './IFCELogo';
+import type { Campaign } from '../types';
+import { IFCELogo } from './auth/IFCELogo';
 
 interface CampaignQRCodeModalProps {
   campaign: Campaign;
