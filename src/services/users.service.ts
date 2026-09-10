@@ -1,6 +1,10 @@
 import { apiRequest } from "./api";
 
-export type BackendRole = "aluno" | "docente" | "servidor" | "coordenador";
+export type BackendRole =
+  | "aluno"
+  | "docente"
+  | "servidor"
+  | "coordenador";
 
 export interface DadosAluno {
   curso: string;
@@ -12,22 +16,11 @@ export interface DadosSiape {
   siape: number;
 }
 
-export interface CreateUserPayload {
-  nome: string;
-  email: string;
-  campusId: string;
-  roles: BackendRole[];
-  ativo?: boolean;
-  dadosPorRole: {
-    aluno?: DadosAluno;
-    docente?: DadosSiape;
-    servidor?: DadosSiape;
-    coordenador?: DadosSiape;
-  };
-}
-
-export interface CreateUserResponse {
-  id: string;
+export interface DadosRoles {
+  aluno?: DadosAluno;
+  docente?: DadosSiape;
+  servidor?: DadosSiape;
+  coordenador?: DadosSiape;
 }
 
 export interface BackendUser {
@@ -37,22 +30,32 @@ export interface BackendUser {
   campusId: string;
   roles: BackendRole[];
   ativo: boolean;
-  dadosRoles?: {
-    aluno?: DadosAluno;
-    docente?: DadosSiape;
-    servidor?: DadosSiape;
-    coordenador?: DadosSiape;
-  };
+  dadosRoles?: DadosRoles;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export type UpdateUserPayload = Partial<
-  Pick<CreateUserPayload, "nome" | "email" | "campusId" | "ativo" | "roles">
->;
+export interface CreateUserPayload {
+  nome: string;
+  email: string;
+  campusId: string;
+  roles: BackendRole[];
+  ativo?: boolean;
+  dadosPorRole?: DadosRoles;
+}
+
+export interface UpdateUserPayload {
+  nome?: string;
+  email?: string;
+  campusId?: string;
+  ativo?: boolean;
+  roles?: BackendRole[];
+}
 
 export async function createUser(
-  data: CreateUserPayload
-): Promise<CreateUserResponse> {
-  return apiRequest<CreateUserResponse>("/users", {
+  data: CreateUserPayload,
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>("/users", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -62,24 +65,34 @@ export async function listUsers(): Promise<BackendUser[]> {
   return apiRequest<BackendUser[]>("/users");
 }
 
-export async function getUserById(userId: string): Promise<BackendUser> {
-  return apiRequest<BackendUser>(`/users/${userId}`);
+export async function getUserById(
+  userId: string,
+): Promise<BackendUser> {
+  return apiRequest<BackendUser>(
+    `/users/${encodeURIComponent(userId)}`,
+  );
 }
 
 export async function updateUser(
   userId: string,
-  data: UpdateUserPayload
+  data: UpdateUserPayload,
 ): Promise<{ mensagem: string }> {
-  return apiRequest<{ mensagem: string }>(`/users/${userId}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  return apiRequest<{ mensagem: string }>(
+    `/users/${encodeURIComponent(userId)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+  );
 }
 
 export async function deactivateUser(
-  userId: string
+  userId: string,
 ): Promise<{ mensagem: string }> {
-  return apiRequest<{ mensagem: string }>(`/users/${userId}/desativar`, {
-    method: "PATCH",
-  });
+  return apiRequest<{ mensagem: string }>(
+    `/users/${encodeURIComponent(userId)}/desativar`,
+    {
+      method: "PATCH",
+    },
+  );
 }
