@@ -391,7 +391,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
 
   // Step 6: Envio da Campanha state
   const [wizardCampaignName, setWizardCampaignName] = useState('');
-  const [wizardCampaignCampus, setWizardCampaignCampus] = useState('IFCE Campus Tauá');
+  const [wizardCampaignCampus, setWizardCampaignCampus] = useState('');
   const [wizardCampaignStartDate, setWizardCampaignStartDate] = useState('2026-09-15');
   const [wizardCampaignEndDate, setWizardCampaignEndDate] = useState('2026-09-30');
   const [wizardCampaignEstimatedTime, setWizardCampaignEstimatedTime] = useState('4 min');
@@ -438,7 +438,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setWizardStep(1);
     setFormTitle('');
     setFormDescription('');
-    setFormCampus('IFCE Campus Tauá');
+    setFormCampus('');
     setFormPeriodo('2026.2');
     setFormCategory('Autoavaliação Institucional');
     setFormStartDate('2026-09-15');
@@ -702,7 +702,7 @@ const handleSaveProgressDraft =
   const handleAdvanceToCampaignSend = () => {
     const titleToUse = formTitle.trim() || 'Avaliação Institucional CPA';
     setWizardCampaignName(titleToUse);
-    setWizardCampaignCampus(formCampus || 'IFCE Campus Tauá');
+    setWizardCampaignCampus(formCampus);
     setWizardCampaignStartDate(formStartDate || '2026-09-15');
     setWizardCampaignEndDate(formEndDate || '2026-09-30');
     const qCount = formQuestions.length || 1;
