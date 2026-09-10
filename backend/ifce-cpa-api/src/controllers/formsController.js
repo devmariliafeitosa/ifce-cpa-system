@@ -66,4 +66,19 @@ async function encerrar(req, res, next) {
   }
 }
 
-module.exports = { criar, buscarPorId, listar, atualizar, ativar, encerrar };   
+async function remover(req, res, next) {
+  try {
+    await formsServices.removerForm(
+      req.params.id,
+      req.user.id
+    );
+
+    return res.status(200).json({
+      mensagem: 'Formulário removido com sucesso',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { criar, buscarPorId, listar, atualizar, ativar, encerrar, remover };   

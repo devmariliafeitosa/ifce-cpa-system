@@ -40,10 +40,13 @@ app.use((error, req, res, next) => {
 });
 
 
-app.use('/questions', questionsRoutes);
-app.use('/users', usersRoutes);
-app.use('/forms', formsRoutes);
-app.use('/respostaForms', respostaFormsRoutes);
-app.use('/form-questions', formQuestionsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/logs', logsRoutes);
+
+app.use('/api/questions', questionsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/forms', formsRoutes);
+app.use('/api/respostaForms', respostaFormsRoutes);
+app.use('/api/form-questions', formQuestionsRoutes);
 
 module.exports = app;

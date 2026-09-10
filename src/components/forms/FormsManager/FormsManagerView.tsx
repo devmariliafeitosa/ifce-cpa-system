@@ -8,7 +8,6 @@ import {
   X,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { INITIAL_SMART_FORMS } from '../../../data/formsData.ts';
 import { getAccessToken, googleSignIn } from '../../../lib/googleAuth.ts';
 import type { GoogleFormFile } from '../../../services/googleFormsService';
 import { createGoogleForm, listGoogleForms } from '../../../services/googleFormsService';
@@ -21,7 +20,9 @@ import type {
   TargetAudience,
 } from '../../../types';
 import { CampaignQRCodeModal } from "../../CampaignQRCodeModal";
-
+import {submitFormResponse } from '../../../services/responses.service';
+import { saveQuestionsForForm } from '../../../services/question.service.ts';
+import { activateForm, createForm, listForms, updateForm } from '../../../services/forms.service';
 import { QuestionClassificationView } from './components/QuestionClassificationView';
 import { FormsListPanel } from './components/FormsListPanel';
 import type { CPATemplateItem } from './data/cpaTemplates';
@@ -59,15 +60,8 @@ interface FormsManagerViewProps {
 export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   onSelectTab,
 }) => {
-  // Main Forms State
-  const [forms, setForms] = useState<SmartForm[]>(() => {
-    const saved = localStorage.getItem('cpa_smart_forms');
-    return saved ? JSON.parse(saved) : INITIAL_SMART_FORMS;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cpa_smart_forms', JSON.stringify(forms));
-  }, [forms]);
+      const [forms, setForms] =
+        useState<SmartForm[]>([]);
 
   // Notifications
   const [notification, setNotification] = useState<{
@@ -81,6 +75,43 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       setNotification((prev) => (prev?.message === message ? null : prev));
     }, 5000);
   };
+
+  useEffect(() => {
+  let active = true;
+
+  async function loadForms() {
+    try {
+      const data =
+        await listForms();
+
+      if (!active) {
+        return;
+      }
+
+      setForms(data);
+    } catch (error) {
+      console.error(
+        'Erro ao carregar formulários:',
+        error,
+      );
+
+      if (!active) {
+        return;
+      }
+
+      showNotification(
+        'error',
+        'Não foi possível carregar os formulários do servidor.',
+      );
+    }
+  }
+
+  void loadForms();
+
+  return () => {
+    active = false;
+  };
+}, []);
 
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -466,66 +497,108 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setIsCreateModalOpen(true);
   };
 
-  // Save Progress as Draft (Botão "Salvar progresso")
-  const handleSaveProgressDraft = () => {
-    const titleToSave = formTitle.trim() || 'Novo Formulário';
-    const questionsToSave: SmartQuestion[] =
-      formQuestions.length > 0
-        ? formQuestions
-        : [
-            {
-              id: `q-${Date.now()}-1`,
-              title: 'Como você avalia a qualidade geral das instalações do campus?',
-              type: 'SCALE',
-              required: true,
-              category: 'Ensino',
-              audiences: ['todos'],
-              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
-            },
-          ];
+// Save Progress as Draft (Botão "Salvar progresso")
+const handleSaveProgressDraft =
+  async () => {
 
-    const computedStatus = 'Rascunho';
+    console.log('[SAVE]', {
+  editing: Boolean(editingForm),
+  quantidadePerguntas: formQuestions.length,
+  perguntas: formQuestions,
+  });
 
-    if (editingForm) {
-      const updated: SmartForm = {
-        ...editingForm,
+    const titleToSave =
+      formTitle.trim() ||
+      'Novo Formulário';
+
+    try {
+      const payload = {
         title: titleToSave,
-        description: formDescription,
-        campus: formCampus,
-        periodo: formPeriodo,
-        startDate: formStartDate,
-        startTime: formStartTime,
-        endDate: formEndDate,
-        endTime: formEndTime,
-        questions: questionsToSave,
-        updatedAt: new Date().toLocaleDateString('pt-BR'),
-        status: computedStatus,
+        description:
+          formDescription,
+
+        campusId:
+          formCampus,
+
+        startDate:
+          formStartDate,
+
+        startTime:
+          formStartTime,
+
+        endDate:
+          formEndDate,
+
+        endTime:
+          formEndTime,
+
+        status:
+          'rascunho' as const,
+
+        isAtivo: false,
       };
-      setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
-      showNotification('success', `Progresso salvo! Formulário "${titleToSave}" mantido em Rascunho.`);
-    } else {
-      const newForm: SmartForm = {
-        id: `form-smart-${Date.now()}`,
-        title: titleToSave,
-        description: formDescription,
-        campus: formCampus,
-        periodo: formPeriodo,
-        startDate: formStartDate,
-        startTime: formStartTime,
-        endDate: formEndDate,
-        endTime: formEndTime,
-        status: computedStatus,
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        questions: questionsToSave,
-        responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
-      };
-      setForms([newForm, ...forms]);
-      showNotification('success', `Progresso salvo! Novo formulário "${titleToSave}" armazenado em Rascunho.`);
+
+      if (editingForm) {
+        await updateForm(
+          editingForm.id,
+          payload
+        );
+
+        showNotification(
+          'success',
+          `Formulário "${titleToSave}" atualizado no servidor.`
+        );
+      } else {
+        /*
+         * 1. Cria formulário
+         */
+        const createdForm =
+          await createForm(
+            payload
+          );
+
+        /*
+         * 2. Cria perguntas
+         * 3. Vincula ao formulário
+         */
+        await saveQuestionsForForm(
+          createdForm.id,
+          formQuestions
+        );
+
+        showNotification(
+          'success',
+          `Formulário "${titleToSave}" e ${formQuestions.length} pergunta(s) salvos no servidor.`
+        );
+      }
+
+      /*
+       * Recarrega formulários
+       */
+      const refreshedForms =
+        await listForms();
+
+      setForms(
+        refreshedForms
+      );
+
+      setIsCreateModalOpen(
+        false
+      );
+    } catch (error) {
+      console.error(
+        'Erro ao salvar formulário:',
+        error
+      );
+
+      showNotification(
+        'error',
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível salvar o formulário.'
+      );
     }
-
-    setIsCreateModalOpen(false);
   };
-
   // Finalize / Publicar Form
   const handleFinalizeForm = () => {
     const titleToSave = formTitle.trim() || 'Avaliação Institucional CPA';
@@ -637,65 +710,121 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setWizardStep(6);
   };
 
-  // Step 6 Confirm & Launch Campaign
-  const handleConfirmSendCampaign = () => {
-    const titleToSave = wizardCampaignName.trim() || formTitle.trim() || 'Avaliação Institucional CPA';
-    const questionsToSave: SmartQuestion[] =
-      formQuestions.length > 0
-        ? formQuestions
-        : [
-            {
-              id: `q-${Date.now()}-1`,
-              title: 'Como você avalia as condições de apoio acadêmico e infraestrutura do campus?',
-              type: 'SCALE',
-              required: true,
-              category: 'Ensino',
-              audiences: ['todos'],
-              options: ['Ótimo', 'Regular', 'Ruim', 'Não possuo conhecimento'],
-            },
-          ];
+// Step 6 Confirm & Launch Campaign
+const handleConfirmSendCampaign =
+  async () => {
+    const titleToSave =
+      wizardCampaignName.trim() ||
+      formTitle.trim() ||
+      'Avaliação Institucional CPA';
 
-    const formatDateShort = (dStr: string) => {
-      if (!dStr) return '';
-      const p = dStr.split('-');
-      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
-      return dStr;
-    };
+    try {
+      const payload = {
+        title: titleToSave,
 
-    const formattedPeriodo = `${formatDateShort(wizardCampaignStartDate)} ${formStartTime} - ${formatDateShort(wizardCampaignEndDate)} ${formEndTime}`;
-    const computedStatus = getCampaignStatus(wizardCampaignStartDate, formStartTime, wizardCampaignEndDate, formEndTime, 'Ativo');
+        description:
+          formDescription,
 
-    const newFormOrUpdated: SmartForm = {
-      id: editingForm ? editingForm.id : `form-smart-${Date.now()}`,
-      title: titleToSave,
-      description: formDescription,
-      campus: wizardCampaignCampus,
-      periodo: formattedPeriodo,
-      startDate: wizardCampaignStartDate,
-      startTime: formStartTime,
-      endDate: wizardCampaignEndDate,
-      endTime: formEndTime,
-      status: computedStatus,
-      createdAt: editingForm ? editingForm.createdAt : new Date().toLocaleDateString('pt-BR'),
-      updatedAt: new Date().toLocaleDateString('pt-BR'),
-      questions: questionsToSave,
-      responsesCount: { total: 0, alunos: 0, docentes: 0, taes: 0 },
-    };
+        campusId:
+          wizardCampaignCampus ||
+          formCampus,
 
-    let updatedList: SmartForm[] = [];
-    if (editingForm) {
-      updatedList = forms.map((f) => (f.id === editingForm.id ? newFormOrUpdated : f));
-    } else {
-      updatedList = [newFormOrUpdated, ...forms];
+        startDate:
+          wizardCampaignStartDate,
+
+        startTime:
+          formStartTime,
+
+        endDate:
+          wizardCampaignEndDate,
+
+        endTime:
+          formEndTime,
+
+        status:
+          'rascunho' as const,
+
+        isAtivo: false,
+      };
+
+      let formId: string;
+
+      if (editingForm) {
+        formId =
+          editingForm.id;
+
+        await updateForm(
+          formId,
+          payload
+        );
+
+        const newQuestions =
+          formQuestions.filter(
+            (question) =>
+              question.id.startsWith('q-')
+          );
+
+        if (
+          newQuestions.length > 0
+        ) {
+          await saveQuestionsForForm(
+            formId,
+            newQuestions
+          );
+        }
+      }
+
+      else {
+        const createdForm =
+          await createForm(
+            payload
+          );
+
+        formId =
+          createdForm.id;
+
+        await saveQuestionsForForm(
+          formId,
+          formQuestions
+        );
+      }
+
+      await activateForm(
+        formId
+      );
+
+      const refreshedForms =
+        await listForms();
+
+      setForms(
+        refreshedForms
+      );
+
+      showNotification(
+        'success',
+        `Formulário "${titleToSave}" enviado e ativado com sucesso!`
+      );
+
+      setShowSendConfirmModal(
+        false
+      );
+
+      setIsCampaignSentSuccess(
+        true
+      );
+    } catch (error) {
+      console.error(
+        'Erro ao enviar formulário:',
+        error
+      );
+
+      showNotification(
+        'error',
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível enviar o formulário.'
+      );
     }
-
-    setForms(updatedList);
-    localStorage.setItem('cpa_smart_forms', JSON.stringify(updatedList));
-    window.dispatchEvent(new CustomEvent('cpa_smart_forms_updated', { detail: updatedList }));
-
-    showNotification('success', `Campanha "${titleToSave}" enviada com sucesso!`);
-    setShowSendConfirmModal(false);
-    setIsCampaignSentSuccess(true);
   };
 
   // Question Manipulation Helpers for Steps 2 and 4
@@ -1243,84 +1372,224 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   };
 
   // Submit Participant Answer with Mandatory Validation Rules
-  const handleSubmitParticipantResponse = (e: React.FormEvent) => {
+const handleSubmitParticipantResponse =
+  async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!respondingForm || !participantSegment) return;
 
-    // 1. Get filtered questions applicable to the active segment and student level
-    const visibleQuestions = getFilteredQuestionsForParticipant();
-
-    // 2. Identify required questions that have no answer
-    const unanswered = visibleQuestions.filter((q) => {
-      if (!q.required) return false;
-      const ans = participantAnswers[q.id];
-      if (q.type === 'CHECKBOX') {
-        return !Array.isArray(ans) || ans.length === 0;
-      }
-      return ans === undefined || ans === null || (typeof ans === 'string' && ans.trim() === '');
-    });
-
-    // 3. Block submission if required questions are unanswered
-    if (unanswered.length > 0) {
-      const unansweredIds = unanswered.map((q) => q.id);
-      setUnansweredQuestionIds(unansweredIds);
-      setShowValidationErrorBanner(true);
-
-      // Scroll automatically to the first pending unanswered question
-      const firstUnansweredId = unansweredIds[0];
-      setTimeout(() => {
-        const element = document.getElementById(`participant-question-${firstUnansweredId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          const banner = document.getElementById('validation-error-banner');
-          if (banner) {
-            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }
-      }, 50);
-
-      showNotification('error', 'Existem perguntas obrigatórias que ainda não foram respondidas.');
+    if (
+      !respondingForm ||
+      !participantSegment
+    ) {
       return;
     }
 
-    // 4. All required questions answered -> submit response
-    setUnansweredQuestionIds([]);
-    setShowValidationErrorBanner(false);
+    /*
+     * Perguntas que realmente aparecem
+     * para este participante.
+     */
+    const visibleQuestions =
+      getFilteredQuestionsForParticipant();
 
-    setIsSubmittingResponse(true);
-    setTimeout(() => {
-      // Increment response count
-      setForms((prevForms) =>
-        prevForms.map((f) => {
-          if (f.id === respondingForm.id) {
-            return {
-              ...f,
-              responsesCount: {
-                ...f.responsesCount,
-                total: f.responsesCount.total + 1,
-                [participantSegment]: f.responsesCount[participantSegment] + 1,
-              },
-            };
-          }
-          return f;
-        })
+    /*
+     * Verifica obrigatórias.
+     */
+    const unanswered =
+      visibleQuestions.filter((q) => {
+        if (!q.required) {
+          return false;
+        }
+
+        const answer =
+          participantAnswers[q.id];
+
+        if (q.type === 'CHECKBOX') {
+          return (
+            !Array.isArray(answer) ||
+            answer.length === 0
+          );
+        }
+
+        return (
+          answer === undefined ||
+          answer === null ||
+          (
+            typeof answer === 'string' &&
+            answer.trim() === ''
+          )
+        );
+      });
+
+    /*
+     * Bloqueia se alguma obrigatória
+     * não estiver respondida.
+     */
+    if (unanswered.length > 0) {
+      const unansweredIds =
+        unanswered.map(
+          (question) => question.id
+        );
+
+      setUnansweredQuestionIds(
+        unansweredIds
       );
 
-      setSubmittedCampaignIds((prev) => Array.from(new Set([...prev, respondingForm.id])));
-      setIsSubmittingResponse(false);
+      setShowValidationErrorBanner(
+        true
+      );
+
+      const firstUnansweredId =
+        unansweredIds[0];
+
+      setTimeout(() => {
+        const element =
+          document.getElementById(
+            `participant-question-${firstUnansweredId}`
+          );
+
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        } else {
+          const banner =
+            document.getElementById(
+              'validation-error-banner'
+            );
+
+          banner?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        }
+      }, 50);
+
+      showNotification(
+        'error',
+        'Existem perguntas obrigatórias que ainda não foram respondidas.'
+      );
+
+      return;
+    }
+
+    /*
+     * Converte o estado do frontend
+     * para o payload esperado pelo backend.
+     */
+    const answers =
+      visibleQuestions
+        .map((question) => ({
+          questionId:
+            question.id,
+
+          value:
+            participantAnswers[
+              question.id
+            ],
+        }))
+        .filter((answer) => {
+          const value =
+            answer.value;
+
+          if (
+            value === undefined ||
+            value === null
+          ) {
+            return false;
+          }
+
+          if (
+            typeof value === 'string' &&
+            value.trim() === ''
+          ) {
+            return false;
+          }
+
+          if (
+            Array.isArray(value) &&
+            value.length === 0
+          ) {
+            return false;
+          }
+
+          return true;
+        }) as {
+          questionId: string;
+          value: string | string[];
+        }[];
+
+    /*
+     * O backend exige pelo menos
+     * uma resposta.
+     */
+    if (answers.length === 0) {
+      showNotification(
+        'error',
+        'Responda pelo menos uma pergunta antes de enviar.'
+      );
+
+      return;
+    }
+
+    setUnansweredQuestionIds([]);
+    setShowValidationErrorBanner(false);
+    setIsSubmittingResponse(true);
+
+    try {
+      const createdResponse =
+        await submitFormResponse(
+          respondingForm.id,
+          answers
+        );
+
+      console.log(
+        '[RESPOSTA SALVA]',
+        createdResponse
+      );
+
+      /*
+       * Mantemos este estado local somente
+       * para a interface saber que acabou
+       * de responder.
+       */
+      setSubmittedCampaignIds(
+        (prev) =>
+          Array.from(
+            new Set([
+              ...prev,
+              respondingForm.id,
+            ])
+          )
+      );
+
       setResponseSubmitted(true);
+
       showNotification(
         'success',
         `Resposta enviada com sucesso para o segmento ${
           participantSegment === 'alunos'
             ? 'Aluno'
-            : participantSegment === 'docentes'
-            ? 'Docente'
-            : 'TAE'
+            : participantSegment ===
+                'docentes'
+              ? 'Docente'
+              : 'TAE'
         }!`
       );
-    }, 600);
+    } catch (error) {
+      console.error(
+        'Erro ao enviar resposta:',
+        error
+      );
+
+      showNotification(
+        'error',
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível enviar a resposta.'
+      );
+    } finally {
+      setIsSubmittingResponse(false);
+    }
   };
 
   // Sync / Publish Smart Form to Google Forms API
@@ -1383,20 +1652,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     showNotification('success', `Formulário "${deletingForm.title}" excluído.`);
     setDeletingForm(null);
   };
-
-  // Handlers mantidos para as próximas etapas do módulo.
-  // As referências abaixo evitam que o TypeScript trate essas funções como código morto
-  // enquanto as telas correspondentes ainda não estão conectadas nesta refatoração.
-  void handleSelectPresetDays;
-  void handleFinalizeForm;
-  void handleChooseNextSegment;
-  void handleLoadCPATemplate;
-  void handleLaunchCampaign;
-  void handleSaveForm;
-  void handleAddQuestion;
-  void handleRemoveQuestion;
-  void handleUpdateQuestion;
-  void handleToggleAudience;
 
   // Filtered forms list for table and grid
   const filteredForms = forms.filter((f) => {

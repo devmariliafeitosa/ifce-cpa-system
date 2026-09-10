@@ -1,21 +1,13 @@
 const express = require('express');
-
-const {
-  authenticate,
-  exigirRole,
-} = require('../middlewares/authMiddleware');
-
 const router = express.Router();
 
-router.get(
-  '/me',
-  authenticate,
-  exigirRole('coordenador'),
-  (req, res) => {
-    return res.json({
-      usuario: req.user,
-    });
-  }
-);
+const authController = require('../controllers/authController');
+const { authenticate } = require('../middlewares/authMiddleware');
+
+router.post('/login', authController.login);
+
+router.get('/me', authenticate, (req, res) => {
+  res.json({ usuario: req.user });
+});
 
 module.exports = router;

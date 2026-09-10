@@ -1,12 +1,31 @@
 const express = require('express');
 const router = express.Router();
 
-const formQuestionsController = require('../controllers/formQuestionsController');
-const { exigirRole } = require('../middlewares/authMiddleware');
+const formQuestionsController =
+  require('../controllers/formQuestionsController');
 
-router.post('/', exigirRole('coordenador'), formQuestionsController.vincular);
-router.delete('/:id', exigirRole('coordenador'), formQuestionsController.desvincular);
+const {
+  authenticate,
+  exigirRole,
+} = require('../middlewares/authMiddleware');
 
-router.get('/form/:formId', formQuestionsController.listarPorForm);
+router.post(
+  '/',
+  authenticate,
+  exigirRole('coordenador'),
+  formQuestionsController.vincular
+);
+
+router.delete(
+  '/:id',
+  authenticate,
+  exigirRole('coordenador'),
+  formQuestionsController.desvincular
+);
+
+router.get(
+  '/form/:formId',
+  formQuestionsController.listarPorForm
+);
 
 module.exports = router;
