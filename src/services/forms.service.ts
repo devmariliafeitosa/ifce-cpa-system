@@ -1,7 +1,7 @@
-
 import type { SmartForm } from "../types";
 import { apiRequest } from "./api";
 import { getQuestionsForForm } from "./question.service";
+import { listCampuses } from "./campuses.service";
 
 export interface CreateFormPayload {
   title: string;
@@ -187,7 +187,10 @@ function formatPeriodo(
 
 export function mapBackendFormToSmartForm(
   form: BackendForm,
+  campusMap?: Map<string, string>,
 ): SmartForm {
+  const campusName = campusMap?.get(form.campusId) ?? form.campusId ?? "Campus não informado";
+
   return {
     id: form.id,
 
@@ -196,14 +199,7 @@ export function mapBackendFormToSmartForm(
     description:
       form.description ?? "",
 
-    /*
-     * Por enquanto o backend devolve somente
-     * campusId.
-     *
-     * Depois vamos buscar o nome real do campus.
-     */
-    campus:
-      form.campusId || "Campus não informado",
+    campus: campusName,
 
     status: mapStatus(
       form.status,
@@ -241,15 +237,18 @@ export function mapBackendFormToSmartForm(
 export async function listForms(): Promise<
   SmartForm[]
 > {
-  const response =
-    await apiRequest<BackendForm[]>(
-      "/forms"
-    );
+  const [response, campuses] = await Promise.all([
+    apiRequest<BackendForm[]>("/forms"),
+    listCampuses(false),
+  ]);
 
-  const forms =
-    response.map(
-      mapBackendFormToSmartForm
-    );
+  const campusMap = new Map<string, string>(
+    campuses.map((c) => [c.id, c.nome])
+  );
+
+  const forms = response.map((f) =>
+    mapBackendFormToSmartForm(f, campusMap)
+  );
 
   const formsWithQuestions =
     await Promise.all(
@@ -270,11 +269,6 @@ export async function listForms(): Promise<
             error
           );
 
-          /*
-           * Um erro nas perguntas não impede
-           * a lista inteira de formulários
-           * de aparecer.
-           */
           return {
             ...form,
             questions: [],

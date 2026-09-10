@@ -120,6 +120,7 @@ export interface SmartForm {
   title: string;
   description: string;
   campus: string;
+  campusId?: string; 
   status:
     | "Ativo"
     | "Agendada"

@@ -140,7 +140,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
   setShowSendConfirmModal,
   onSelectTab,
 }) => {
-  // Lista real de campi vinda do backend (/campuses), em vez do array fixo antigo
   const [campuses, setCampuses] = useState<BackendCampus[]>([]);
   const [campusesLoading, setCampusesLoading] = useState(true);
   const [campusesError, setCampusesError] = useState<string | null>(null);
@@ -153,12 +152,11 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
       setCampusesError(null);
 
       try {
-        const lista = await listCampuses(true); // só campi ativos
+        const lista = await listCampuses(false);
         if (cancelado) return;
 
         setCampuses(lista);
 
-        // Se ainda não há campus selecionado (form novo), seleciona o primeiro da lista
         if (!formCampus && lista.length > 0) {
           setFormCampus(lista[0].id);
         }
@@ -180,13 +178,11 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Nome legível do campus selecionado, pra exibição (o formCampus guarda o id real)
   const formCampusNome =
     campuses.find((c) => c.id === formCampus)?.nome || formCampus;
 
   return (
     <>
-      {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
           <div
@@ -215,7 +211,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       Ativa
                     </span>
                   </div>
-                  <p className="text-slate-600 text-[11px]">Campus: {wizardCampaignCampus}</p>
+                  <p className="text-slate-600 text-[11px]">Campus: {formCampusNome}</p>
                   <p className="text-slate-600 text-[11px]">Período: {wizardCampaignStartDate} até {wizardCampaignEndDate}</p>
                   <p className="text-slate-600 text-[11px]">Público: {formAudiences.length} segmento(s)</p>
                 </div>
@@ -248,9 +244,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
               </div>
             ) : (
               <>
-            {/* CABEÇALHO DO WIZARD (COMPACTO E LIMPO) */}
             <div className="bg-slate-50 border-b border-slate-200/80 px-5 py-3 space-y-2 shrink-0">
-              {/* Header Top Row: Title, Step Subtitle & Close */}
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate tracking-tight">
@@ -270,7 +264,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </button>
               </div>
 
-              {/* Discrete Progress Bar */}
               <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#006837] transition-all duration-300 rounded-full"
@@ -278,7 +271,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 />
               </div>
 
-              {/* STEPPER INDICATOR RAIL */}
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-1 pt-0.5">
                 {WIZARD_STEPS.map((step) => {
                   const isActive = wizardStep === step.id;
@@ -309,10 +301,8 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
               </div>
             </div>
 
-            {/* CORPO DO WIZARD (CONTEÚDO DAS ETAPAS) */}
             <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
 
-              {/* ETAPA 1 — INFORMAÇÕES DO FORMULÁRIO */}
               {wizardStep === 1 && (
                 <div className="space-y-6 animate-in fade-in duration-200">
                   <div className="border-b border-slate-100 pb-3">
@@ -326,7 +316,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                   </div>
 
                   <div className="space-y-4">
-                    {/* Campo 1: Título do Formulário */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
                         <span>Título do Formulário</span>
@@ -345,7 +334,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </p>
                     </div>
 
-                    {/* Campo 2: Descrição */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-800">
                         Descrição / Apresentação Institucional
@@ -359,7 +347,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       />
                     </div>
 
-                    {/* Campo 3: Campus (Seletor com lista de todos os campi do IFCE) */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
                         <Building2 className="w-3.5 h-3.5 text-[#006837]" />
@@ -380,7 +367,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                         )}
                         {campuses.map((campus) => (
                           <option key={campus.id} value={campus.id}>
-                            {campus.nome} ({campus.sigla})
+                            {campus.nome} ({campus.sigla}){campus.ativo ? '' : ' — inativo'}
                           </option>
                         ))}
                       </select>
@@ -394,7 +381,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 2 — PERGUNTAS GERAIS */}
               {wizardStep === 2 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -416,7 +402,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Questions List (Filtered for 'todos') */}
                   {formQuestions.filter((q) => q.audiences.includes('todos')).length === 0 ? (
                     <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-3 bg-slate-50/50">
                       <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
@@ -458,7 +443,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 3 — ESCOLHA DO SEGMENTO */}
               {wizardStep === 3 && (
                 <div className="space-y-6 animate-in fade-in duration-200">
                   <div className="border-b border-slate-100 pb-3">
@@ -471,16 +455,13 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </p>
                   </div>
 
-                  {/* 3 CARDS GRANDES DE SEGMENTO */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* CARD 1: DISCENTES */}
                     {(() => {
                       const qCount = formQuestions.filter((q) => q.audiences.includes('alunos') && !q.audiences.includes('todos')).length;
                       const isDone = qCount > 0 || completedSegments.includes('alunos');
 
                       return (
                         <div
-                          
                           onClick={() => {
                             setSelectedSegment('alunos');
                             setWizardStep(4);
@@ -531,7 +512,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       );
                     })()}
 
-                    {/* CARD 2: DOCENTES */}
                     {(() => {
                       const qCount = formQuestions.filter((q) => q.audiences.includes('docentes') && !q.audiences.includes('todos')).length;
                       const isDone = qCount > 0 || completedSegments.includes('docentes');
@@ -588,7 +568,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       );
                     })()}
 
-                    {/* CARD 3: TAES */}
                     {(() => {
                       const qCount = formQuestions.filter((q) => q.audiences.includes('taes') && !q.audiences.includes('todos')).length;
                       const isDone = qCount > 0 || completedSegments.includes('taes');
@@ -652,10 +631,8 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 4 — PERGUNTAS DO SEGMENTO */}
               {wizardStep === 4 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  {/* Cabeçalho da Etapa 4 (Sem filtro/troca de segmento) */}
                   <div className="border-b border-slate-100 pb-2.5">
                     <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                       <HelpCircle className="w-5 h-5 text-[#006837]" />
@@ -673,7 +650,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </p>
                   </div>
 
-                  {/* Lista de perguntas do segmento selecionado */}
                   {formQuestions.filter((q) => q.audiences.includes(selectedSegment) && !q.audiences.includes('todos')).length === 0 ? (
                     <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-4 bg-slate-50/50">
                       <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
@@ -798,10 +774,8 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 5 — REVISÃO DO FORMULÁRIO */}
               {wizardStep === 5 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  {/* Cabeçalho da Etapa */}
                   <div className="border-b border-slate-100 pb-2">
                     <h4 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-[#006837]" />
@@ -812,7 +786,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </p>
                   </div>
 
-                  {/* RESUMO RÁPIDO NO TOPO */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5">
                       <span className="text-base font-black text-[#006837] block leading-none">{formQuestions.length}</span>
@@ -839,9 +812,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </div>
                   </div>
 
-                  {/* BLOCOS COMPACTOS DA REVISÃO (SEM CONFIGURAÇÃO DE TEMPO) */}
                   <div className="space-y-3">
-                    {/* BLOCO 1: Informações Gerais */}
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -877,7 +848,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* BLOCO 2: Participantes / Segmentos */}
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -912,7 +882,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* BLOCO 3: Perguntas */}
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -958,7 +927,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* BLOCO 4: Identificação e Sigilo */}
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -977,7 +945,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 </div>
               )}
 
-              {/* ETAPA 6 — ENVIO DA CAMPANHA */}
               {wizardStep === 6 && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <div className="border-b border-slate-100 pb-2">
@@ -990,7 +957,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </p>
                   </div>
 
-                  {/* BLOCO 1: PÚBLICO */}
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -1021,7 +987,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </div>
                   </div>
 
-                  {/* BLOCO 2: CANAIS DE ENVIO */}
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
                     <div className="border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -1031,7 +996,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      {/* E-mail Checkbox */}
                       <label
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.email
@@ -1050,7 +1014,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                         </span>
                       </label>
 
-                      {/* QR Code Checkbox */}
                       <label
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.qrcode
@@ -1069,7 +1032,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                         </span>
                       </label>
 
-                      {/* Link Checkbox */}
                       <label
                         className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
                           sendMethods.link
@@ -1089,9 +1051,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </label>
                     </div>
 
-                    {/* REVELA APENAS O QUE ESTIVER SELECIONADO COM FORMATO COMPACTO */}
-
-                    {/* 1. SE E-MAIL ESTIVER SELECIONADO: CARD COMPACTO */}
                     {sendMethods.email && (
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in duration-150">
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -1135,7 +1094,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </div>
                     )}
 
-                    {/* 2. SE QR CODE ESTIVER SELECIONADO */}
                     {sendMethods.qrcode && (
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3 animate-in fade-in duration-150">
                         <div className="flex items-center gap-2.5">
@@ -1158,7 +1116,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       </div>
                     )}
 
-                    {/* 3. SE LINK ESTIVER SELECIONADO */}
                     {sendMethods.link && (
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 animate-in fade-in duration-150">
                         <span className="text-xs font-bold text-slate-900 block">Link direto de acesso</span>
@@ -1186,14 +1143,12 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     )}
                   </div>
 
-                  {/* BLOCO 3: PERÍODO E AGENDAMENTO DE ENVIO */}
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2.5">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Calendar className="w-4 h-4 text-[#006837]" />
                         3. PERÍODO E AGENDAMENTO DE ENVIO
                       </span>
-                      {/* Presets rápidos */}
                       <div className="flex items-center gap-1">
                         {[7, 15, 30].map((days) => (
                           <button
@@ -1269,9 +1224,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
 
             </div>
 
-            {/* RODAPÉ DO WIZARD (TODAS AS ETAPAS POSSUEM) */}
             <div className="bg-slate-50 border-t border-slate-200/80 p-4 sm:p-5 flex items-center justify-between gap-3 shrink-0">
-              {/* Esquerda: Cancelar */}
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
@@ -1280,9 +1233,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                 Cancelar
               </button>
 
-              {/* Direita: Voltar, Salvar progresso, Seguinte / Finalizar */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Botão Voltar (Desabilitado na Etapa 1) */}
                 <button
                   type="button"
                   disabled={wizardStep === 1}
@@ -1297,7 +1248,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                   <span>Voltar</span>
                 </button>
 
-                {/* Botão Salvar Progresso (Permanece como Rascunho) */}
                 <button
                   type="button"
                   onClick={handleSaveProgressDraft}
@@ -1308,7 +1258,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                   <span>Salvar progresso</span>
                 </button>
 
-                {/* Botão Dinâmico de Avanço por Etapa */}
                 {wizardStep === 1 && (
                   <button
                     type="button"
@@ -1342,7 +1291,6 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                   </button>
                 )}
 
-                {/* Na Etapa 4, o botão ao lado de 'Adicionar Nova Pergunta' substitui o botão seguinte */}
                 {wizardStep === 4 && null}
 
                 {wizardStep === 5 && (
