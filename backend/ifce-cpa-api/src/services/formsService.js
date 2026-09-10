@@ -81,6 +81,28 @@ async function encerrarForm(formId, atualizadoPor) {
   });
 }
 
+async function removerForm(formId, removidoPor) {
+  const existente =
+    await formsRepository.buscarFormPorId(formId);
+
+  if (!existente) {
+    const erro = new Error(
+      `Formulário "${formId}" não encontrado`
+    );
+
+    erro.status = 404;
+    throw erro;
+  }
+
+  await formsRepository.removerForm(formId);
+
+  await registrarLog({
+    userId: removidoPor,
+    tipo: 'DELETE',
+    descricao: `removeu o formulário "${existente.title}"`,
+  });
+}
+
 module.exports = {
   criarForm,
   buscarForm,
@@ -88,4 +110,5 @@ module.exports = {
   atualizarForm,
   ativarForm,
   encerrarForm,
+  removerForm,
 };
