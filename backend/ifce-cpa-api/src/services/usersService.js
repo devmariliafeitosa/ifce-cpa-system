@@ -62,7 +62,7 @@ async function buscarUsuarioCompleto(userId) {
   if (!usuario) return null;
 
   const dadosRoles = {};
-  for (const role of usuario.roles) {
+  for (const role of usuario.roles || []) {
     dadosRoles[role] = await roleRepository.buscarDadosRole(role, userId);
   }
 
@@ -70,7 +70,39 @@ async function buscarUsuarioCompleto(userId) {
 }
 
 async function listarUsuarios() {
-  return usersRepository.listarUsuarios();
+  const usuarios = await usersRepository.listarUsuarios();
+
+  return Promise.all(
+    usuarios.map(async (usuario) => {
+      const dadosRoles = {};
+      for (const role of usuario.roles || []) {
+        dadosRoles[role] = await roleRepository.buscarDadosRole(role, usuario.id);
+      }
+      return { ...usuario, dadosRoles };
+    })
+  );
+}
+
+async function sincronizarRoles({ userId, rolesAntigos, rolesNovos, dadosPorRole = {} }) {
+  const antigos = new Set(rolesAntigos);
+  const novos = new Set(rolesNovos);
+
+  const rolesParaCriar = rolesNovos.filter((r) => !antigos.has(r));
+  const rolesParaRemover = rolesAntigos.filter((r) => !novos.has(r));
+  const rolesParaAtualizar = rolesNovos.filter((r) => antigos.has(r) && dadosPorRole[r]);
+
+  for (const role of rolesParaCriar) {
+    validarDadosRole(role, dadosPorRole[role]);
+    await roleRepository.criarDadosRole(role, userId, dadosPorRole[role]);
+  }
+
+  for (const role of rolesParaRemover) {
+    await roleRepository.removerDadosRole(role, userId);
+  }
+
+  for (const role of rolesParaAtualizar) {
+    await roleRepository.atualizarDadosRole(role, userId, dadosPorRole[role]);
+  }
 }
 
 async function atualizarUsuario(userId, dados, atualizadoPor) {
@@ -79,12 +111,34 @@ async function atualizarUsuario(userId, dados, atualizadoPor) {
     throw new Error(`Usuário "${userId}" não encontrado`);
   }
 
-  const dadosParaSalvar = { ...dados };
-  if (dados.campusId) {
-    dadosParaSalvar.campusId = dbPrincipal.collection('campuses').doc(dados.campusId);
+  const { dadosPorRole, roles, campusId, ...camposSimples } = dados;
+
+  const dadosParaSalvar = { ...camposSimples };
+
+  if (campusId) {
+    dadosParaSalvar.campusId = dbPrincipal.collection('campuses').doc(campusId);
   }
 
-  await usersRepository.atualizarUsuario(userId, dadosParaSalvar);
+  const rolesAntigos = existente.roles || [];
+  const rolesNovos = roles || rolesAntigos;
+
+  if (roles) {
+    validarRoles(roles);
+    dadosParaSalvar.roles = roles;
+  }
+
+  if (Object.keys(dadosParaSalvar).length > 0) {
+    await usersRepository.atualizarUsuario(userId, dadosParaSalvar);
+  }
+
+  if (roles || dadosPorRole) {
+    await sincronizarRoles({
+      userId,
+      rolesAntigos,
+      rolesNovos,
+      dadosPorRole: dadosPorRole || {},
+    });
+  }
 
   await registrarLog({
     userId: atualizadoPor,

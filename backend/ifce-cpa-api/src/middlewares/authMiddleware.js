@@ -92,8 +92,7 @@ function requireOwnerOrAdmin(req, res, next) {
   const userId = req.user?.id;
 
   const admin =
-    req.user?.roles?.includes('coordenador') ||
-    req.user?.roles?.includes('admin');
+    req.user?.roles?.includes('coordenador')
 
   if (!admin && userId !== req.params.userId) {
     return res.status(403).json({
