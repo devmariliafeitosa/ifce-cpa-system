@@ -370,7 +370,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   // Form Builder Inputs
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
+  // Vazio até o modal carregar a lista real de /campuses e selecionar o primeiro
+  const [formCampus, setFormCampus] = useState('');
   const [formPeriodo, setFormPeriodo] = useState('2026.2');
   const [, setFormCategory] = useState<string>('Autoavaliação Institucional');
   const [formStartDate, setFormStartDate] = useState('2026-09-15');
@@ -478,7 +479,7 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setWizardStep(targetStep);
     setFormTitle(form.title);
     setFormDescription(form.description);
-    setFormCampus(form.campus || 'IFCE Campus Tauá');
+    setFormCampus(form.campus || '');
     setFormPeriodo(form.periodo || '2026.2');
     setFormStartDate(form.startDate || '2026-09-15');
     setFormStartTime(form.startTime || '08:00');

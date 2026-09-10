@@ -21,9 +21,10 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { SmartForm, SmartQuestion, TargetAudience } from '../../../../types';
-import { IFCE_CAMPUSES, WIZARD_STEPS } from '../data/constants';
+import { WIZARD_STEPS } from '../data/constants';
+import { listCampuses, type BackendCampus } from '../../../../services/campuses.service';
 
 interface SendMethods {
   email: boolean;
@@ -139,6 +140,50 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
   setShowSendConfirmModal,
   onSelectTab,
 }) => {
+  // Lista real de campi vinda do backend (/campuses), em vez do array fixo antigo
+  const [campuses, setCampuses] = useState<BackendCampus[]>([]);
+  const [campusesLoading, setCampusesLoading] = useState(true);
+  const [campusesError, setCampusesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function carregarCampuses() {
+      setCampusesLoading(true);
+      setCampusesError(null);
+
+      try {
+        const lista = await listCampuses(true); // só campi ativos
+        if (cancelado) return;
+
+        setCampuses(lista);
+
+        // Se ainda não há campus selecionado (form novo), seleciona o primeiro da lista
+        if (!formCampus && lista.length > 0) {
+          setFormCampus(lista[0].id);
+        }
+      } catch (error) {
+        if (!cancelado) {
+          console.error('Erro ao carregar campi:', error);
+          setCampusesError('Não foi possível carregar a lista de campi.');
+        }
+      } finally {
+        if (!cancelado) setCampusesLoading(false);
+      }
+    }
+
+    carregarCampuses();
+
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Nome legível do campus selecionado, pra exibição (o formCampus guarda o id real)
+  const formCampusNome =
+    campuses.find((c) => c.id === formCampus)?.nome || formCampus;
+
   return (
     <>
       {/* MODAL 1: Wizard de Criação de Formulários (CPA IFCE) */}
@@ -324,14 +369,26 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                       <select
                         value={formCampus}
                         onChange={(e) => setFormCampus(e.target.value)}
-                        className="w-full h-11 px-3.5 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800 transition-all cursor-pointer"
+                        disabled={campusesLoading}
+                        className="w-full h-11 px-3.5 text-xs sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] font-semibold text-slate-800 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {IFCE_CAMPUSES.map((campusName) => (
-                          <option key={campusName} value={campusName}>
-                            {campusName}
+                        {campusesLoading && (
+                          <option value="">Carregando campi...</option>
+                        )}
+                        {!campusesLoading && campuses.length === 0 && (
+                          <option value="">Nenhum campus cadastrado</option>
+                        )}
+                        {campuses.map((campus) => (
+                          <option key={campus.id} value={campus.id}>
+                            {campus.nome} ({campus.sigla})
                           </option>
                         ))}
                       </select>
+                      {campusesError && (
+                        <p className="text-[11px] font-semibold text-rose-600">
+                          {campusesError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -768,8 +825,8 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                     </div>
 
                     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center space-y-0.5 truncate">
-                      <span className="text-xs font-black text-slate-800 block truncate leading-snug" title={formCampus}>
-                        {formCampus.replace('IFCE Campus ', '')}
+                      <span className="text-xs font-black text-slate-800 block truncate leading-snug" title={formCampusNome}>
+                        {formCampusNome}
                       </span>
                       <span className="text-[11px] font-bold text-slate-600 block">Campus</span>
                     </div>
@@ -807,7 +864,7 @@ export const CreateFormWizardModal: React.FC<CreateFormWizardModalProps> = ({
                         </div>
                         <div>
                           <span className="text-slate-400 font-medium block text-[11px]">Campus:</span>
-                          <span className="font-bold text-slate-800">{formCampus}</span>
+                          <span className="font-bold text-slate-800">{formCampusNome}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 font-medium block text-[11px]">Período Letivo:</span>
