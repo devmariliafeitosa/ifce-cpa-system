@@ -7,6 +7,8 @@ const usersRoutes = require('./routes/usersRoutes');
 const formsRoutes = require('./routes/formsRoutes');
 const respostaFormsRoutes = require('./routes/respostaFormsRoutes');
 const formQuestionsRoutes = require('./routes/formQuestionRoutes');
+const campusesRoutes = require('./routes/campusesRoutes');
+
 
 
 const { requestLogger } = require('./middlewares/requestLogger');
@@ -23,9 +25,10 @@ app.use(cors({ origin: corsOrigins }));
 app.use(express.json({ limit: '32kb' }));
 app.use(requestLogger);
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/logs', logsRoutes);
 app.use('/api/auth', authRoutes);
+
 
 app.use((error, req, res, next) => {
 	if (error instanceof SyntaxError && error.status === 400 && error.body) {
@@ -42,11 +45,11 @@ app.use((error, req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/logs', logsRoutes);
-
 app.use('/api/questions', questionsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/forms', formsRoutes);
 app.use('/api/respostaForms', respostaFormsRoutes);
 app.use('/api/form-questions', formQuestionsRoutes);
+app.use('/campuses', campusesRoutes);
 
 module.exports = app;
