@@ -20,9 +20,11 @@ import type {
   TargetAudience,
 } from '../../../types';
 import { CampaignQRCodeModal } from "../../CampaignQRCodeModal";
-import {submitFormResponse } from '../../../services/responses.service';
-import { saveQuestionsForForm } from '../../../services/question.service.ts';
+import { submitFormResponse } from '../../../services/responses.service';
+import { saveQuestionsForForm } from '../../../services/question.service';
 import { activateForm, createForm, listForms, updateForm } from '../../../services/forms.service';
+import { listCampuses } from '../../../services/campuses.service';
+import type { BackendCampus } from '../../../services/campuses.service';
 import { QuestionClassificationView } from './components/QuestionClassificationView';
 import { FormsListPanel } from './components/FormsListPanel';
 import type { CPATemplateItem } from './data/cpaTemplates';
@@ -41,7 +43,6 @@ import { EmailEditModal } from './modals/EmailEditModal';
 import { QrCodePreviewModal } from './modals/QrCodePreviewModal';
 import { LaunchCampaignConfirmModal } from './modals/LaunchCampaignConfirmModal';
 
-// Re-exportado para compatibilidade com quem importava utilitários diretamente daqui
 export { getCampaignStatus, getCountdownBadgeInfo, formatCompactPeriod, getCompactStatusBadge } from './utils/campaignStatus';
 export { MOCK_DRIVE_FORMS } from './data/mockDriveForms';
 export type { DriveFormMock } from './data/mockDriveForms';
@@ -60,10 +61,8 @@ interface FormsManagerViewProps {
 export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   onSelectTab,
 }) => {
-      const [forms, setForms] =
-        useState<SmartForm[]>([]);
+  const [forms, setForms] = useState<SmartForm[]>([]);
 
-  // Notifications
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -76,56 +75,71 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }, 5000);
   };
 
+  const [campuses, setCampuses] = useState<BackendCampus[]>([]);
+
   useEffect(() => {
-  let active = true;
+    let active = true;
 
-  async function loadForms() {
-    try {
-      const data =
-        await listForms();
+    async function loadForms() {
+      try {
+        const data = await listForms();
 
-      if (!active) {
-        return;
+        if (!active) {
+          return;
+        }
+
+        setForms(data);
+      } catch (error) {
+        console.error('Erro ao carregar formulários:', error);
+
+        if (!active) {
+          return;
+        }
+
+        showNotification(
+          'error',
+          'Não foi possível carregar os formulários do servidor.',
+        );
       }
-
-      setForms(data);
-    } catch (error) {
-      console.error(
-        'Erro ao carregar formulários:',
-        error,
-      );
-
-      if (!active) {
-        return;
-      }
-
-      showNotification(
-        'error',
-        'Não foi possível carregar os formulários do servidor.',
-      );
     }
-  }
 
-  void loadForms();
+    void loadForms();
 
-  return () => {
-    active = false;
-  };
-}, []);
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  // Search and Filter State
+  useEffect(() => {
+    let active = true;
+
+    async function loadCampuses() {
+      try {
+        const data = await listCampuses(false);
+        if (!active) return;
+        setCampuses(data);
+      } catch (error) {
+        console.error('Erro ao carregar campi:', error);
+      }
+    }
+
+    void loadCampuses();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'Ativo' | 'Rascunho' | 'Encerrado'>('todos');
   const [audienceFilter, setAudienceFilter] = useState<'todos' | 'alunos' | 'docentes' | 'taes'>('todos');
   const [campusFilter, setCampusFilter] = useState<string>('todos');
   const [periodFilter, setPeriodFilter] = useState<string>('todos');
 
-  // Extrai dinamicamente apenas os períodos de formulários efetivamente cadastrados/ativos no sistema
   const availablePeriods = React.useMemo(() => {
     const periodMap = new Map<string, string>();
 
     forms.forEach((f) => {
-      // Tenta capturar padrão de semestre no título ou período (ex: 2026.2, 2025.1)
       const semesterMatch = (f.title + ' ' + (f.periodo || '')).match(/\b20\d{2}\.[12]\b/);
       if (semesterMatch) {
         const sem = semesterMatch[0];
@@ -172,33 +186,27 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
       .sort((a, b) => b.value.localeCompare(a.value));
   }, [forms]);
 
-  // Se o período filtrado não existir mais, volta para 'todos'
   useEffect(() => {
     if (periodFilter !== 'todos' && !availablePeriods.some((p) => p.value === periodFilter)) {
       setPeriodFilter('todos');
     }
   }, [availablePeriods, periodFilter]);
 
-  // Import Google Form Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importSearchTerm, setImportSearchTerm] = useState('');
   const [isFetchingDriveForms, setIsFetchingDriveForms] = useState(false);
   const [, setGoogleDriveFiles] = useState<GoogleFormFile[]>([]);
 
-  // Classificação das Perguntas Screen State
   const [classifyingForm, setClassifyingForm] = useState<SmartForm | null>(null);
 
-  // Filters for Classification Screen
   const [classSearchTerm, setClassSearchTerm] = useState('');
   const [classCategoryFilter, setClassCategoryFilter] = useState<string>('todas');
   const [classAudienceFilter, setClassAudienceFilter] = useState<string>('todos');
   const [classRequiredFilter, setClassRequiredFilter] = useState<string>('todas');
   const [classTypeFilter, setClassTypeFilter] = useState<string>('todos');
 
-  // "Visualizar como" Profile Preview Role ('none' | 'alunos' | 'docentes' | 'taes')
   const [previewRole, setPreviewRole] = useState<'none' | 'alunos' | 'docentes' | 'taes'>('none');
 
-  // Fetch real Google Forms if connected
   const handleFetchDriveForms = async () => {
     setIsFetchingDriveForms(true);
     try {
@@ -220,13 +228,13 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     }
   };
 
-  // Import Selected Form Handler
   const handleImportForm = (mockItem: DriveFormMock) => {
     const newForm: SmartForm = {
       id: `form-imp-${Date.now()}`,
       title: `${mockItem.name} (Importado)`,
       description: mockItem.description,
       campus: 'Campus Tauá',
+      campusId: campuses[0]?.id,
       status: 'Rascunho',
       createdAt: new Date().toLocaleDateString('pt-BR'),
       periodo: '15/08/2026 - 30/12/2026',
@@ -244,7 +252,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setForms([newForm, ...forms]);
     setIsImportModalOpen(false);
 
-    // Transition directly to Classification Screen!
     setClassifyingForm(newForm);
     setPreviewRole('none');
     showNotification(
@@ -253,7 +260,6 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     );
   };
 
-  // Classification Screen Handlers
   const handleToggleAudienceInClassifying = (questionId: string, target: TargetAudience) => {
     if (!classifyingForm) return;
 
@@ -319,12 +325,10 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setPreviewRole('none');
   };
 
-  // Question filtering logic for Classification screen
   const getFilteredQuestionsForClassification = (): SmartQuestion[] => {
     if (!classifyingForm) return [];
 
     return classifyingForm.questions.filter((q) => {
-      // 1. Text search
       if (classSearchTerm.trim()) {
         const term = classSearchTerm.toLowerCase();
         const matchesTitle = q.title.toLowerCase().includes(term);
@@ -332,12 +336,10 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         if (!matchesTitle && !matchesDesc) return false;
       }
 
-      // 2. Category filter
       if (classCategoryFilter !== 'todas' && q.category !== classCategoryFilter) {
         return false;
       }
 
-      // 3. Audience filter
       if (classAudienceFilter === 'todos_only') {
         if (!q.audiences.includes('todos')) return false;
       } else if (classAudienceFilter === 'alunos') {
@@ -348,18 +350,15 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         if (!q.audiences.includes('taes')) return false;
       }
 
-      // 4. Required filter
       if (classRequiredFilter === 'required' && !q.required) return false;
       if (classRequiredFilter === 'optional' && q.required) return false;
 
-      // 5. Type filter
       if (classTypeFilter !== 'todos' && q.type !== classTypeFilter) return false;
 
       return true;
     });
   };
 
-  // Wizard State (Steps 1 to 5)
   const [wizardStep, setWizardStep] = useState<number>(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<SmartForm | null>(null);
@@ -367,10 +366,9 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [completedSegments, setCompletedSegments] = useState<string[]>([]);
   const [publishStatus, setPublishStatus] = useState<'Ativo' | 'Rascunho'>('Ativo');
 
-  // Form Builder Inputs
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formCampus, setFormCampus] = useState('IFCE Campus Tauá');
+  const [formCampus, setFormCampus] = useState('');
   const [formPeriodo, setFormPeriodo] = useState('2026.2');
   const [, setFormCategory] = useState<string>('Autoavaliação Institucional');
   const [formStartDate, setFormStartDate] = useState('2026-09-15');
@@ -388,9 +386,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   const [formQuestions, setFormQuestions] = useState<SmartQuestion[]>([]);
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Record<string, boolean>>({});
 
-  // Step 6: Envio da Campanha state
   const [wizardCampaignName, setWizardCampaignName] = useState('');
-  const [wizardCampaignCampus, setWizardCampaignCampus] = useState('IFCE Campus Tauá');
+  const [wizardCampaignCampus, setWizardCampaignCampus] = useState('');
   const [wizardCampaignStartDate, setWizardCampaignStartDate] = useState('2026-09-15');
   const [wizardCampaignEndDate, setWizardCampaignEndDate] = useState('2026-09-30');
   const [wizardCampaignEstimatedTime, setWizardCampaignEstimatedTime] = useState('4 min');
@@ -431,13 +428,12 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setFormEndDate(`${year}-${month}-${day}`);
   };
 
-  // Open Create Wizard
   const handleOpenCreateModal = () => {
     setEditingForm(null);
     setWizardStep(1);
     setFormTitle('');
     setFormDescription('');
-    setFormCampus('IFCE Campus Tauá');
+    setFormCampus(campuses[0]?.id ?? '');
     setFormPeriodo('2026.2');
     setFormCategory('Autoavaliação Institucional');
     setFormStartDate('2026-09-15');
@@ -472,13 +468,12 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setIsCreateModalOpen(true);
   };
 
-  // Open Edit Wizard
   const handleOpenEditModal = (form: SmartForm, targetStep: number = 1) => {
     setEditingForm(form);
     setWizardStep(targetStep);
     setFormTitle(form.title);
     setFormDescription(form.description);
-    setFormCampus(form.campus || 'IFCE Campus Tauá');
+    setFormCampus(form.campusId ?? campuses[0]?.id ?? '');
     setFormPeriodo(form.periodo || '2026.2');
     setFormStartDate(form.startDate || '2026-09-15');
     setFormStartTime(form.startTime || '08:00');
@@ -497,74 +492,33 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
     setIsCreateModalOpen(true);
   };
 
-// Save Progress as Draft (Botão "Salvar progresso")
-const handleSaveProgressDraft =
-  async () => {
-
-    console.log('[SAVE]', {
-  editing: Boolean(editingForm),
-  quantidadePerguntas: formQuestions.length,
-  perguntas: formQuestions,
-  });
-
-    const titleToSave =
-      formTitle.trim() ||
-      'Novo Formulário';
+  const handleSaveProgressDraft = async () => {
+    const titleToSave = formTitle.trim() || 'Novo Formulário';
 
     try {
       const payload = {
         title: titleToSave,
-        description:
-          formDescription,
-
-        campusId:
-          formCampus,
-
-        startDate:
-          formStartDate,
-
-        startTime:
-          formStartTime,
-
-        endDate:
-          formEndDate,
-
-        endTime:
-          formEndTime,
-
-        status:
-          'rascunho' as const,
-
+        description: formDescription,
+        campusId: formCampus,
+        startDate: formStartDate,
+        startTime: formStartTime,
+        endDate: formEndDate,
+        endTime: formEndTime,
+        status: 'rascunho' as const,
         isAtivo: false,
       };
 
       if (editingForm) {
-        await updateForm(
-          editingForm.id,
-          payload
-        );
+        await updateForm(editingForm.id, payload);
 
         showNotification(
           'success',
           `Formulário "${titleToSave}" atualizado no servidor.`
         );
       } else {
-        /*
-         * 1. Cria formulário
-         */
-        const createdForm =
-          await createForm(
-            payload
-          );
+        const createdForm = await createForm(payload);
 
-        /*
-         * 2. Cria perguntas
-         * 3. Vincula ao formulário
-         */
-        await saveQuestionsForForm(
-          createdForm.id,
-          formQuestions
-        );
+        await saveQuestionsForForm(createdForm.id, formQuestions);
 
         showNotification(
           'success',
@@ -572,24 +526,11 @@ const handleSaveProgressDraft =
         );
       }
 
-      /*
-       * Recarrega formulários
-       */
-      const refreshedForms =
-        await listForms();
-
-      setForms(
-        refreshedForms
-      );
-
-      setIsCreateModalOpen(
-        false
-      );
+      const refreshedForms = await listForms();
+      setForms(refreshedForms);
+      setIsCreateModalOpen(false);
     } catch (error) {
-      console.error(
-        'Erro ao salvar formulário:',
-        error
-      );
+      console.error('Erro ao salvar formulário:', error);
 
       showNotification(
         'error',
@@ -599,7 +540,7 @@ const handleSaveProgressDraft =
       );
     }
   };
-  // Finalize / Publicar Form
+
   const handleFinalizeForm = () => {
     const titleToSave = formTitle.trim() || 'Avaliação Institucional CPA';
     const questionsToSave: SmartQuestion[] =
@@ -657,6 +598,7 @@ const handleSaveProgressDraft =
         title: titleToSave,
         description: formDescription,
         campus: formCampus,
+        campusId: formCampus,
         periodo: formattedPeriodo,
         startDate: formStartDate,
         startTime: formStartTime,
@@ -677,6 +619,7 @@ const handleSaveProgressDraft =
         title: titleToSave,
         description: formDescription,
         campus: formCampus,
+        campusId: formCampus,
         periodo: formattedPeriodo,
         startDate: formStartDate,
         startTime: formStartTime,
@@ -697,11 +640,10 @@ const handleSaveProgressDraft =
     setIsCreateModalOpen(false);
   };
 
-  // Step 5 -> Step 6 Transition
   const handleAdvanceToCampaignSend = () => {
     const titleToUse = formTitle.trim() || 'Avaliação Institucional CPA';
     setWizardCampaignName(titleToUse);
-    setWizardCampaignCampus(formCampus || 'IFCE Campus Tauá');
+    setWizardCampaignCampus(formCampus);
     setWizardCampaignStartDate(formStartDate || '2026-09-15');
     setWizardCampaignEndDate(formEndDate || '2026-09-30');
     const qCount = formQuestions.length || 1;
@@ -710,9 +652,7 @@ const handleSaveProgressDraft =
     setWizardStep(6);
   };
 
-// Step 6 Confirm & Launch Campaign
-const handleConfirmSendCampaign =
-  async () => {
+  const handleConfirmSendCampaign = async () => {
     const titleToSave =
       wizardCampaignName.trim() ||
       formTitle.trim() ||
@@ -721,102 +661,49 @@ const handleConfirmSendCampaign =
     try {
       const payload = {
         title: titleToSave,
-
-        description:
-          formDescription,
-
-        campusId:
-          wizardCampaignCampus ||
-          formCampus,
-
-        startDate:
-          wizardCampaignStartDate,
-
-        startTime:
-          formStartTime,
-
-        endDate:
-          wizardCampaignEndDate,
-
-        endTime:
-          formEndTime,
-
-        status:
-          'rascunho' as const,
-
+        description: formDescription,
+        campusId: wizardCampaignCampus || formCampus,
+        startDate: wizardCampaignStartDate,
+        startTime: formStartTime,
+        endDate: wizardCampaignEndDate,
+        endTime: formEndTime,
+        status: 'rascunho' as const,
         isAtivo: false,
       };
 
       let formId: string;
 
       if (editingForm) {
-        formId =
-          editingForm.id;
+        formId = editingForm.id;
+        await updateForm(formId, payload);
 
-        await updateForm(
-          formId,
-          payload
+        const newQuestions = formQuestions.filter(
+          (question) => question.id.startsWith('q-')
         );
 
-        const newQuestions =
-          formQuestions.filter(
-            (question) =>
-              question.id.startsWith('q-')
-          );
-
-        if (
-          newQuestions.length > 0
-        ) {
-          await saveQuestionsForForm(
-            formId,
-            newQuestions
-          );
+        if (newQuestions.length > 0) {
+          await saveQuestionsForForm(formId, newQuestions);
         }
+      } else {
+        const createdForm = await createForm(payload);
+        formId = createdForm.id;
+        await saveQuestionsForForm(formId, formQuestions);
       }
 
-      else {
-        const createdForm =
-          await createForm(
-            payload
-          );
+      await activateForm(formId);
 
-        formId =
-          createdForm.id;
-
-        await saveQuestionsForForm(
-          formId,
-          formQuestions
-        );
-      }
-
-      await activateForm(
-        formId
-      );
-
-      const refreshedForms =
-        await listForms();
-
-      setForms(
-        refreshedForms
-      );
+      const refreshedForms = await listForms();
+      setForms(refreshedForms);
 
       showNotification(
         'success',
         `Formulário "${titleToSave}" enviado e ativado com sucesso!`
       );
 
-      setShowSendConfirmModal(
-        false
-      );
-
-      setIsCampaignSentSuccess(
-        true
-      );
+      setShowSendConfirmModal(false);
+      setIsCampaignSentSuccess(true);
     } catch (error) {
-      console.error(
-        'Erro ao enviar formulário:',
-        error
-      );
+      console.error('Erro ao enviar formulário:', error);
 
       showNotification(
         'error',
@@ -827,7 +714,6 @@ const handleConfirmSendCampaign =
     }
   };
 
-  // Question Manipulation Helpers for Steps 2 and 4
   const handleAddGeneralQuestion = () => {
     const newId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setFormQuestions((prev) => [
@@ -844,7 +730,6 @@ const handleConfirmSendCampaign =
     ]);
     setExpandedQuestionIds({ [newId]: true });
 
-    // Exibe a nova pergunta centralizada na área visível
     setTimeout(() => {
       const el = document.getElementById(`wizard-question-card-${newId}`);
       if (el) {
@@ -873,7 +758,6 @@ const handleConfirmSendCampaign =
     ]);
     setExpandedQuestionIds({ [newId]: true });
 
-    // Exibe a nova pergunta centralizada na área visível
     setTimeout(() => {
       const el = document.getElementById(`wizard-question-card-${newId}`);
       if (el) {
@@ -934,7 +818,6 @@ const handleConfirmSendCampaign =
     showNotification('info', `Perguntas salvas! Escolha o próximo segmento ou avance para a revisão.`);
   };
 
-  // Helper to load CPA template items into current questions
   const handleLoadCPATemplate = (template: CPATemplateItem) => {
     if (!formTitle.trim()) {
       setFormTitle(`${template.title} - ${new Date().getFullYear()}`);
@@ -951,7 +834,6 @@ const handleConfirmSendCampaign =
     showNotification('success', `Perguntas do modelo "${template.title}" carregadas no formulário!`);
   };
 
-  // Participant Responder Mode ("Visão do Participante")
   const [respondingForm, setRespondingForm] = useState<SmartForm | null>(null);
   const [participantSegment, setParticipantSegment] = useState<'alunos' | 'docentes' | 'taes' | null>(null);
   const [participantStudentLevel, setParticipantStudentLevel] = useState<StudentLevel>('graduacao');
@@ -961,20 +843,15 @@ const handleConfirmSendCampaign =
   const [unansweredQuestionIds, setUnansweredQuestionIds] = useState<string[]>([]);
   const [showValidationErrorBanner, setShowValidationErrorBanner] = useState(false);
 
-  // Metrics & Analytics Viewer
   const [viewingMetricsForm, setViewingMetricsForm] = useState<SmartForm | null>(null);
 
-  // Delete Confirmation State
   const [deletingForm, setDeletingForm] = useState<SmartForm | null>(null);
 
-  // Publishing to Google Forms State
   const [, setPublishingFormId] = useState<string | null>(null);
 
-  // View Mode: 'table' (default requested) or 'grid'
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
-  // Campaign Configuration State
   const [campaignModalForm, setCampaignModalForm] = useState<SmartForm | null>(null);
   const [viewingQrCodeCampaign, setViewingQrCodeCampaign] = useState<Campaign | null>(null);
   const [submittedCampaignIds, setSubmittedCampaignIds] = useState<string[]>(() => {
@@ -1020,7 +897,6 @@ const handleConfirmSendCampaign =
     localStorage.setItem('cpa_campaigns_list', JSON.stringify(campaignsList));
   }, [campaignsList]);
 
-  // Open Campaign Configuration Modal
   const handleOpenCampaignModal = (form: SmartForm) => {
     setCampaignModalForm(form);
     setCampaignTitle(`Campanha de Avaliação Institucional 2026.2 - ${form.title}`);
@@ -1063,7 +939,6 @@ const handleConfirmSendCampaign =
     setOpenActionMenuId(null);
   };
 
-  // Launch / Save Campaign
   const handleLaunchCampaign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!campaignModalForm) return;
@@ -1106,7 +981,6 @@ const handleConfirmSendCampaign =
     setCampaignModalForm(null);
   };
 
-  // Action Menu Handlers
   const handleDuplicateForm = (form: SmartForm) => {
     const duplicated: SmartForm = {
       ...form,
@@ -1148,7 +1022,6 @@ const handleConfirmSendCampaign =
     }
   };
 
-  // Save Created or Edited Form
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
@@ -1162,24 +1035,24 @@ const handleConfirmSendCampaign =
     }
 
     if (editingForm) {
-      // Update
       const updated: SmartForm = {
         ...editingForm,
         title: formTitle,
         description: formDescription,
         campus: formCampus,
+        campusId: formCampus,
         questions: formQuestions,
         updatedAt: new Date().toLocaleDateString('pt-BR'),
       };
       setForms(forms.map((f) => (f.id === editingForm.id ? updated : f)));
       showNotification('success', `Formulário "${formTitle}" atualizado com sucesso!`);
     } else {
-      // Create New
       const newForm: SmartForm = {
         id: `form-smart-${Date.now()}`,
         title: formTitle,
         description: formDescription,
         campus: formCampus,
+        campusId: formCampus,
         status: 'Rascunho',
         createdAt: new Date().toLocaleDateString('pt-BR'),
         questions: formQuestions,
@@ -1197,7 +1070,6 @@ const handleConfirmSendCampaign =
     setIsCreateModalOpen(false);
   };
 
-  // Question manipulation helpers
   const handleAddQuestion = () => {
     const newId = `q-${Date.now()}`;
     setFormQuestions((prev) => [
@@ -1244,7 +1116,6 @@ const handleConfirmSendCampaign =
     );
   };
 
-  // Question option manipulation helpers
   const handleAddQuestionOption = (questionId: string) => {
     setFormQuestions(
       formQuestions.map((q) => {
@@ -1284,14 +1155,12 @@ const handleConfirmSendCampaign =
         let newAudiences = [...q.audiences];
 
         if (target === 'todos') {
-          // If toggled 'todos'
           if (newAudiences.includes('todos')) {
-            newAudiences = ['alunos']; // fallback
+            newAudiences = ['alunos'];
           } else {
             newAudiences = ['todos'];
           }
         } else {
-          // If 'todos' was checked, remove 'todos' first
           if (newAudiences.includes('todos')) {
             newAudiences = newAudiences.filter((a) => a !== 'todos');
           }
@@ -1309,7 +1178,6 @@ const handleConfirmSendCampaign =
     );
   };
 
-  // Participant Mode Actions
   const handleStartResponding = (form: SmartForm) => {
     setRespondingForm(form);
     setParticipantSegment(null);
@@ -1319,14 +1187,12 @@ const handleConfirmSendCampaign =
     setShowValidationErrorBanner(false);
   };
 
-  // Filter questions for current participant segment and student level
   const getFilteredQuestionsForParticipant = (): SmartQuestion[] => {
     if (!respondingForm || !participantSegment) return [];
     return respondingForm.questions.filter((q) => {
       if (q.audiences.includes('todos')) return true;
       if (!q.audiences.includes(participantSegment)) return false;
 
-      // Subsegmentation filtering for Discentes
       if (participantSegment === 'alunos') {
         const level = q.studentLevel || 'todos';
         if (level === 'todos') return true;
@@ -1337,7 +1203,6 @@ const handleConfirmSendCampaign =
     });
   };
 
-  // Handle participant answer changes with live validation updates
   const handleParticipantAnswerChange = (qId: string, val: string | string[]) => {
     setParticipantAnswers((prev) => ({
       ...prev,
@@ -1371,80 +1236,45 @@ const handleConfirmSendCampaign =
     }
   };
 
-  // Submit Participant Answer with Mandatory Validation Rules
-const handleSubmitParticipantResponse =
-  async (e: React.FormEvent) => {
+  const handleSubmitParticipantResponse = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !respondingForm ||
-      !participantSegment
-    ) {
+    if (!respondingForm || !participantSegment) {
       return;
     }
 
-    /*
-     * Perguntas que realmente aparecem
-     * para este participante.
-     */
-    const visibleQuestions =
-      getFilteredQuestionsForParticipant();
+    const visibleQuestions = getFilteredQuestionsForParticipant();
 
-    /*
-     * Verifica obrigatórias.
-     */
-    const unanswered =
-      visibleQuestions.filter((q) => {
-        if (!q.required) {
-          return false;
-        }
+    const unanswered = visibleQuestions.filter((q) => {
+      if (!q.required) {
+        return false;
+      }
 
-        const answer =
-          participantAnswers[q.id];
+      const answer = participantAnswers[q.id];
 
-        if (q.type === 'CHECKBOX') {
-          return (
-            !Array.isArray(answer) ||
-            answer.length === 0
-          );
-        }
+      if (q.type === 'CHECKBOX') {
+        return !Array.isArray(answer) || answer.length === 0;
+      }
 
-        return (
-          answer === undefined ||
-          answer === null ||
-          (
-            typeof answer === 'string' &&
-            answer.trim() === ''
-          )
-        );
-      });
+      return (
+        answer === undefined ||
+        answer === null ||
+        (typeof answer === 'string' && answer.trim() === '')
+      );
+    });
 
-    /*
-     * Bloqueia se alguma obrigatória
-     * não estiver respondida.
-     */
     if (unanswered.length > 0) {
-      const unansweredIds =
-        unanswered.map(
-          (question) => question.id
-        );
+      const unansweredIds = unanswered.map((question) => question.id);
 
-      setUnansweredQuestionIds(
-        unansweredIds
-      );
+      setUnansweredQuestionIds(unansweredIds);
+      setShowValidationErrorBanner(true);
 
-      setShowValidationErrorBanner(
-        true
-      );
-
-      const firstUnansweredId =
-        unansweredIds[0];
+      const firstUnansweredId = unansweredIds[0];
 
       setTimeout(() => {
-        const element =
-          document.getElementById(
-            `participant-question-${firstUnansweredId}`
-          );
+        const element = document.getElementById(
+          `participant-question-${firstUnansweredId}`
+        );
 
         if (element) {
           element.scrollIntoView({
@@ -1452,10 +1282,7 @@ const handleSubmitParticipantResponse =
             block: 'center',
           });
         } else {
-          const banner =
-            document.getElementById(
-              'validation-error-banner'
-            );
+          const banner = document.getElementById('validation-error-banner');
 
           banner?.scrollIntoView({
             behavior: 'smooth',
@@ -1472,56 +1299,32 @@ const handleSubmitParticipantResponse =
       return;
     }
 
-    /*
-     * Converte o estado do frontend
-     * para o payload esperado pelo backend.
-     */
-    const answers =
-      visibleQuestions
-        .map((question) => ({
-          questionId:
-            question.id,
+    const answers = visibleQuestions
+      .map((question) => ({
+        questionId: question.id,
+        value: participantAnswers[question.id],
+      }))
+      .filter((answer) => {
+        const value = answer.value;
 
-          value:
-            participantAnswers[
-              question.id
-            ],
-        }))
-        .filter((answer) => {
-          const value =
-            answer.value;
+        if (value === undefined || value === null) {
+          return false;
+        }
 
-          if (
-            value === undefined ||
-            value === null
-          ) {
-            return false;
-          }
+        if (typeof value === 'string' && value.trim() === '') {
+          return false;
+        }
 
-          if (
-            typeof value === 'string' &&
-            value.trim() === ''
-          ) {
-            return false;
-          }
+        if (Array.isArray(value) && value.length === 0) {
+          return false;
+        }
 
-          if (
-            Array.isArray(value) &&
-            value.length === 0
-          ) {
-            return false;
-          }
+        return true;
+      }) as {
+        questionId: string;
+        value: string | string[];
+      }[];
 
-          return true;
-        }) as {
-          questionId: string;
-          value: string | string[];
-        }[];
-
-    /*
-     * O backend exige pelo menos
-     * uma resposta.
-     */
     if (answers.length === 0) {
       showNotification(
         'error',
@@ -1536,30 +1339,12 @@ const handleSubmitParticipantResponse =
     setIsSubmittingResponse(true);
 
     try {
-      const createdResponse =
-        await submitFormResponse(
-          respondingForm.id,
-          answers
-        );
+      const createdResponse = await submitFormResponse(respondingForm.id, answers);
 
-      console.log(
-        '[RESPOSTA SALVA]',
-        createdResponse
-      );
+      console.log('[RESPOSTA SALVA]', createdResponse);
 
-      /*
-       * Mantemos este estado local somente
-       * para a interface saber que acabou
-       * de responder.
-       */
-      setSubmittedCampaignIds(
-        (prev) =>
-          Array.from(
-            new Set([
-              ...prev,
-              respondingForm.id,
-            ])
-          )
+      setSubmittedCampaignIds((prev) =>
+        Array.from(new Set([...prev, respondingForm.id]))
       );
 
       setResponseSubmitted(true);
@@ -1569,17 +1354,13 @@ const handleSubmitParticipantResponse =
         `Resposta enviada com sucesso para o segmento ${
           participantSegment === 'alunos'
             ? 'Aluno'
-            : participantSegment ===
-                'docentes'
+            : participantSegment === 'docentes'
               ? 'Docente'
               : 'TAE'
         }!`
       );
     } catch (error) {
-      console.error(
-        'Erro ao enviar resposta:',
-        error
-      );
+      console.error('Erro ao enviar resposta:', error);
 
       showNotification(
         'error',
@@ -1592,7 +1373,6 @@ const handleSubmitParticipantResponse =
     }
   };
 
-  // Sync / Publish Smart Form to Google Forms API
   const handlePublishToGoogleForms = async (form: SmartForm) => {
     setPublishingFormId(form.id);
     try {
@@ -1607,7 +1387,6 @@ const handleSubmitParticipantResponse =
         return;
       }
 
-      // Convert questions for Google Forms API
       const questionsInput = form.questions.map((q) => ({
         title: `${q.title} [Público: ${
           q.audiences.includes('todos')
@@ -1628,7 +1407,6 @@ const handleSubmitParticipantResponse =
         questionsInput
       );
 
-      // Update form with Google link
       const updatedForm: SmartForm = {
         ...form,
         googleFormId: created.formId,
@@ -1645,7 +1423,6 @@ const handleSubmitParticipantResponse =
     }
   };
 
-  // Delete Form
   const handleDeleteForm = () => {
     if (!deletingForm) return;
     setForms(forms.filter((f) => f.id !== deletingForm.id));
@@ -1653,7 +1430,6 @@ const handleSubmitParticipantResponse =
     setDeletingForm(null);
   };
 
-  // Filtered forms list for table and grid
   const filteredForms = forms.filter((f) => {
     const matchesSearch =
       f.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1695,7 +1471,6 @@ const handleSubmitParticipantResponse =
     return matchesSearch && matchesStatus && matchesAudience && matchesCampus && matchesPeriod;
   });
 
-  // Render Classificação das Perguntas Screen if active
   if (classifyingForm) {
     return (
       <QuestionClassificationView
@@ -1721,7 +1496,6 @@ const handleSubmitParticipantResponse =
     );
   }
 
-
   const renderQuestionCard = (q: SmartQuestion, qIdx: number, totalCount: number) => {
     const isExpanded = !!expandedQuestionIds[q.id];
 
@@ -1743,7 +1517,6 @@ const handleSubmitParticipantResponse =
     const isStudentQuestion = q.audiences.includes('alunos') || (selectedSegment === 'alunos' && wizardStep === 4);
 
     if (!isExpanded) {
-      // COMPACT MINIMIZED CARD (~50px height)
       return (
         <div
           id={`wizard-question-card-${q.id}`}
@@ -1805,7 +1578,6 @@ const handleSubmitParticipantResponse =
               <Trash2 className="w-3.5 h-3.5" />
             </button>
 
-            {/* Expand Button */}
             <button
               type="button"
               onClick={() => toggleQuestionExpanded(q.id)}
@@ -1820,7 +1592,6 @@ const handleSubmitParticipantResponse =
       );
     }
 
-    // EXPANDED QUESTION CARD
     return (
       <div
         id={`wizard-question-card-${q.id}`}
@@ -1873,7 +1644,6 @@ const handleSubmitParticipantResponse =
               <Trash2 className="w-3.5 h-3.5" />
             </button>
 
-            {/* Minimize Button */}
             <button
               type="button"
               onClick={() => toggleQuestionExpanded(q.id)}
@@ -2153,7 +1923,6 @@ const handleSubmitParticipantResponse =
         handleImportForm={handleImportForm}
       />
 
-      {/* MODAL 6: Criar e Configurar Campanha de Avaliação (Envio - Wizard de 5 Etapas) */}
       {campaignModalForm && (
         <SendCampaignWizardModal
           form={campaignModalForm}
@@ -2192,7 +1961,6 @@ const handleSubmitParticipantResponse =
         />
       )}
 
-      {/* MODAL 7: QR Code e Material de Divulgação da Campanha */}
       {viewingQrCodeCampaign && (
         <CampaignQRCodeModal
           campaign={viewingQrCodeCampaign}

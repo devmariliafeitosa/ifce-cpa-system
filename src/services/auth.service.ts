@@ -1,21 +1,13 @@
 import {
-  browserLocalPersistence,
-  browserSessionPersistence,
-  sendPasswordResetEmail,
-  setPersistence,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-
-import { firebaseAuth } from "../config/firebase";
-
-import {
   ApiError,
   apiRequest,
+  clearAuthSession,
   clearStoredAuthUser,
+  getStoredAuthUser,
+  jsonBody,
+  setAuthToken,
   setStoredAuthUser,
 } from "./api";
-
 import type { UserCoordinator } from "../types";
 
 interface AuthenticateCoordinatorParams {
@@ -34,7 +26,7 @@ interface ResetPasswordParams {
 
 interface BackendUser {
   id: string;
-  firebaseUid: string;
+  firebaseUid?: string;
   nome: string;
   email: string;
   campusId?: string | null;
@@ -42,6 +34,16 @@ interface BackendUser {
   ativo: boolean;
   siape?: string;
   createdAt?: string;
+  dadosRoles?: {
+    coordenador?: { siape?: string | number };
+    docente?: { siape?: string | number };
+    servidor?: { siape?: string | number };
+  };
+}
+
+interface LoginResponse {
+  token: string;
+  usuario: BackendUser;
 }
 
 interface MeResponse {
@@ -59,154 +61,147 @@ export type AuthenticationResult =
       message: string;
     };
 
-function getFirebaseErrorMessage(error: unknown): string {
-  const code =
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error
-      ? String(
-          (error as { code: unknown }).code,
-        )
-      : "";
-
-  switch (code) {
-    case "auth/invalid-credential":
-    case "auth/user-not-found":
-    case "auth/wrong-password":
-      return "E-mail ou senha inválidos.";
-
-    case "auth/user-disabled":
-      return "Esta conta foi desativada.";
-
-    case "auth/too-many-requests":
-      return "Muitas tentativas de login. Tente novamente mais tarde.";
-
-    case "auth/network-request-failed":
-      return "Não foi possível conectar ao Firebase. Verifique sua internet.";
-
-    case "auth/invalid-email":
-      return "E-mail inválido.";
-
-    default:
-      return "Não foi possível realizar o login.";
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
   }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Não foi possível realizar o login.";
 }
 
-export async function authenticateCoordinator({
-  email,
-  password,
-  rememberMe = false,
-}: AuthenticateCoordinatorParams): Promise<AuthenticationResult> {
-  const enteredEmail =
-    email.trim().toLowerCase();
+function mapBackendUser(
+  backendUser: BackendUser,
+): UserCoordinator {
+  const siapeDoRole =
+    backendUser.dadosRoles?.coordenador?.siape ??
+    backendUser.dadosRoles?.docente?.siape ??
+    backendUser.dadosRoles?.servidor?.siape;
+
+  return {
+    id: backendUser.id,
+    name: backendUser.nome,
+    email: backendUser.email,
+    campus:
+      backendUser.campusId ||
+      "Campus não informado",
+    siape: String(siapeDoRole ?? backendUser.siape ?? ""),
+    createdAt: backendUser.createdAt || "",
+  };
+}
+
+export async function authenticateCoordinator(
+  params: AuthenticateCoordinatorParams,
+): Promise<AuthenticationResult> {
+  const email = params.email.trim().toLowerCase();
 
   try {
-    /**
-     * Lembrar de mim:
-     *
-     * true:
-     * continua autenticado ao fechar o navegador.
-     *
-     * false:
-     * sessão termina ao fechar a aba/janela.
-     */
-    await setPersistence(
-      firebaseAuth,
-      rememberMe
-        ? browserLocalPersistence
-        : browserSessionPersistence,
+    const response = await apiRequest<LoginResponse>(
+      "/auth/login",
+      {
+        method: "POST",
+        auth: false,
+        body: jsonBody({
+          email,
+          senha: params.password,
+        }),
+      },
     );
-
-    /**
-     * Firebase verifica e-mail + senha.
-     */
-    await signInWithEmailAndPassword(
-      firebaseAuth,
-      enteredEmail,
-      password,
-    );
-
-    const response =
-      await apiRequest<MeResponse>("/auth/me");
 
     const backendUser = response.usuario;
 
-    if (
-      !backendUser.roles?.includes(
-        "coordenador",
-      )
-    ) {
-      await signOut(firebaseAuth);
-      clearStoredAuthUser();
-
+    if (!response.token) {
       return {
         success: false,
-        message:
-          "Esta conta não possui permissão de Coordenação.",
+        message: "O servidor não retornou um token de acesso.",
       };
     }
 
-    const user: UserCoordinator = {
-      id: backendUser.id,
+    if (!backendUser) {
+      return {
+        success: false,
+        message: "O servidor não retornou os dados do usuário.",
+      };
+    }
 
-      name: backendUser.nome,
+    if (!backendUser.ativo) {
+      return {
+        success: false,
+        message: "Esta conta está desativada.",
+      };
+    }
 
-      email: backendUser.email,
+    if (!backendUser.roles.includes("coordenador")) {
+      return {
+        success: false,
+        message:
+          "Acesso permitido somente para coordenadores.",
+      };
+    }
 
-      campus:
-        backendUser.campusId ||
-        "Campus não informado",
+    const user = mapBackendUser(backendUser);
 
-      siape: backendUser.siape || "",
-
-      createdAt:
-        backendUser.createdAt || "",
-    };
+    setAuthToken(
+      response.token,
+      params.rememberMe ?? false,
+    );
 
     setStoredAuthUser(
       user,
-      rememberMe,
+      params.rememberMe ?? false,
     );
 
     return {
       success: true,
-      email: enteredEmail,
+      email: backendUser.email,
       user,
     };
   } catch (error) {
-    /**
-     * Se o Firebase autenticou mas o backend
-     * recusou o usuário, encerra a sessão.
-     */
-    if (error instanceof ApiError) {
-      await signOut(firebaseAuth);
-      clearStoredAuthUser();
-
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    clearAuthSession();
 
     return {
       success: false,
-      message:
-        getFirebaseErrorMessage(error),
+      message: getErrorMessage(error),
     };
   }
 }
 
-export async function requestPasswordReset({
-  email,
-}: RequestPasswordResetParams): Promise<void> {
-  await sendPasswordResetEmail(
-    firebaseAuth,
-    email.trim().toLowerCase(),
+export async function getCurrentUser(): Promise<BackendUser> {
+  const response = await apiRequest<MeResponse>(
+    "/auth/me",
+  );
+
+  return response.usuario;
+}
+
+export function getCurrentStoredUser(): UserCoordinator | null {
+  return getStoredAuthUser<UserCoordinator>();
+}
+
+export async function logout(): Promise<void> {
+  clearAuthSession();
+}
+
+export async function requestPasswordReset(
+  params: RequestPasswordResetParams,
+): Promise<void> {
+  await apiRequest(
+    "/auth/forgot-password",
+    {
+      method: "POST",
+      auth: false,
+      body: jsonBody({
+        email: params.email.trim().toLowerCase(),
+      }),
+    },
   );
 }
 
-export async function resetPassword({
-  password,
-}: ResetPasswordParams): Promise<void> {
-  void password;
+export async function resetPassword(
+  params: ResetPasswordParams,
+): Promise<void> {
+  void params;
 }
