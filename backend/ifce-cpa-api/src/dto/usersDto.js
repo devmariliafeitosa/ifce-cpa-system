@@ -62,11 +62,47 @@ function validarCriacaoUsuario(body) {
 }
 
 function validarAtualizacaoUsuario(body) {
-  const permitidos = ['nome', 'email', 'campusId', 'ativo', 'roles'];
+  const permitidos = ['nome', 'email', 'campusId', 'ativo', 'roles', 'dadosPorRole'];
   const dados = {};
 
   for (const campo of permitidos) {
     if (body[campo] !== undefined) dados[campo] = body[campo];
+  }
+
+  const erros = [];
+
+  if (dados.roles !== undefined) {
+    if (!Array.isArray(dados.roles) || dados.roles.length === 0) {
+      erros.push('roles deve ser um array não vazio');
+    } else {
+      const invalido = dados.roles.find((r) => !ROLES_VALIDOS.includes(r));
+      if (invalido) erros.push(`role inválido: ${invalido}`);
+    }
+  }
+
+  if (dados.ativo !== undefined && typeof dados.ativo !== 'boolean') {
+    erros.push('ativo deve ser boolean');
+  }
+
+  if (dados.dadosPorRole) {
+    for (const role of Object.keys(dados.dadosPorRole)) {
+      if (!ROLES_VALIDOS.includes(role)) {
+        erros.push(`role inválido em dadosPorRole: ${role}`);
+        continue;
+      }
+      const camposObrigatorios = CAMPOS_POR_ROLE[role] || [];
+      const dadosRole = dados.dadosPorRole[role];
+      const faltando = camposObrigatorios.filter((campo) => dadosRole?.[campo] === undefined);
+      if (faltando.length > 0) {
+        erros.push(`dadosPorRole.${role} está faltando: ${faltando.join(', ')}`);
+      }
+    }
+  }
+
+  if (erros.length > 0) {
+    const erro = new Error(erros.join('; '));
+    erro.status = 400;
+    throw erro;
   }
 
   if (Object.keys(dados).length === 0) {
@@ -78,4 +114,4 @@ function validarAtualizacaoUsuario(body) {
   return dados;
 }
 
-module.exports = { validarCriacaoUsuario, validarAtualizacaoUsuario };
+module.exports = { validarCriacaoUsuario, validarAtualizacaoUsuario, ROLES_VALIDOS };
