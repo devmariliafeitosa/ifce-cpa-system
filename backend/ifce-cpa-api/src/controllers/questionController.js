@@ -26,8 +26,8 @@ async function buscarPorId(req, res, next) {
 
 async function listar(req, res, next) {
   try {
-    const { audience } = req.query;
-    const questions = await questionsServices.listarQuestions({ audience });
+    const { audience, studentLevel } = req.query;
+    const questions = await questionsServices.listarQuestions({ audience, studentLevel });
     res.json(questions.map(formatarQuestionResponse));
   } catch (err) {
     next(err);

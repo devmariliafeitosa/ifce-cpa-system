@@ -4,7 +4,15 @@ const { registrarLog } = require('./logsService');
 const AUDIENCES_VALIDAS = ['aluno', 'docente', 'servidor', 'coordenador'];
 const TIPOS_VALIDOS = ['multipla_escolha', 'texto_livre', 'escala', 'sim_nao'];
 
-function validarQuestion({ title, audiences, type, options }) {
+const STUDENT_LEVELS_VALIDOS = [
+  'todos',
+  'tecnico',
+  'graduacao',
+  'mestrado',
+  'pos_graduacao',
+];
+
+function validarQuestion({ title, audiences, type, options, studentLevel }) {
   if (!title) {
     throw new Error('O título da pergunta é obrigatório');
   }
@@ -25,6 +33,10 @@ function validarQuestion({ title, audiences, type, options }) {
   if (type === 'multipla_escolha' && (!Array.isArray(options) || options.length < 2)) {
     throw new Error('Perguntas de múltipla escolha precisam de ao menos 2 opções');
   }
+
+  if (studentLevel !== undefined && !STUDENT_LEVELS_VALIDOS.includes(studentLevel)) {
+    throw new Error(`Nível de discente inválido: ${studentLevel}`);
+  }
 }
 
 async function criarQuestion(dados, criadoPor) {
@@ -37,6 +49,7 @@ async function criarQuestion(dados, criadoPor) {
     required: dados.required ?? false,
     title: dados.title,
     type: dados.type,
+    studentLevel: dados.studentLevel ?? 'todos',
   });
 
   await registrarLog({
@@ -88,4 +101,5 @@ module.exports = {
   listarQuestions,
   atualizarQuestion,
   removerQuestion,
+  STUDENT_LEVELS_VALIDOS,
 };

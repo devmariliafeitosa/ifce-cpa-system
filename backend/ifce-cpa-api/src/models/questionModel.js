@@ -1,3 +1,5 @@
+// models/questionModel.ts
+
 /**
  * @typedef {Object} Question
  * @property {string} id
@@ -7,6 +9,7 @@
  * @property {string[]} options
  * @property {number} order
  * @property {boolean} required
+ * @property {string} studentLevel - 'todos' | 'tecnico' | 'graduacao' | 'mestrado' | 'pos_graduacao'  // NOVO
  * @property {FirebaseFirestore.Timestamp} createdAt
  */
 
@@ -19,6 +22,7 @@ function formatarQuestionResponse(question) {
     options: question.options || [],
     order: question.order ?? 0,
     required: question.required ?? false,
+    studentLevel: question.studentLevel ?? 'todos',
     createdAt: question.createdAt,
   };
 }
