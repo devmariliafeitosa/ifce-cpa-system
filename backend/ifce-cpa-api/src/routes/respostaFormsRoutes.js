@@ -6,6 +6,8 @@ const respostaFormsController =
 
 const { authenticate, exigirRole } = require('../middlewares/authMiddleware');
 
+router.post('/public', respostaFormsController.enviarPublica);
+
 router.post('/', authenticate, respostaFormsController.enviar);
 
 router.get('/minhas', authenticate, respostaFormsController.listarMinhas);
