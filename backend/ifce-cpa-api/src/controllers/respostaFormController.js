@@ -15,6 +15,56 @@ async function enviar(req, res, next) {
   }
 }
 
+async function enviarPublica(
+  req,
+  res,
+  next
+) {
+  try {
+    const dadosValidados =
+      validarEnvioResposta(
+        req.body
+      );
+
+    const {
+      respondentHash,
+    } = req.body;
+
+    if (
+      !respondentHash ||
+      typeof respondentHash !==
+        'string'
+    ) {
+      return res
+        .status(400)
+        .json({
+          mensagem:
+            'respondentHash é obrigatório',
+        });
+    }
+
+    const anonymousUserId =
+      `anon-${respondentHash}`;
+
+    const idResponseForm =
+      await respostaFormsServices
+        .enviarResposta({
+          ...dadosValidados,
+
+          userId:
+            anonymousUserId,
+        });
+
+    return res
+      .status(201)
+      .json({
+        id: idResponseForm,
+      });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function buscarPorId(req, res, next) {
   try {
     const resposta = await respostaFormsServices.buscarResposta(req.params.id);
@@ -45,4 +95,4 @@ async function listarMinhas(req, res, next) {
   }
 }
 
-module.exports = { enviar, buscarPorId, listarPorForm, listarMinhas };
+module.exports = { enviar, buscarPorId, listarPorForm, listarMinhas, enviarPublica };
