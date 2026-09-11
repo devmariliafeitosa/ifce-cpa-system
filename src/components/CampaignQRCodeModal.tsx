@@ -43,7 +43,7 @@ export const CampaignQRCodeModal: React.FC<CampaignQRCodeModalProps> = ({
 
   // Generate public campaign evaluation URL
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://cpa.ifce.edu.br';
-  const campaignUrl = campaign.uniqueTokenUrl || `${baseUrl}/?campaignId=${campaign.id}`;
+  const campaignUrl = campaign.uniqueTokenUrl || `${baseUrl}/responder/${campaign.formId}`;
 
   // Metrics
   const emailsSent = campaign.sentEmailsCount ?? 2450;
