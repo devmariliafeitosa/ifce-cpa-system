@@ -1,7 +1,8 @@
 const API_URL = (
   (import.meta as ImportMeta & {
     env?: { VITE_API_URL?: string };
-  }).env?.VITE_API_URL || "http://localhost:3001/api"
+  }).env?.VITE_API_URL ||
+  `http://${window.location.hostname}:3001/api`
 ).replace(/\/$/, "");
 
 const AUTH_TOKEN_KEY = "cpa_auth_token";
