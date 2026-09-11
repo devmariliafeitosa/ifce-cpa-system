@@ -234,6 +234,33 @@ export function mapBackendFormToSmartForm(
   };
 }
 
+export async function getPublicFormById(
+  formId: string
+): Promise<SmartForm> {
+  const backendForm =
+    await apiRequest<BackendForm>(
+      `/forms/${encodeURIComponent(formId)}`,
+      {
+        auth: false,
+      }
+    );
+
+  const form =
+    mapBackendFormToSmartForm(
+      backendForm
+    );
+
+  const questions =
+    await getQuestionsForForm(
+      formId
+    );
+
+  return {
+    ...form,
+    questions,
+  };
+}
+
 export async function listForms(): Promise<
   SmartForm[]
 > {
