@@ -170,9 +170,18 @@ function mapBackendQuestion(question: BackendQuestion): SmartQuestion {
   };
 }
 
-export async function getQuestionsForForm(formId: string): Promise<SmartQuestion[]> {
-  const response = await apiRequest<BackendQuestion[]>(
-    `/form-questions/form/${formId}`
+export async function getQuestionsForForm(
+  formId: string
+): Promise<SmartQuestion[]> {
+  const response =
+    await apiRequest<BackendQuestion[]>(
+      `/form-questions/form/${encodeURIComponent(formId)}`,
+      {
+        auth: false,
+      }
+    );
+
+  return response.map(
+    mapBackendQuestion
   );
-  return response.map(mapBackendQuestion);
 }
