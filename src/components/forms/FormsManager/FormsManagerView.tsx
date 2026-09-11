@@ -913,6 +913,18 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
   };
 
   const handleOpenQRCodeForForm = (form: SmartForm) => {
+
+    const publicBaseUrl = (
+  (
+    import.meta as ImportMeta & {
+      env?: {
+        VITE_PUBLIC_APP_URL?: string;
+      };
+    }
+  ).env?.VITE_PUBLIC_APP_URL ||
+  window.location.origin
+).replace(/\/$/, '');
+
     let campaign = campaignsList.find((c) => c.formId === form.id);
     if (!campaign) {
       campaign = {
@@ -928,9 +940,8 @@ export const FormsManagerView: React.FC<FormsManagerViewProps> = ({
         createdAt: new Date().toLocaleDateString('pt-BR'),
         status: form.status === 'Ativo' ? 'Ativa' : 'Rascunho',
         sentEmailsCount: 2450,
-        uniqueTokenUrl: `https://cpa.ifce.edu.br/avaliacao/${form.id}?token=suap-${Math.floor(
-          100000 + Math.random() * 900000
-        )}`,
+        uniqueTokenUrl:
+        `${publicBaseUrl}/responder/${form.id}`,
         qrCodeAccessCount: 184,
         qrCodeResponsesCount: 142,
       };
