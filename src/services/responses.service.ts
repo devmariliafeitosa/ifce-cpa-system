@@ -6,6 +6,27 @@ export interface FormAnswerPayload {
   value: string | string[];
 }
 
+export async function submitPublicFormResponse(
+  formId: string,
+  respondentHash: string,
+  answers: FormAnswerPayload[]
+): Promise<SubmitFormResponse> {
+  return apiRequest<SubmitFormResponse>(
+    "/respostaForms/public",
+    {
+      method: "POST",
+
+      auth: false,
+
+      body: JSON.stringify({
+        formId,
+        respondentHash,
+        answers,
+      }),
+    }
+  );
+}
+
 export interface SubmitFormResponse {
   id: string;
 }
