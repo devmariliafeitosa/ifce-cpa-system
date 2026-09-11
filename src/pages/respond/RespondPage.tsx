@@ -1,22 +1,59 @@
-import React, { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
-import { CalendarX2, CheckCircle2, LinkIcon, ListX } from "lucide-react";
-
-import { RespondShell } from "../../features/respond/components/RespondShell";
-import { StatusScreen } from "../../features/respond/components/StatusScreen";
-import { EmailIdentifyStep } from "../../features/respond/components/EmailIdentifyStep";
-import { SegmentSelectStep } from "../../features/respond/components/SegmentSelectStep";
-import { QuestionnaireStep } from "../../features/respond/components/QuestionnaireStep";
-import { SuccessStep } from "../../features/respond/components/SuccessStep";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-  getCampaignByToken,
-  getFormById,
+  useParams,
+} from "react-router-dom";
+
+import {
+  CalendarX2,
+  CheckCircle2,
+  LinkIcon,
+  ListX,
+  Loader2,
+} from "lucide-react";
+
+import {
+  RespondShell,
+} from "../../features/respond/components/RespondShell";
+
+import {
+  StatusScreen,
+} from "../../features/respond/components/StatusScreen";
+
+import {
+  EmailIdentifyStep,
+} from "../../features/respond/components/EmailIdentifyStep";
+
+import {
+  SegmentSelectStep,
+} from "../../features/respond/components/SegmentSelectStep";
+
+import {
+  QuestionnaireStep,
+} from "../../features/respond/components/QuestionnaireStep";
+
+import {
+  SuccessStep,
+} from "../../features/respond/components/SuccessStep";
+
+import {
+  getPublicFormById,
+} from "../../services/forms.service";
+
+import {
+  submitPublicFormResponse,
+} from "../../services/responses.service";
+
+import {
   hasBrowserAlreadyAnswered,
   hasEmailHashAlreadyAnswered,
-  isCampaignOpen,
   saveAnonymousSubmission,
 } from "../../features/respond/utils/respondStorage";
+
 import {
   SEGMENT_TO_AUDIENCE,
   guessSegmentFromEmail,
@@ -26,190 +63,514 @@ import {
 import type {
   FormParticipantAnswer,
   ParticipantSegment,
+  SmartForm,
   SmartQuestion,
   StudentLevel,
 } from "../../types";
 
-type FlowStep = "identify" | "segment" | "questionnaire" | "success";
+type FlowStep =
+  | "identify"
+  | "segment"
+  | "questionnaire"
+  | "success";
 
-export const RespondPage: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
+export const RespondPage:
+  React.FC = () => {
 
-  const campaign = useMemo(
-    () => (token ? getCampaignByToken(token) : null),
-    [token]
+  /*
+   * Apesar do parâmetro ainda se chamar
+   * token, agora ele é o ID real do formulário.
+   */
+  const { token } =
+    useParams<{
+      token: string;
+    }>();
+
+  const [form, setForm] =
+    useState<SmartForm | null>(
+      null
+    );
+
+  const [
+    isLoadingForm,
+    setIsLoadingForm
+  ] = useState(true);
+
+  const [
+    loadError,
+    setLoadError
+  ] = useState<string | null>(
+    null
   );
-  const form = useMemo(
-    () => (campaign ? getFormById(campaign.formId) : null),
-    [campaign]
-  );
 
-  const [step, setStep] = useState<FlowStep>("identify");
-  const [emailHash, setEmailHash] = useState<string | null>(null);
-  const [suggestedSegment, setSuggestedSegment] =
-    useState<ParticipantSegment | null>(null);
-  const [segment, setSegment] = useState<ParticipantSegment | null>(null);
-  const [studentLevel, setStudentLevel] = useState<
-    Exclude<StudentLevel, "todos"> | undefined
+  const [step, setStep] =
+    useState<FlowStep>(
+      "identify"
+    );
+
+  const [
+    emailHash,
+    setEmailHash
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    suggestedSegment,
+    setSuggestedSegment
+  ] = useState<
+    ParticipantSegment | null
+  >(null);
+
+  const [
+    segment,
+    setSegment
+  ] = useState<
+    ParticipantSegment | null
+  >(null);
+
+  const [
+    studentLevel,
+    setStudentLevel
+  ] = useState<
+    | Exclude<
+        StudentLevel,
+        "todos"
+      >
+    | undefined
   >(undefined);
-  const [identifyError, setIdentifyError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // RESP-002 — filtragem inteligente: perguntas gerais ("todos") + perguntas
-  // do segmento do participante, respeitando o nível de ensino no caso de
-  // discentes. Declarado antes de qualquer retorno antecipado (regra dos
-  // Hooks do React).
-  const filteredQuestions: SmartQuestion[] = useMemo(() => {
-    if (!form || !segment) return [];
-    const audience = SEGMENT_TO_AUDIENCE[segment];
-    return form.questions.filter((q) => {
-      const matchesAudience =
-        q.audiences.includes("todos") || q.audiences.includes(audience);
-      if (!matchesAudience) return false;
+  const [
+    identifyError,
+    setIdentifyError
+  ] = useState<
+    string | null
+  >(null);
 
-      if (audience === "alunos" && q.studentLevel && q.studentLevel !== "todos") {
-        return q.studentLevel === studentLevel;
+  const [
+    isSubmitting,
+    setIsSubmitting
+  ] = useState(false);
+
+  /*
+   * Busca formulário REAL no backend.
+   */
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      if (!token) {
+        setIsLoadingForm(false);
+        return;
       }
-      return true;
-    });
-  }, [form, segment, studentLevel]);
 
-  // Invalid link / token não encontrado.
-  if (!token || !campaign || !form) {
+      try {
+        const result =
+          await getPublicFormById(
+            token
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setForm(result);
+        setLoadError(null);
+      } catch (error) {
+        console.error(
+          "Erro ao carregar formulário público:",
+          error
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar o formulário."
+        );
+      } finally {
+        if (active) {
+          setIsLoadingForm(false);
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  /*
+   * Filtra perguntas de acordo
+   * com Aluno / Docente / TAE.
+   */
+  const filteredQuestions:
+    SmartQuestion[] =
+    useMemo(() => {
+      if (
+        !form ||
+        !segment
+      ) {
+        return [];
+      }
+
+      const audience =
+        SEGMENT_TO_AUDIENCE[
+          segment
+        ];
+
+      return form.questions.filter(
+        (question) => {
+          const matchesAudience =
+            question.audiences.includes(
+              "todos"
+            ) ||
+            question.audiences.includes(
+              audience
+            );
+
+          if (!matchesAudience) {
+            return false;
+          }
+
+          if (
+            audience ===
+              "alunos" &&
+            question.studentLevel &&
+            question.studentLevel !==
+              "todos"
+          ) {
+            return (
+              question.studentLevel ===
+              studentLevel
+            );
+          }
+
+          return true;
+        }
+      );
+    }, [
+      form,
+      segment,
+      studentLevel,
+    ]);
+
+  if (isLoadingForm) {
+    return (
+      <RespondShell>
+        <StatusScreen
+          icon={Loader2}
+          tone="neutral"
+          title="Carregando questionário"
+          description="Aguarde enquanto buscamos o formulário da avaliação."
+        />
+      </RespondShell>
+    );
+  }
+
+  if (
+    !token ||
+    loadError ||
+    !form
+  ) {
     return (
       <RespondShell>
         <StatusScreen
           icon={LinkIcon}
           tone="warning"
           title="Link inválido"
-          description="Não encontramos nenhuma campanha de avaliação associada a este link. Verifique se o endereço foi copiado corretamente ou solicite um novo link/QR Code à coordenação da CPA."
+          description={
+            loadError ||
+            "Não encontramos o formulário associado a este QR Code."
+          }
         />
       </RespondShell>
     );
   }
 
-  // Campanha fora do período de aplicação (agendada, encerrada ou rascunho).
-  if (!isCampaignOpen(campaign)) {
+  /*
+   * Para a apresentação:
+   * basta estar publicado/ativo.
+   *
+   * Não vamos complicar agora
+   * verificando datas.
+   */
+  if (
+    form.status !== "Ativo" &&
+    form.status !== "Ativa"
+  ) {
     return (
-      <RespondShell campaignTitle={campaign.title} campus={campaign.campus}>
+      <RespondShell
+        campaignTitle={
+          form.title
+        }
+        campus={form.campus}
+      >
         <StatusScreen
           icon={CalendarX2}
           tone="neutral"
-          title="Esta campanha não está aberta no momento"
-          description="O período de aplicação deste questionário ainda não começou ou já foi encerrado. Consulte a coordenação da CPA do seu campus para mais informações."
+          title="Este formulário não está aberto"
+          description="Este questionário ainda não está disponível para respostas."
         />
       </RespondShell>
     );
   }
 
-  // RN004 — já respondeu neste navegador.
-  if (hasBrowserAlreadyAnswered(campaign.id)) {
+  /*
+   * Controle local simples
+   * contra resposta repetida.
+   */
+  if (
+    hasBrowserAlreadyAnswered(
+      form.id
+    )
+  ) {
     return (
-      <RespondShell campaignTitle={campaign.title} campus={campaign.campus}>
+      <RespondShell
+        campaignTitle={
+          form.title
+        }
+        campus={form.campus}
+      >
         <StatusScreen
           icon={CheckCircle2}
           tone="success"
           title="Você já respondeu a esta avaliação"
-          description="Identificamos que uma resposta já foi registrada para esta campanha a partir deste dispositivo. Cada participante pode responder apenas uma vez por ciclo. Obrigado por contribuir!"
+          description="Uma resposta deste dispositivo já foi registrada para este formulário."
         />
       </RespondShell>
     );
   }
 
-  const handleIdentify = (email: string) => {
-    const hash = hashEmailForDeduplication(email);
-
-    if (hasEmailHashAlreadyAnswered(campaign.id, hash)) {
-      setIdentifyError(
-        "Já existe uma resposta registrada para este e-mail nesta campanha."
+  const handleIdentify = (
+    email: string
+  ) => {
+    const hash =
+      hashEmailForDeduplication(
+        email
       );
+
+    if (
+      hasEmailHashAlreadyAnswered(
+        form.id,
+        hash
+      )
+    ) {
+      setIdentifyError(
+        "Já existe uma resposta registrada para este e-mail neste formulário."
+      );
+
       return;
     }
 
     setIdentifyError(null);
+
     setEmailHash(hash);
-    setSuggestedSegment(guessSegmentFromEmail(email));
+
+    setSuggestedSegment(
+      guessSegmentFromEmail(
+        email
+      )
+    );
+
     setStep("segment");
   };
 
   const handleSegmentContinue = (
-    selectedSegment: ParticipantSegment,
-    level?: Exclude<StudentLevel, "todos">
+    selectedSegment:
+      ParticipantSegment,
+
+    level?:
+      Exclude<
+        StudentLevel,
+        "todos"
+      >
   ) => {
-    setSegment(selectedSegment);
-    setStudentLevel(level);
-    setStep("questionnaire");
-  };
-
-  const handleSubmitAnswers = (answers: FormParticipantAnswer[]) => {
-    if (!segment || !emailHash) return;
-    setIsSubmitting(true);
-
-    const audience = SEGMENT_TO_AUDIENCE[segment];
-
-    // RN005 — a resposta persistida nunca carrega e-mail ou qualquer outro
-    // dado que identifique o participante.
-    saveAnonymousSubmission(
-      {
-        id: `sub-${Date.now()}`,
-        formId: form.id,
-        segment: audience,
-        submittedAt: new Date().toISOString(),
-        answers,
-        campaignId: campaign.id,
-        studentLevel: segment === "discente" ? studentLevel : undefined,
-      },
-      campaign.id,
-      emailHash
+    setSegment(
+      selectedSegment
     );
 
-    setIsSubmitting(false);
-    setStep("success");
+    setStudentLevel(level);
+
+    setStep(
+      "questionnaire"
+    );
   };
 
+  const handleSubmitAnswers =
+    async (
+      answers:
+        FormParticipantAnswer[]
+    ) => {
+      if (
+        !segment ||
+        !emailHash
+      ) {
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        /*
+         * Salva no BACKEND.
+         */
+        await submitPublicFormResponse(
+          form.id,
+          emailHash,
+          answers
+        );
+
+        const audience =
+          SEGMENT_TO_AUDIENCE[
+            segment
+          ];
+
+        /*
+         * Mantemos o armazenamento
+         * local somente para marcar
+         * que este navegador/e-mail
+         * já respondeu.
+         */
+        saveAnonymousSubmission(
+          {
+            id:
+              `sub-${Date.now()}`,
+
+            formId:
+              form.id,
+
+            segment:
+              audience,
+
+            submittedAt:
+              new Date()
+                .toISOString(),
+
+            answers,
+
+            campaignId:
+              form.id,
+
+            studentLevel:
+              segment ===
+                "discente"
+                ? studentLevel
+                : undefined,
+          },
+          form.id,
+          emailHash
+        );
+
+        setStep(
+          "success"
+        );
+      } catch (error) {
+        console.error(
+          "Erro ao enviar resposta:",
+          error
+        );
+
+        window.alert(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível enviar a resposta."
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
   const stepIndex =
-    step === "identify" ? 1 : step === "segment" ? 2 : step === "questionnaire" ? 3 : 4;
+    step === "identify"
+      ? 1
+      : step === "segment"
+        ? 2
+        : step ===
+            "questionnaire"
+          ? 3
+          : 4;
 
   return (
     <RespondShell
-      campaignTitle={campaign.title}
-      campus={campaign.campus}
+      campaignTitle={
+        form.title
+      }
+      campus={form.campus}
       stepIndex={stepIndex}
     >
-      {step === "identify" && (
+      {step ===
+        "identify" && (
         <EmailIdentifyStep
-          onContinue={handleIdentify}
-          errorMessage={identifyError}
+          onContinue={
+            handleIdentify
+          }
+          errorMessage={
+            identifyError
+          }
         />
       )}
 
-      {step === "segment" && (
+      {step ===
+        "segment" && (
         <SegmentSelectStep
-          suggestedSegment={suggestedSegment}
-          onBack={() => setStep("identify")}
-          onContinue={handleSegmentContinue}
+          suggestedSegment={
+            suggestedSegment
+          }
+          onBack={() =>
+            setStep(
+              "identify"
+            )
+          }
+          onContinue={
+            handleSegmentContinue
+          }
         />
       )}
 
-      {step === "questionnaire" &&
-        (filteredQuestions.length > 0 ? (
-          <QuestionnaireStep
-            form={form}
-            questions={filteredQuestions}
-            onBack={() => setStep("segment")}
-            onSubmit={handleSubmitAnswers}
-            isSubmitting={isSubmitting}
-          />
-        ) : (
-          <StatusScreen
-            icon={ListX}
-            tone="neutral"
-            title="Nenhuma pergunta disponível"
-            description="Não há perguntas configuradas para o seu perfil nesta campanha. Entre em contato com a coordenação da CPA se você acredita que isso é um engano."
-          />
-        ))}
+      {step ===
+        "questionnaire" &&
+        (
+          filteredQuestions.length >
+          0
+            ? (
+              <QuestionnaireStep
+                form={form}
+                questions={
+                  filteredQuestions
+                }
+                onBack={() =>
+                  setStep(
+                    "segment"
+                  )
+                }
+                onSubmit={
+                  handleSubmitAnswers
+                }
+                isSubmitting={
+                  isSubmitting
+                }
+              />
+            )
+            : (
+              <StatusScreen
+                icon={ListX}
+                tone="neutral"
+                title="Nenhuma pergunta disponível"
+                description="Não há perguntas configuradas para o seu perfil."
+              />
+            )
+        )}
 
-      {step === "success" && <SuccessStep />}
+      {step ===
+        "success" && (
+        <SuccessStep />
+      )}
     </RespondShell>
   );
 };
